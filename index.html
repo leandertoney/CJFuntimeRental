@@ -158,18 +158,12 @@
       inset: 0;
       z-index: 0;
     }
-    .hero-img-wrap img {
+    .hero-img-wrap img,
+    .hero-img-wrap video {
       width: 100%;
       height: 100%;
       object-fit: cover;
       object-position: center 55%;
-      animation: kenBurns 18s ease-in-out infinite alternate;
-      will-change: transform;
-    }
-    @keyframes kenBurns {
-      0%   { transform: scale(1)    translate(0,    0); }
-      40%  { transform: scale(1.05) translate(-1.2%, 0.4%); }
-      100% { transform: scale(1.08) translate(0.6%, -0.5%); }
     }
     .hero-overlay {
       position: absolute;
@@ -676,6 +670,28 @@
     }
     .review-author { font-size: 11px; color: var(--muted); font-weight: 500; letter-spacing: 0.3px; }
 
+
+    /* ─────────────────────────────────────────
+       PHOTO GALLERY
+    ───────────────────────────────────────── */
+    .gallery { padding: 96px 0; background: var(--black); border-top: 1px solid var(--border); }
+    .gallery-header { margin-bottom: 48px; }
+    .gallery-header h2 { font-family: var(--heading); font-size: clamp(2rem, 4.5vw, 3rem); letter-spacing: 3px; line-height: 1; margin-bottom: 8px; }
+    .gallery-header p { color: var(--muted); font-size: 14px; }
+    .gallery-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+    .gallery-card { position: relative; overflow: hidden; border-radius: 4px; }
+    .gallery-card-img { width: 100%; aspect-ratio: 9 / 16; object-fit: cover; display: block; transition: transform 0.5s ease; }
+    .gallery-card:hover .gallery-card-img { transform: scale(1.04); }
+    .gallery-card-caption { position: absolute; bottom: 0; left: 0; right: 0; padding: 20px 14px 14px; background: linear-gradient(to top, rgba(0,0,0,0.75), transparent); font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,0.8); opacity: 0; transition: opacity 0.3s ease; }
+    .gallery-card:hover .gallery-card-caption { opacity: 1; }
+    @media (max-width: 1024px) { .gallery-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 640px) {
+      .gallery-grid { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; padding-bottom: 12px; }
+      .gallery-grid::-webkit-scrollbar { height: 3px; }
+      .gallery-grid::-webkit-scrollbar-thumb { background: rgba(255,107,0,0.4); border-radius: 2px; }
+      .gallery-card { flex: 0 0 46vw; scroll-snap-align: start; }
+    }
+
     /* ─────────────────────────────────────────
        FAQ
     ───────────────────────────────────────── */
@@ -901,7 +917,8 @@
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
       .reveal { opacity: 1; transform: none; }
-      .hero-img-wrap img { animation: none; }
+      .hero-img-wrap img,
+      .hero-img-wrap video { animation: none; }
     }
 
     /* ─────────────────────────────────────────
@@ -995,6 +1012,15 @@
       border: 1px solid rgba(255,107,0,0.4);
       color: var(--orange);
     }
+
+    /* Photo strip */
+    .vd-photo-strip { display: flex; gap: 8px; overflow-x: auto; padding: 12px 28px; background: rgba(0,0,0,0.3); border-bottom: 1px solid var(--border); scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
+    .vd-photo-strip::-webkit-scrollbar { height: 3px; }
+    .vd-photo-strip::-webkit-scrollbar-thumb { background: rgba(255,107,0,0.4); border-radius: 2px; }
+    .vd-strip-thumb { flex: 0 0 auto; width: 60px; border: 2px solid transparent; border-radius: 3px; overflow: hidden; background: none; padding: 0; cursor: pointer; transition: border-color 0.2s, opacity 0.2s; scroll-snap-align: start; opacity: 0.65; }
+    .vd-strip-thumb img { width: 100%; aspect-ratio: 9 / 16; object-fit: cover; display: block; }
+    .vd-strip-thumb:hover { opacity: 1; border-color: rgba(255,107,0,0.5); }
+    .vd-strip-thumb.active { border-color: var(--orange); opacity: 1; }
 
     .vd-body {
       max-width: 1100px;
@@ -1369,7 +1395,16 @@
   <!-- HERO -->
   <section class="hero" id="hero">
     <div class="hero-img-wrap">
-      <img src="cj_orange_sling.jpg" alt="Polaris Slingshot rental Lancaster PA — CJ's Fun Time Rental">
+      <video
+        src="cj_hero_video.mp4"
+        autoplay
+        muted
+        loop
+        playsinline
+        disablepictureinpicture
+        preload="auto"
+        aria-hidden="true"
+      ></video>
     </div>
     <div class="hero-overlay"></div>
     <div class="hero-body">
@@ -1660,6 +1695,42 @@
     </div>
   </section>
 
+  <!-- GALLERY -->
+  <section class="gallery" id="gallery">
+    <div class="container">
+      <div class="gallery-header reveal">
+        <h2>Real Rides. Real People.</h2>
+        <p>Moments from renters out on the open road.</p>
+      </div>
+      <div class="gallery-grid">
+        <div class="gallery-card reveal">
+          <img class="gallery-card-img" src="cj_night_rental.jpg" alt="Night rental — CJ's Fun Time Rental" loading="lazy">
+          <div class="gallery-card-caption">Night Cruise</div>
+        </div>
+        <div class="gallery-card reveal" style="transition-delay:0.05s">
+          <img class="gallery-card-img" src="cj_couple_rental.jpg" alt="Couple rental — CJ's Fun Time Rental" loading="lazy">
+          <div class="gallery-card-caption">Date Night</div>
+        </div>
+        <div class="gallery-card reveal" style="transition-delay:0.1s">
+          <img class="gallery-card-img" src="cj_hopi_rental.jpg" alt="Hopi rental — CJ's Fun Time Rental" loading="lazy">
+          <div class="gallery-card-caption">Weekend Adventure</div>
+        </div>
+        <div class="gallery-card reveal" style="transition-delay:0.15s">
+          <img class="gallery-card-img" src="cj_mam_rental.jpg" alt="Rental experience — CJ's Fun Time Rental" loading="lazy">
+          <div class="gallery-card-caption">Good Times</div>
+        </div>
+        <div class="gallery-card reveal" style="transition-delay:0.2s">
+          <img class="gallery-card-img" src="cj_double_rental.jpg" alt="Double rental — CJ's Fun Time Rental" loading="lazy">
+          <div class="gallery-card-caption">Double the Fun</div>
+        </div>
+        <div class="gallery-card reveal" style="transition-delay:0.25s">
+          <img class="gallery-card-img" src="cj_baby_driver.jpg" alt="Open road rental — CJ's Fun Time Rental" loading="lazy">
+          <div class="gallery-card-caption">Born to Ride</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- FAQ -->
   <section class="faq" id="faq">
     <div class="container">
@@ -1755,7 +1826,7 @@
         <a href="#book">Book Now</a>
       </nav>
       <div class="footer-bottom">
-        <p class="footer-copy">&copy; 2025 CJ's Fun Time Rental &nbsp;·&nbsp; Lancaster, PA</p>
+        <p class="footer-copy">&copy; 2025 CJ's Fun Time Rental &nbsp;·&nbsp; Lancaster, PA &nbsp;<a href="/admin" style="color:rgba(255,255,255,0.12);font-size:10px;letter-spacing:0.5px" tabindex="-1">admin</a></p>
         <p class="footer-built">Built by <a href="https://universoleappstudios.com" target="_blank" rel="noopener">UNIVERSOLE APP STUDIOS</a></p>
         <p class="footer-seo">Polaris Slingshot Rental Lancaster PA &nbsp;·&nbsp; Can-Am Spyder Rental PA &nbsp;·&nbsp; Slingshot Rental Near Me &nbsp;·&nbsp; 3-Wheel Car Rental Central Pennsylvania</p>
       </div>
@@ -1841,11 +1912,13 @@
             document.getElementById('lead-email').style.borderColor = 'rgba(255,107,0,0.8)';
             return;
           }
-          var leads = JSON.parse(localStorage.getItem('cjfr_leads') || '[]');
-          leads.push({ email: email, date: new Date().toISOString() });
-          localStorage.setItem('cjfr_leads', JSON.stringify(leads));
           document.getElementById('lead-form').style.display    = 'none';
           document.getElementById('lead-success').style.display = 'flex';
+          fetch('/api/leads', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email, source: '10% Off Discount Form' })
+          }).catch(function() {});
         });
       }
 
@@ -2163,11 +2236,17 @@
   <!-- VEHICLE DETAIL PANEL -->
   <script src="vehicle-detail.js"></script>
 
+  <!-- ADMIN CONFIG — must load before stripe-checkout.js so discounts are available -->
+  <script src="/site-config.js"></script>
+
   <!-- STRIPE PAYMENT INTEGRATION -->
   <!-- Stripe.js is loaded but only activates when STRIPE_ENABLED = true in stripe.config.js -->
   <script src="https://js.stripe.com/v3/"></script>
   <script src="stripe.config.js"></script>
   <script src="stripe-checkout.js"></script>
+
+  <!-- APPLY ADMIN CONFIG TO FRONTEND -->
+  <script src="/frontend-config.js"></script>
 
 </body>
 </html>

@@ -21,22 +21,22 @@
       badges: ['Best Seller', 'AutoDrive (No Clutch)', '3-Wheeler'],
       tagline: 'The ultimate open-air thrill machine \u2014 orange, aggressive, unforgettable.',
       specs: [
-        { label: 'Year', value: '2022' },
-        { label: 'Daily Rate', value: '$180 / day' },
-        { label: 'Drivetrain', value: 'AutoDrive (no clutch)' },
-        { label: 'Engine', value: '2.0L 4-Cyl \u00b7 203 hp' },
-        { label: 'Seats', value: '2 (driver + passenger)' },
-        { label: 'Miles Included', value: '600 mi / trip' },
+        '2022 model year',
+        'AutoDrive \u2014 no clutch, no stall',
+        '2.0L 4-Cyl \u00b7 203 hp',
+        '3-wheel autocycle',
+        '2 seats (driver + passenger)',
+        '600 miles included per trip',
       ],
       features: [
-        'AutoDrive transmission \u2014 no clutch, no stall',
         'Open-air cockpit with 180\u00b0 panoramic views',
         'Premium Rockford Fosgate audio system',
-        'Alpine touchscreen infotainment display',
+        'Alpine 7\u201d touchscreen with Apple CarPlay',
         'LED daytime running lights & performance lighting',
         'Sporty bucket seats with 4-point harness mounts',
         'Rear-view camera standard',
         'Push-button start',
+        'USB charging ports (front)',
       ],
       safety: [
         'Automotive-grade seat belts (front & rear anchorage)',
@@ -47,10 +47,10 @@
         'Insurance & protection included in every rental',
       ],
       connectivity: [
-        'Alpine 7\u201d touchscreen with Apple CarPlay',
+        'Apple CarPlay via Alpine 7\u201d touchscreen',
         'Bluetooth audio & hands-free calling',
         'Rockford Fosgate 4-speaker sound system',
-        'USB charging ports (front)',
+        'USB charging ports',
         'Integrated GPS navigation',
       ],
       included: [
@@ -79,17 +79,17 @@
       badges: ['3-Wheeler', 'Manual Transmission', "Pure Driver's Machine"],
       tagline: "Raw, manual, mechanical \u2014 the Slingshot the way driving was meant to feel.",
       specs: [
-        { label: 'Year', value: '2020' },
-        { label: 'Daily Rate', value: '$180 / day' },
-        { label: 'Drivetrain', value: '5-Speed Manual' },
-        { label: 'Engine', value: '2.0L 4-Cyl \u00b7 173 hp' },
-        { label: 'Seats', value: '2 (driver + passenger)' },
-        { label: 'Miles Included', value: '600 mi / trip' },
+        '2020 model year',
+        '5-speed manual transmission',
+        '2.0L 4-Cyl \u00b7 173 hp',
+        '3-wheel autocycle',
+        '2 seats (driver + passenger)',
+        '600 miles included per trip',
       ],
       features: [
-        '5-speed manual transmission \u2014 real driver engagement',
         'Open-air cockpit with 180\u00b0 panoramic views',
         'Aggressive sport-tuned suspension',
+        '7\u201d touchscreen infotainment display',
         'LED daytime running lights',
         'Sporty bucket seats',
         'Push-button start',
@@ -135,22 +135,22 @@
       badges: ['Premium Pick', '3-Wheeler', 'Touring Comfort'],
       tagline: 'Long-haul luxury meets open-road freedom \u2014 the Can-Am built for adventure.',
       specs: [
-        { label: 'Year', value: '2021' },
-        { label: 'Daily Rate', value: '$203 / day' },
-        { label: 'Drivetrain', value: 'SE6 Semi-Auto' },
-        { label: 'Engine', value: 'Rotax 1330 ACE \u00b7 115 hp' },
-        { label: 'Seats', value: '2 (driver + passenger)' },
-        { label: 'Miles Included', value: '600 mi / trip' },
+        '2021 model year',
+        'SE6 semi-automatic transmission',
+        'Rotax 1330 ACE \u00b7 115 hp',
+        '3-wheel autocycle',
+        '2 seats (driver + passenger)',
+        '600 miles included per trip',
       ],
       features: [
-        'SE6 semi-automatic transmission \u2014 smooth paddle-shift',
+        'SE6 semi-auto transmission \u2014 smooth paddle-shift',
         'Heated grips & heated seat (driver)',
         'Premium touring windshield',
-        'Integrated hard-sided storage (saddlebags)',
+        'Integrated hard-sided saddlebags',
         'Air-ride adjustable rear suspension',
         'LED lighting throughout',
         'Reverse gear standard',
-        'Large fuel tank for long-distance touring',
+        'Large fuel tank for long-distance trips',
       ],
       safety: [
         'Stability Control System (SCS) standard',
@@ -186,6 +186,15 @@
     },
   };
 
+  var SOCIAL_PHOTOS = [
+    { src: 'cj_night_rental.jpg',  alt: 'Night rental' },
+    { src: 'cj_couple_rental.jpg', alt: 'Couple rental' },
+    { src: 'cj_hopi_rental.jpg',   alt: 'Hopi rental' },
+    { src: 'cj_mam_rental.jpg',    alt: 'MAM rental' },
+    { src: 'cj_double_rental.jpg', alt: 'Double rental' },
+    { src: 'cj_baby_driver.jpg',   alt: 'Baby Driver rental' },
+  ];
+
   var SAVINGS = [
     { days: 7, pct: 15, label: 'Weekly discount' },
     { days: 3, pct: 10, label: '3-day discount' },
@@ -211,32 +220,25 @@
     return null;
   }
 
-  function renderItems(items) {
-    return items.map(function (item) { return '<li>' + item + '</li>'; }).join('');
+  // Renders items as .vd-spec-item divs (for the 2-col grid with checkmark ::before)
+  function renderSpecItems(items) {
+    return items.map(function (item) {
+      return '<div class="vd-spec-item">' + item + '</div>';
+    }).join('');
   }
 
   function renderStars(n) {
     var s = '';
     for (var i = 0; i < n; i++) s += '\u2605';
-    return '<span class="vd-stars">' + s + '</span>';
+    return s;
   }
 
   function renderReviews(reviews) {
     return reviews.map(function (r) {
       return '<div class="vd-review-card">' +
-        '<div class="vd-review-header">' + renderStars(r.rating) +
-        '<span class="vd-reviewer">' + r.name + '</span>' +
-        '<span class="vd-verified">Verified Renter</span></div>' +
-        '<p class="vd-review-text">\u201c' + r.text + '\u201d</p>' +
-        '</div>';
-    }).join('');
-  }
-
-  function renderSpecs(specs) {
-    return specs.map(function (s) {
-      return '<div class="vd-spec-item">' +
-        '<span class="vd-spec-label">' + s.label + '</span>' +
-        '<span class="vd-spec-value">' + s.value + '</span>' +
+        '<div class="vd-review-stars">' + renderStars(r.rating) + '</div>' +
+        '<p class="vd-review-quote">\u201c' + r.text + '\u201d</p>' +
+        '<p class="vd-review-author">' + r.name + ' &nbsp;\u00b7&nbsp; <span style="color:rgba(255,107,0,0.7)">Verified Renter</span></p>' +
         '</div>';
     }).join('');
   }
@@ -244,37 +246,55 @@
   function renderBadges(badges) {
     return badges.map(function (b) { return '<span class="vd-badge">' + b + '</span>'; }).join('');
   }
+  function renderPhotoStrip() {
+    return '<div class="vd-photo-strip" id="vd-photo-strip">' +
+      SOCIAL_PHOTOS.map(function (p, i) {
+        return '<button class="vd-strip-thumb" data-strip-idx="' + i + '" aria-label="View photo: ' + p.alt + '">' +
+          '<img src="' + p.src + '" alt="' + p.alt + '" loading="lazy">' +
+        '</button>';
+      }).join('') +
+    '</div>';
+  }
 
-  // ── Live price preview ─────────────────────────────────────────────────────
 
-  function updatePricePreview() {
+
+  // ── Live price update (operates on DOM IDs in the booking sidebar) ──────────
+
+  function updateSummary() {
     var panel = document.getElementById('vd-panel');
     var vehicleKey = panel ? panel.getAttribute('data-vehicle') : null;
     var v = vehicleKey ? VEHICLES[vehicleKey] : null;
     if (!v) return;
 
-    var startDate = document.getElementById('vd-start-date').value;
-    var startTime = document.getElementById('vd-start-time').value;
-    var endDate   = document.getElementById('vd-end-date').value;
-    var endTime   = document.getElementById('vd-end-time').value;
+    var startDate = (document.getElementById('vd-start-date') || {}).value;
+    var startTime = (document.getElementById('vd-start-time') || {}).value;
+    var endDate   = (document.getElementById('vd-end-date')   || {}).value;
+    var endTime   = (document.getElementById('vd-end-time')   || {}).value;
 
     var days = calcDays(startDate, startTime, endDate, endTime);
     var baseTotal = v.rate * (days || 1);
     var savings = days > 1 ? calcSavings(days, baseTotal) : null;
     var finalTotal = savings ? baseTotal - savings.amount : baseTotal;
 
-    var preview = document.getElementById('vd-price-preview');
-    if (!preview) return;
+    var rowDays    = document.getElementById('vd-row-days');
+    var rowSavings = document.getElementById('vd-row-savings');
+    var sumDays    = document.getElementById('vd-sum-days');
+    var sumSavings = document.getElementById('vd-sum-savings');
+    var sumTotal   = document.getElementById('vd-sum-total');
+    var bookRate   = document.getElementById('vd-book-rate');
+
+    if (bookRate) bookRate.textContent = '$' + v.rate;
 
     if (days > 0) {
-      var html = '<span class="vd-price-days">' + days + ' day' + (days !== 1 ? 's' : '') + '</span>';
-      html += '<span class="vd-price-total">$' + finalTotal + '</span>';
-      if (savings) {
-        html += '<span class="vd-price-savings">You save $' + savings.amount + ' \u2014 ' + savings.label + '</span>';
-      }
-      preview.innerHTML = html;
+      if (rowDays)    rowDays.style.display    = 'flex';
+      if (sumDays)    sumDays.textContent       = days + ' day' + (days !== 1 ? 's' : '');
+      if (rowSavings) rowSavings.style.display  = savings ? 'flex' : 'none';
+      if (sumSavings && savings) sumSavings.textContent = '\u2212$' + savings.amount + ' (' + savings.label + ')';
+      if (sumTotal)   sumTotal.textContent      = '$' + finalTotal;
     } else {
-      preview.innerHTML = '<span class="vd-price-rate">$' + v.rate + ' / day</span>';
+      if (rowDays)    rowDays.style.display    = 'none';
+      if (rowSavings) rowSavings.style.display = 'none';
+      if (sumTotal)   sumTotal.textContent     = '\u2014';
     }
   }
 
@@ -290,81 +310,162 @@
     panel.setAttribute('data-vehicle', vehicleKey);
 
     panel.innerHTML =
+      // Sticky header
       '<div class="vd-header">' +
-        '<button class="vd-close" id="vd-close-btn" aria-label="Close">&times;</button>' +
-        '<div class="vd-breadcrumb"><span>Fleet</span><span class="vd-bc-sep">\u203a</span><span>' + v.label + '</span></div>' +
+        '<button class="vd-back" id="vd-back">\u2190 Back to Fleet</button>' +
+        '<span class="vd-header-title">' + v.label + '</span>' +
+        '<span class="vd-header-price">$' + v.rate + ' / day</span>' +
       '</div>' +
-      '<div class="vd-hero" style="background-image:url(\'' + v.img + '\')">' +
+
+      // Hero image with badges bottom-left
+      '<div class="vd-hero">' +
+        '<img id="vd-hero-img" src="' + v.img + '" alt="' + v.label + ' rental Lancaster PA">' +
         '<div class="vd-hero-overlay"></div>' +
-        '<div class="vd-hero-content">' +
-          '<div class="vd-badges">' + renderBadges(v.badges) + '</div>' +
-          '<h2 class="vd-title">' + v.label + '</h2>' +
-          '<p class="vd-tagline">' + v.tagline + '</p>' +
-        '</div>' +
+        '<div class="vd-hero-badge">' + renderBadges(v.badges) + '</div>' +
       '</div>' +
+      renderPhotoStrip() +
+
+      // Body: left col + right booking sidebar
       '<div class="vd-body">' +
-        '<div class="vd-main">' +
-          '<section class="vd-section"><h3 class="vd-section-title">Vehicle Specs</h3>' +
-            '<div class="vd-specs-grid">' + renderSpecs(v.specs) + '</div></section>' +
-          '<section class="vd-section"><h3 class="vd-section-title">Features</h3>' +
-            '<ul class="vd-list">' + renderItems(v.features) + '</ul></section>' +
-          '<section class="vd-section"><h3 class="vd-section-title">Safety &amp; Protection</h3>' +
-            '<ul class="vd-list">' + renderItems(v.safety) + '</ul></section>' +
-          '<section class="vd-section"><h3 class="vd-section-title">Connectivity &amp; Tech</h3>' +
-            '<ul class="vd-list">' + renderItems(v.connectivity) + '</ul></section>' +
-          '<section class="vd-section"><h3 class="vd-section-title">Everything Included</h3>' +
-            '<ul class="vd-list vd-list-check">' + renderItems(v.included) + '</ul></section>' +
-          '<section class="vd-section"><h3 class="vd-section-title">Guest Reviews</h3>' +
-            '<div class="vd-reviews">' + renderReviews(v.reviews) + '</div></section>' +
-        '</div>' +
-        '<aside class="vd-booking">' +
-          '<div class="vd-booking-inner">' +
-            '<p class="vd-booking-rate">$' + v.rate + ' <span>/ day</span></p>' +
-            '<p class="vd-booking-label">Select your trip dates</p>' +
-            '<div class="vd-field"><label>Trip Start</label>' +
-              '<div class="vd-field-row">' +
-                '<input type="date" id="vd-start-date" class="vd-input">' +
-                '<input type="time" id="vd-start-time" class="vd-input" value="09:00">' +
-              '</div></div>' +
-            '<div class="vd-field"><label>Trip End</label>' +
-              '<div class="vd-field-row">' +
-                '<input type="date" id="vd-end-date" class="vd-input">' +
-                '<input type="time" id="vd-end-time" class="vd-input" value="09:00">' +
-              '</div></div>' +
-            '<div id="vd-price-preview" class="vd-price-preview"><span class="vd-price-rate">$' + v.rate + ' / day</span></div>' +
-            '<div class="vd-inclusions-mini">' +
-              '<span>\u2713 Insurance included</span>' +
-              '<span>\u2713 600 mi included</span>' +
-              '<span>\u2713 Lancaster, PA pickup</span>' +
-            '</div>' +
-            '<button class="btn btn-primary vd-book-btn" id="vd-book-btn">Book This Ride &rarr;</button>' +
-            '<p class="vd-booking-note">No motorcycle license required &middot; No hidden fees</p>' +
+
+        // Left column
+        '<div class="vd-left">' +
+          '<div class="vd-title-row"><h1 class="vd-name">' + v.label + '</h1></div>' +
+          '<div class="vd-rating">' +
+            '<span class="vd-stars">\u2605\u2605\u2605\u2605\u2605</span>' +
+            '<span class="vd-rating-text">5.0 &nbsp;\u00b7&nbsp; Verified Renters</span>' +
           '</div>' +
-        '</aside>' +
+          '<p style="font-size:15px;color:rgba(255,255,255,0.7);line-height:1.7;margin-bottom:36px">' + v.tagline + '</p>' +
+
+          '<div class="vd-section">' +
+            '<div class="vd-section-title">Vehicle Specs</div>' +
+            '<div class="vd-specs-grid">' + renderSpecItems(v.specs) + '</div>' +
+          '</div>' +
+
+          '<div class="vd-section">' +
+            '<div class="vd-section-title">Features</div>' +
+            '<div class="vd-specs-grid">' + renderSpecItems(v.features) + '</div>' +
+          '</div>' +
+
+          '<div class="vd-section">' +
+            '<div class="vd-section-title">Safety &amp; Protection</div>' +
+            '<div class="vd-specs-grid">' + renderSpecItems(v.safety) + '</div>' +
+          '</div>' +
+
+          '<div class="vd-section">' +
+            '<div class="vd-section-title">Connectivity &amp; Tech</div>' +
+            '<div class="vd-specs-grid">' + renderSpecItems(v.connectivity) + '</div>' +
+          '</div>' +
+
+          '<div class="vd-section">' +
+            '<div class="vd-section-title">Everything Included</div>' +
+            '<div class="vd-specs-grid">' + renderSpecItems(v.included) + '</div>' +
+          '</div>' +
+
+          '<div class="vd-section">' +
+            '<div class="vd-section-title">What Renters Say</div>' +
+            '<div class="vd-reviews">' + renderReviews(v.reviews) + '</div>' +
+          '</div>' +
+        '</div>' +
+
+        // Right booking sidebar
+        '<div class="vd-booking">' +
+          '<div class="vd-booking-title">Reserve This Ride</div>' +
+          '<div class="vd-booking-price">From <span id="vd-book-rate">$' + v.rate + '</span> / day</div>' +
+
+          '<div class="vd-field-row">' +
+            '<div class="vd-field">' +
+              '<label>Start Date</label>' +
+              '<input type="date" id="vd-start-date">' +
+            '</div>' +
+            '<div class="vd-field">' +
+              '<label>Start Time</label>' +
+              '<input type="time" id="vd-start-time" value="09:00">' +
+            '</div>' +
+          '</div>' +
+          '<div class="vd-field-row">' +
+            '<div class="vd-field">' +
+              '<label>End Date</label>' +
+              '<input type="date" id="vd-end-date">' +
+            '</div>' +
+            '<div class="vd-field">' +
+              '<label>End Time</label>' +
+              '<input type="time" id="vd-end-time" value="09:00">' +
+            '</div>' +
+          '</div>' +
+          '<div class="vd-field">' +
+            '<label>Pickup &amp; Return</label>' +
+            '<input type="text" value="Lancaster, PA" readonly>' +
+          '</div>' +
+
+          '<hr class="vd-booking-divider">' +
+
+          '<div class="vd-booking-summary">' +
+            '<div class="vd-booking-row" id="vd-row-days" style="display:none">' +
+              '<span class="l">Duration</span><span class="r" id="vd-sum-days">\u2014</span>' +
+            '</div>' +
+            '<div class="vd-booking-row saving" id="vd-row-savings" style="display:none">' +
+              '<span class="l">Trip Savings</span><span class="r" id="vd-sum-savings">\u2014</span>' +
+            '</div>' +
+          '</div>' +
+
+          '<div class="vd-booking-total">' +
+            '<span>Estimated Total</span>' +
+            '<span class="price" id="vd-sum-total">\u2014</span>' +
+          '</div>' +
+
+          '<div class="vd-inclusions-mini">' +
+            '<div class="vd-inclusion">Insurance &amp; protection included</div>' +
+            '<div class="vd-inclusion">600 miles included</div>' +
+            '<div class="vd-inclusion">No motorcycle license required</div>' +
+          '</div>' +
+
+          '<button class="btn btn-primary vd-book-btn" id="vd-book-btn">Book This Ride &rarr;</button>' +
+          '<p class="vd-booking-note">\uD83D\uDD12 Secure checkout &middot; No charge until Stripe checkout</p>' +
+        '</div>' +
+
       '</div>';
 
-    // Wire date change → live price preview
+    // Wire date inputs → live summary
     ['vd-start-date', 'vd-start-time', 'vd-end-date', 'vd-end-time'].forEach(function (id) {
       var el = document.getElementById(id);
-      if (el) el.addEventListener('change', updatePricePreview);
+      if (el) el.addEventListener('change', updateSummary);
     });
 
-    // Close button
-    var closeBtn = document.getElementById('vd-close-btn');
-    if (closeBtn) closeBtn.addEventListener('click', closePanel);
+    // Back / close button
+    var backBtn = document.getElementById('vd-back');
+    if (backBtn) backBtn.addEventListener('click', closePanel);
 
     // Book This Ride → pass dates to booking modal
     var bookBtn = document.getElementById('vd-book-btn');
     if (bookBtn) {
       bookBtn.addEventListener('click', function () {
-        var sd = document.getElementById('vd-start-date').value;
-        var st = document.getElementById('vd-start-time').value;
-        var ed = document.getElementById('vd-end-date').value;
-        var et = document.getElementById('vd-end-time').value;
+        var sd = (document.getElementById('vd-start-date') || {}).value;
+        var st = (document.getElementById('vd-start-time') || {}).value;
+        var ed = (document.getElementById('vd-end-date')   || {}).value;
+        var et = (document.getElementById('vd-end-time')   || {}).value;
         closePanel();
-        if (window.CJStripe) window.CJStripe.openModal(vehicleKey, { startDate: sd, startTime: st, endDate: ed, endTime: et });
+        if (window.CJStripe) {
+          window.CJStripe.openModal(vehicleKey, { startDate: sd, startTime: st, endDate: ed, endTime: et });
+        }
       });
     }
+    // Photo strip → swap hero image
+    var strip = document.getElementById('vd-photo-strip');
+    if (strip) {
+      strip.addEventListener('click', function (e) {
+        var thumb = e.target.closest('.vd-strip-thumb');
+        if (!thumb) return;
+        var idx = parseInt(thumb.getAttribute('data-strip-idx'), 10);
+        var photo = SOCIAL_PHOTOS[idx];
+        if (!photo) return;
+        var heroImg = document.getElementById('vd-hero-img');
+        if (heroImg) { heroImg.src = photo.src; heroImg.alt = photo.alt; }
+        strip.querySelectorAll('.vd-strip-thumb').forEach(function (t) { t.classList.remove('active'); });
+        thumb.classList.add('active');
+      });
+    }
+
 
     panel.setAttribute('aria-hidden', 'false');
     panel.classList.add('open');
@@ -382,7 +483,7 @@
   // ── Init ───────────────────────────────────────────────────────────────────
 
   document.addEventListener('DOMContentLoaded', function () {
-    // Fleet card buttons → open detail panel
+    // Fleet card "View Details" buttons → open detail panel
     document.querySelectorAll('[data-vehicle-detail]').forEach(function (btn) {
       btn.addEventListener('click', function (e) {
         e.preventDefault();
