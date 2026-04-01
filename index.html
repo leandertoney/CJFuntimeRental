@@ -82,13 +82,11 @@
        HEADER
     ───────────────────────────────────────── */
     .site-header {
-      position: relative;
-      width: 100%;
-      padding: 28px 0;
+      padding: 20px 0;
       background: transparent;
     }
     .header-inner { display: flex; align-items: center; justify-content: space-between; }
-    .header-logo img { height: 72px; width: auto; object-fit: contain; }
+    .header-logo img { height: 64px; width: auto; object-fit: contain; }
     .nav-links { display: flex; align-items: center; gap: 32px; }
     .nav-links a {
       font-size: 13px;
@@ -129,15 +127,19 @@
        HERO — full-bleed image, almost no text
     ───────────────────────────────────────── */
     .hero-wrap {
-      display: flex;
-      flex-direction: column;
+      position: relative;
       height: 100vh;
       height: 100svh;
+      overflow: hidden;
+    }
+    .site-header {
+      position: absolute !important;
+      top: 0; left: 0; width: 100%;
+      z-index: 10;
     }
     .hero {
-      position: relative;
-      flex: 1;
-      overflow: hidden;
+      position: absolute;
+      inset: 0;
     }
     .hero-img-wrap {
       position: absolute;
@@ -530,6 +532,117 @@
     .cta-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; position: relative; }
 
     /* ─────────────────────────────────────────
+       LEAD CAPTURE
+    ───────────────────────────────────────── */
+    .lead-section {
+      padding: 100px 0;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .lead-section::before {
+      content: '';
+      position: absolute;
+      top: -150px; left: 50%;
+      transform: translateX(-50%);
+      width: 700px; height: 700px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,107,0,0.07) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .lead-eyebrow {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--orange);
+      margin-bottom: 16px;
+      position: relative;
+    }
+    .lead-section h2 {
+      font-family: var(--heading);
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      letter-spacing: 3px;
+      line-height: 1;
+      margin-bottom: 16px;
+      position: relative;
+    }
+    .lead-section h2 span { color: var(--orange); }
+    .lead-section > .container > p {
+      color: var(--muted);
+      font-size: 14px;
+      max-width: 420px;
+      margin: 0 auto 40px;
+      line-height: 1.6;
+      position: relative;
+    }
+    .lead-form {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      max-width: 420px;
+      margin: 0 auto;
+      position: relative;
+    }
+    .lead-form input {
+      width: 100%;
+      padding: 14px 18px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--white);
+      font-family: var(--body);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .lead-form input::placeholder { color: var(--muted); }
+    .lead-form input:focus { border-color: rgba(255,107,0,0.5); }
+    .lead-form button {
+      width: 100%;
+      padding: 16px;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 1px;
+    }
+    .lead-fine {
+      font-size: 11px;
+      color: rgba(255,255,255,0.2);
+      margin-top: 14px;
+      position: relative;
+    }
+    .lead-success {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      max-width: 420px;
+      margin: 0 auto;
+      position: relative;
+    }
+    .lead-success-icon {
+      font-size: 3rem;
+      line-height: 1;
+    }
+    .lead-success h3 {
+      font-family: var(--heading);
+      font-size: 2rem;
+      letter-spacing: 2px;
+      color: var(--orange);
+    }
+    .lead-success p {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    @media (max-width: 768px) {
+      .lead-section { padding: 72px 0; }
+    }
+
+    /* ─────────────────────────────────────────
        FOOTER
     ───────────────────────────────────────── */
     .site-footer {
@@ -574,6 +687,90 @@
       .hero-img-wrap img { animation: none; }
       .marquee-track { animation: none; }
     }
+
+    /* ─────────────────────────────────────────
+       BOOKING MODAL
+    ───────────────────────────────────────── */
+    .booking-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 1100;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(6px);
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .booking-modal.open { display: flex; }
+    .booking-modal-inner {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 40px 36px;
+      max-width: 520px;
+      width: 100%;
+      position: relative;
+    }
+    .booking-modal-close {
+      position: absolute;
+      top: 14px; right: 16px;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 22px;
+      cursor: pointer;
+      line-height: 1;
+      transition: color 0.2s;
+    }
+    .booking-modal-close:hover { color: var(--white); }
+    .booking-modal-inner h2 {
+      font-family: var(--heading);
+      font-size: 2rem;
+      letter-spacing: 3px;
+      margin-bottom: 8px;
+    }
+    .booking-modal-sub { font-size: 13px; color: var(--muted); margin-bottom: 28px; }
+    .booking-modal-vehicles { display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
+    .booking-vehicle-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: var(--dark);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 18px;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      text-align: left;
+    }
+    .booking-vehicle-btn:hover { border-color: var(--orange); background: rgba(255,107,0,0.05); }
+    .bv-info { display: flex; flex-direction: column; gap: 3px; }
+    .bv-name { font-family: var(--body); font-weight: 600; font-size: 14px; color: var(--white); }
+    .bv-tag { font-size: 11px; color: var(--muted); letter-spacing: 0.3px; }
+    .bv-price { font-family: var(--heading); font-size: 1.3rem; letter-spacing: 1px; color: var(--orange); white-space: nowrap; }
+    .booking-modal-note { font-size: 12px; color: var(--muted); text-align: center; }
+    .booking-modal-note a { color: var(--orange); }
+
+    /* Fleet card "Book" button */
+    .fleet-card-book {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--body);
+      font-weight: 600;
+      font-size: 13px;
+      background: var(--orange);
+      color: #000;
+      border: none;
+      border-radius: 5px;
+      padding: 9px 18px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-top: 10px;
+    }
+    .fleet-card-book:hover { filter: brightness(1.1); transform: translateY(-1px); }
   </style>
 </head>
 <body>
@@ -591,7 +788,8 @@
         <a href="#how">How It Works</a>
         <a href="#reviews">Reviews</a>
         <a href="#faq">FAQ</a>
-        <a href="https://www.facebook.com/people/CJs-Fun-Time-Rental/61575102921796/" target="_blank" rel="noopener" class="btn btn-primary">Book Now</a>
+        <a href="#win" style="color:var(--orange)">Win Free Rental</a>
+        <a href="#book" class="btn btn-primary">Book Now</a>
       </nav>
       <button class="hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
     </div>
@@ -675,6 +873,7 @@
               <p class="fleet-card-specs">3-Wheel Autocycle &nbsp;·&nbsp; 2 Seats &nbsp;·&nbsp; Automatic &nbsp;·&nbsp; Open-Air</p>
             </div>
             <div class="fleet-card-price">$180<span>/ day</span></div>
+            <button class="fleet-card-book" data-stripe-vehicle="slingshot_2022">Book This Ride &rarr;</button>
           </div>
         </div>
 
@@ -689,6 +888,7 @@
               <p class="fleet-card-specs">3-Wheel Autocycle &nbsp;·&nbsp; 2 Seats &nbsp;·&nbsp; Automatic</p>
             </div>
             <div class="fleet-card-price">$180<span>/ day</span></div>
+            <button class="fleet-card-book" data-stripe-vehicle="slingshot_2020">Book This Ride &rarr;</button>
           </div>
         </div>
 
@@ -705,12 +905,13 @@
               <p class="fleet-card-specs">3-Wheel Stability &nbsp;·&nbsp; 2 Seats &nbsp;·&nbsp; F3 Limited</p>
             </div>
             <div class="fleet-card-price">$203<span>/ day</span></div>
+            <button class="fleet-card-book" data-stripe-vehicle="canam_spyder">Book This Ride &rarr;</button>
           </div>
         </div>
 
       </div>
       <div class="fleet-ctas reveal">
-        <a href="https://www.facebook.com/people/CJs-Fun-Time-Rental/61575102921796/" target="_blank" rel="noopener" class="btn btn-primary">Book Direct on Facebook &rarr;</a>
+        <button class="btn btn-primary" data-stripe-book>Book Now &rarr;</button>
         <a href="https://turo.com/us/en/drivers/44355733" target="_blank" rel="noopener" class="btn btn-ghost">Also on Turo</a>
       </div>
     </div>
@@ -726,8 +927,8 @@
       <div class="how-steps">
         <div class="how-step reveal" style="transition-delay:0.05s">
           <div class="how-num">01</div>
-          <h3>Book Direct</h3>
-          <p>Message Chris on Facebook or book through Turo. No waiting, no middleman hassle.</p>
+          <h3>Book &amp; Pay</h3>
+          <p>Choose your vehicle, pick your date, and pay securely online — or message Chris on Facebook.</p>
         </div>
         <div class="how-step reveal" style="transition-delay:0.15s">
           <div class="how-num">02</div>
@@ -741,7 +942,7 @@
         </div>
       </div>
       <div class="how-cta reveal">
-        <a href="https://www.facebook.com/people/CJs-Fun-Time-Rental/61575102921796/" target="_blank" rel="noopener" class="btn btn-primary">Message Chris on Facebook &rarr;</a>
+        <button class="btn btn-primary" data-stripe-book>Reserve Your Ride &rarr;</button>
       </div>
     </div>
   </section>
@@ -823,11 +1024,33 @@
   <section class="cta-section" id="book">
     <div class="container">
       <h2 class="reveal">Book Your<br>Ride Today</h2>
-      <p class="reveal">Weekends fill up fast — message Chris directly on Facebook.</p>
+      <p class="reveal">Weekends fill up fast — reserve your ride in minutes.</p>
       <div class="cta-actions reveal">
-        <a href="https://www.facebook.com/people/CJs-Fun-Time-Rental/61575102921796/" target="_blank" rel="noopener" class="btn btn-primary">Message on Facebook &rarr;</a>
+        <button class="btn btn-primary" data-stripe-book>Book Your Ride &rarr;</button>
       </div>
       <p class="cta-note reveal">Also available on <a href="https://turo.com/us/en/drivers/44355733" target="_blank" rel="noopener">Turo</a> &nbsp;·&nbsp; <a href="https://www.instagram.com/cjsfuntimerentals/" target="_blank" rel="noopener">Instagram</a></p>
+    </div>
+  </section>
+
+  <!-- LEAD CAPTURE -->
+  <section class="lead-section" id="win">
+    <div class="container">
+      <p class="lead-eyebrow reveal">&#127881; Monthly Giveaway</p>
+      <h2 class="reveal">Enter to Win a<br><span>Free Rental</span></h2>
+      <p class="reveal">One lucky winner every month gets a free half-day Polaris Slingshot rental. Drop your info below — no purchase necessary.</p>
+      <div class="lead-form reveal" id="lead-form">
+        <input type="text" id="lead-name" placeholder="Your Name" autocomplete="name" required>
+        <input type="email" id="lead-email" placeholder="Email Address" autocomplete="email" required>
+        <input type="tel" id="lead-phone" placeholder="Phone Number (optional)" autocomplete="tel">
+        <button class="btn btn-primary" id="lead-submit">Enter the Giveaway &rarr;</button>
+        <p class="lead-fine">We respect your privacy. No spam — ever. Unsubscribe anytime.</p>
+      </div>
+      <div class="lead-success" id="lead-success">
+        <div class="lead-success-icon">&#127881;</div>
+        <h3>You're In!</h3>
+        <p>We'll notify you if you win. In the meantime, check availability and book your ride today.</p>
+        <a href="https://www.facebook.com/people/CJs-Fun-Time-Rental/61575102921796/" target="_blank" rel="noopener" class="btn btn-primary" style="margin-top:8px">Check Availability &rarr;</a>
+      </div>
     </div>
   </section>
 
@@ -850,13 +1073,33 @@
 
   <!-- MOBILE STICKY -->
   <div class="mobile-sticky">
-    <a href="https://www.facebook.com/people/CJs-Fun-Time-Rental/61575102921796/" target="_blank" rel="noopener" class="btn btn-primary">Book Now on Facebook &rarr;</a>
+    <button class="btn btn-primary" data-stripe-book style="width:100%;justify-content:center">Book Now &rarr;</button>
   </div>
 
   <button class="back-to-top" id="back-to-top" aria-label="Back to top">&uarr;</button>
 
   <script>
     document.addEventListener('DOMContentLoaded', function() {
+
+      // Lead capture form
+      var leadSubmit = document.getElementById('lead-submit');
+      if (leadSubmit) {
+        leadSubmit.addEventListener('click', function() {
+          var name  = document.getElementById('lead-name').value.trim();
+          var email = document.getElementById('lead-email').value.trim();
+          var phone = document.getElementById('lead-phone').value.trim();
+          if (!name || !email) {
+            document.getElementById('lead-name').style.borderColor  = name  ? '' : 'rgba(255,107,0,0.8)';
+            document.getElementById('lead-email').style.borderColor = email ? '' : 'rgba(255,107,0,0.8)';
+            return;
+          }
+          var leads = JSON.parse(localStorage.getItem('cjfr_leads') || '[]');
+          leads.push({ name: name, email: email, phone: phone, date: new Date().toISOString() });
+          localStorage.setItem('cjfr_leads', JSON.stringify(leads));
+          document.getElementById('lead-form').style.display    = 'none';
+          document.getElementById('lead-success').style.display = 'flex';
+        });
+      }
 
       // Hamburger
       var ham = document.getElementById('hamburger');
@@ -904,5 +1147,45 @@
 
     });
   </script>
+
+  <!-- BOOKING MODAL -->
+  <div id="booking-modal" class="booking-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="booking-modal-title">
+    <div class="booking-modal-inner">
+      <button class="booking-modal-close" data-modal-close aria-label="Close">&times;</button>
+      <h2 id="booking-modal-title">Choose Your Ride</h2>
+      <p class="booking-modal-sub">Select a vehicle below to reserve your date and pay securely.</p>
+      <div class="booking-modal-vehicles">
+        <button class="booking-vehicle-btn" data-stripe-vehicle="slingshot_2022">
+          <div class="bv-info">
+            <span class="bv-name">2022 Polaris Slingshot</span>
+            <span class="bv-tag">Most Popular · No Moto License</span>
+          </div>
+          <span class="bv-price">$180 / day</span>
+        </button>
+        <button class="booking-vehicle-btn" data-stripe-vehicle="slingshot_2020">
+          <div class="bv-info">
+            <span class="bv-name">2020 Polaris Slingshot</span>
+            <span class="bv-tag">Great Value</span>
+          </div>
+          <span class="bv-price">$180 / day</span>
+        </button>
+        <button class="booking-vehicle-btn" data-stripe-vehicle="canam_spyder">
+          <div class="bv-info">
+            <span class="bv-name">2021 Can-Am Spyder F3</span>
+            <span class="bv-tag">Touring</span>
+          </div>
+          <span class="bv-price">$203 / day</span>
+        </button>
+      </div>
+      <p class="booking-modal-note">Secure payment powered by Stripe &nbsp;&middot;&nbsp; or <a href="https://www.facebook.com/people/CJs-Fun-Time-Rental/61575102921796/" target="_blank" rel="noopener">message Chris on Facebook</a></p>
+    </div>
+  </div>
+
+  <!-- STRIPE PAYMENT INTEGRATION -->
+  <!-- Stripe.js is loaded but only activates when STRIPE_ENABLED = true in stripe.config.js -->
+  <script src="https://js.stripe.com/v3/"></script>
+  <script src="stripe.config.js"></script>
+  <script src="stripe-checkout.js"></script>
+
 </body>
 </html>
