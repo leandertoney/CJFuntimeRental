@@ -88,8 +88,18 @@
        HEADER
     ───────────────────────────────────────── */
     .site-header {
+      position: fixed !important;
+      top: 0; left: 0; width: 100%;
+      z-index: 900;
       padding: 20px 0;
       background: transparent;
+      transition: background 0.3s ease, padding 0.3s ease, box-shadow 0.3s ease;
+    }
+    .site-header.scrolled {
+      background: rgba(10,10,10,0.97);
+      padding: 14px 0;
+      box-shadow: 0 1px 0 var(--border);
+      backdrop-filter: blur(12px);
     }
     .header-inner { display: flex; align-items: center; justify-content: space-between; }
     .header-logo img { height: 64px; width: auto; object-fit: contain; }
@@ -138,11 +148,7 @@
       height: 100svh;
       overflow: hidden;
     }
-    .site-header {
-      position: absolute !important;
-      top: 0; left: 0; width: 100%;
-      z-index: 10;
-    }
+    /* header is fixed globally — no override needed here */
     .hero {
       position: absolute;
       inset: 0;
@@ -1475,24 +1481,92 @@
 
         <!-- Detail panel (right) -->
         <div class="how-detail">
+
+          <!-- Panel 1: vehicle + date selector mockup -->
           <div class="how-detail-panel active" data-panel="0">
-            <div class="how-detail-icon">🗓</div>
+            <div class="how-ui-mock">
+              <div class="how-mock-header">Choose Your Vehicle</div>
+              <div class="how-mock-vehicle-row">
+                <span class="vname">2022 Polaris Slingshot</span>
+                <span class="vprice">$180</span>
+              </div>
+              <div class="how-mock-vehicle-unsel">
+                <span class="vname">2020 Polaris Slingshot</span>
+                <span class="vprice">$180</span>
+              </div>
+              <div class="how-mock-vehicle-unsel">
+                <span class="vname">2021 Can-Am Spyder F3</span>
+                <span class="vprice">$203</span>
+              </div>
+              <div class="how-mock-date-row">
+                <div class="how-mock-date-field">
+                  <div class="dlabel">Pickup Date</div>
+                  <div class="dval">Sat, Jun 14</div>
+                </div>
+                <div class="how-mock-date-field">
+                  <div class="dlabel">Return Date</div>
+                  <div class="dval">Sun, Jun 15</div>
+                </div>
+              </div>
+            </div>
             <div class="how-detail-label">Step 01</div>
             <h3 class="how-detail-title">Book &amp; Pay</h3>
             <p class="how-detail-body">Choose your vehicle, pick your date, and pay securely online in minutes. Weekends fill fast — lock in your spot before someone else does.</p>
           </div>
+
+          <!-- Panel 2: booking confirmation mockup -->
           <div class="how-detail-panel" data-panel="1">
-            <div class="how-detail-icon">🤝</div>
+            <div class="how-ui-mock">
+              <div class="how-mock-header">Booking Confirmed</div>
+              <div class="how-mock-confirm">
+                <div class="how-mock-confirm-row">
+                  <span class="cl">Vehicle</span>
+                  <span class="cr">2022 Polaris Slingshot</span>
+                </div>
+                <div class="how-mock-confirm-row">
+                  <span class="cl">Date</span>
+                  <span class="cr">Sat, Jun 14</span>
+                </div>
+                <div class="how-mock-confirm-row">
+                  <span class="cl">Pickup</span>
+                  <span class="cr">Lancaster, PA</span>
+                </div>
+                <hr class="how-mock-divider">
+                <div class="how-mock-confirm-row">
+                  <span class="cl">Host</span>
+                  <span class="cr">Chris — CJ's Fun Time</span>
+                </div>
+                <div class="how-mock-confirm-row">
+                  <span class="cl">Total Paid</span>
+                  <span class="cr">$180.00</span>
+                </div>
+              </div>
+              <div class="how-mock-status">Confirmed &amp; Ready</div>
+            </div>
             <div class="how-detail-label">Step 02</div>
             <h3 class="how-detail-title">Meet in Lancaster</h3>
             <p class="how-detail-body">Chris meets you at pickup, walks you through the vehicle, and answers any questions. Quick briefing — then you're ready to roll.</p>
           </div>
+
+          <!-- Panel 3: ride card mockup -->
           <div class="how-detail-panel" data-panel="2">
-            <div class="how-detail-icon">🛣</div>
+            <div class="how-ui-mock">
+              <img src="cj_orange_sling.jpg" class="how-mock-ride-img" alt="Polaris Slingshot">
+              <div class="how-mock-ride-meta">
+                <span class="rname">Polaris Slingshot</span>
+                <span class="rprice">$180 / day</span>
+              </div>
+              <div class="how-mock-tags">
+                <span class="how-mock-tag">No Moto License</span>
+                <span class="how-mock-tag">Automatic</span>
+                <span class="how-mock-tag">Open Air</span>
+              </div>
+            </div>
             <div class="how-detail-label">Step 03</div>
             <h3 class="how-detail-title">Hit the Road</h3>
             <p class="how-detail-body">Explore Central PA on three wheels. No motorcycle experience needed — just a valid driver's license and a sense of adventure.</p>
           </div>
+
         </div>
 
       </div>
@@ -1774,6 +1848,14 @@
           document.getElementById('lead-success').style.display = 'flex';
         });
       }
+
+      // Sticky nav scroll state
+      var siteHeader = document.getElementById('site-header');
+      function updateHeader() {
+        siteHeader.classList.toggle('scrolled', window.scrollY > 60);
+      }
+      window.addEventListener('scroll', updateHeader, { passive: true });
+      updateHeader();
 
       // Hamburger
       var ham = document.getElementById('hamburger');
