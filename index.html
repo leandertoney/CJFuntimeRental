@@ -261,6 +261,7 @@
        FLEET
     ───────────────────────────────────────── */
     .fleet { padding: 96px 0; }
+    .fleet > .container { position: relative; z-index: 1; }
     .fleet-header {
       display: flex;
       align-items: flex-end;
@@ -379,6 +380,7 @@
        HOW IT WORKS — interactive stepper
     ───────────────────────────────────────── */
     .how { padding: 96px 0; }
+    .how > .container { position: relative; z-index: 1; }
     .how-header { margin-bottom: 56px; }
     .how-header h2 { font-family: var(--heading); font-size: clamp(2rem, 4.5vw, 3rem); letter-spacing: 3px; margin-bottom: 8px; }
     .how-header p { color: var(--muted); font-size: 14px; }
@@ -723,6 +725,7 @@
        FAQ
     ───────────────────────────────────────── */
     .faq { padding: 96px 0; }
+    .faq > .container { position: relative; z-index: 1; isolation: isolate; }
     .faq-inner { display: grid; grid-template-columns: 1fr 2fr; gap: 80px; align-items: start; }
     .faq-left h2 { font-family: var(--heading); font-size: clamp(2rem, 4vw, 2.8rem); letter-spacing: 3px; line-height: 1.1; margin-bottom: 16px; }
     .faq-left p { font-size: 13px; color: var(--muted); line-height: 1.7; margin-bottom: 24px; }
@@ -924,6 +927,153 @@
     .footer-built a { color: var(--orange); transition: opacity 0.2s; }
     .footer-built a:hover { opacity: 0.8; }
     .footer-seo { font-size: 10px; color: rgba(255,255,255,0.3); }
+
+    /* ─────────────────────────────────────────
+       LED GLOW & AMBIENT LIGHT EFFECTS
+       Inspired by Polaris Slingshot LED lines
+    ───────────────────────────────────────── */
+
+    /* — Keyframes always defined so reduced-motion override works cleanly — */
+    @keyframes orbDrift1 {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      30%       { transform: translate(80px, -60px) scale(1.1); }
+      65%       { transform: translate(-50px, 40px) scale(0.93); }
+    }
+    @keyframes orbDrift2 {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      35%       { transform: translate(-90px, 70px) scale(1.08); }
+      70%       { transform: translate(55px, -35px) scale(0.95); }
+    }
+    @keyframes ledSweep {
+      0%   { transform: rotate(15deg) translateX(-130%); opacity: 0; }
+      6%   { opacity: 1; }
+      94%  { opacity: 1; }
+      100% { transform: rotate(15deg) translateX(230%); opacity: 0; }
+    }
+    @keyframes ledSweepReverse {
+      0%   { transform: rotate(-12deg) translateX(130%); opacity: 0; }
+      6%   { opacity: 1; }
+      94%  { opacity: 1; }
+      100% { transform: rotate(-12deg) translateX(-230%); opacity: 0; }
+    }
+    @keyframes ledSweepFlat {
+      0%   { transform: translateX(-110%); opacity: 0; }
+      8%   { opacity: 1; }
+      92%  { opacity: 1; }
+      100% { transform: translateX(210%); opacity: 0; }
+    }
+    @keyframes glowPulse {
+      0%, 100% { opacity: 1; transform: translateX(-50%) scale(1); }
+      50%       { opacity: 4; transform: translateX(-50%) scale(1.2); }
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+
+      /* ── GLOBAL AMBIENT ORBS ────────────────────── */
+      body::before,
+      body::after {
+        content: '';
+        position: fixed;
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: 0;
+      }
+      body::before {
+        width: 900px; height: 900px;
+        bottom: -250px; left: -200px;
+        background: radial-gradient(circle, rgba(255,107,0,0.13) 0%, rgba(255,107,0,0.04) 45%, transparent 70%);
+        filter: blur(60px);
+        animation: orbDrift1 25s ease-in-out infinite;
+      }
+      body::after {
+        width: 800px; height: 800px;
+        top: 20%; right: -220px;
+        background: radial-gradient(circle, rgba(245,197,24,0.1) 0%, rgba(245,197,24,0.03) 45%, transparent 70%);
+        filter: blur(70px);
+        animation: orbDrift2 32s ease-in-out infinite;
+        animation-delay: -14s;
+      }
+
+      /* Content sits above fixed orbs */
+      .hero-wrap, .fleet, .how, .reviews, .faq,
+      .cta-section, .lead-section, .site-footer,
+      .mobile-sticky, .back-to-top {
+        position: relative;
+        z-index: 1;
+      }
+
+      /* ── FLEET — diagonal sweep L→R ── */
+      .fleet { overflow: hidden; }
+      .fleet::before {
+        content: '';
+        position: absolute;
+        top: 30%; left: 0;
+        width: 100%; height: 2px;
+        background: linear-gradient(90deg,
+          transparent 0%,
+          rgba(255,107,0,0.5) 35%,
+          rgba(255,107,0,0.7) 50%,
+          rgba(255,107,0,0.5) 65%,
+          transparent 100%
+        );
+        pointer-events: none;
+        z-index: 0;
+        animation: ledSweep 12s linear infinite;
+        animation-delay: -2s;
+      }
+
+      /* ── HOW IT WORKS — flat sweep ── */
+      .how { overflow: hidden; }
+      .how::before {
+        content: '';
+        position: absolute;
+        top: 40%; left: 0;
+        width: 100%; height: 2px;
+        background: linear-gradient(90deg,
+          transparent 0%,
+          rgba(245,197,24,0.45) 35%,
+          rgba(245,197,24,0.65) 50%,
+          rgba(245,197,24,0.45) 65%,
+          transparent 100%
+        );
+        pointer-events: none;
+        z-index: 0;
+        animation: ledSweepFlat 16s linear infinite;
+        animation-delay: -5s;
+      }
+
+      /* ── FAQ — diagonal sweep R→L ── */
+      .faq { overflow: hidden; }
+      .faq::before {
+        content: '';
+        position: absolute;
+        top: 60%; left: 0;
+        width: 100%; height: 2px;
+        background: linear-gradient(90deg,
+          transparent 0%,
+          rgba(255,107,0,0.45) 35%,
+          rgba(255,107,0,0.65) 50%,
+          rgba(255,107,0,0.45) 65%,
+          transparent 100%
+        );
+        pointer-events: none;
+        z-index: 0;
+        animation: ledSweepReverse 14s linear infinite;
+        animation-delay: -6s;
+      }
+
+      /* ── CTA + LEAD — breathing LED halo ── */
+      .cta-section::before {
+        animation: glowPulse 4s ease-in-out infinite;
+        transform-origin: center;
+      }
+      .lead-section::before {
+        animation: glowPulse 5s ease-in-out infinite;
+        animation-delay: -2s;
+        transform-origin: center;
+      }
+
+    } /* end prefers-reduced-motion */
 
     @media (max-width: 768px) {
       .footer-inner { flex-direction: column; align-items: flex-start; gap: 20px; }
@@ -1784,6 +1934,38 @@
 
 
   <!-- FAQ -->
+  <!-- FINAL CTA -->
+  <section class="cta-section" id="book">
+    <div class="container">
+      <h2 class="reveal">Book Your<br>Ride Today</h2>
+      <p class="reveal">Weekends fill up fast — reserve your ride in minutes.</p>
+      <div class="cta-actions reveal">
+        <button class="btn btn-primary" data-stripe-book>Book Your Ride &rarr;</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- LEAD CAPTURE -->
+  <section class="lead-section" id="win">
+    <div class="container">
+      <p class="lead-eyebrow reveal">&#127881; First-Time Renter Offer</p>
+      <h2 class="reveal">Get <span>10% Off</span><br>Your First Rental</h2>
+      <p class="reveal">Enter your email and we'll send you a 10% off code for your first booking.</p>
+      <div class="lead-form reveal" id="lead-form">
+        <input type="email" id="lead-email" placeholder="Your Email Address" autocomplete="email" required>
+        <button class="btn btn-outline-orange" id="lead-submit" style="justify-content:center">Send Me the Discount &rarr;</button>
+        <p class="lead-fine">We respect your privacy. No spam — ever. Unsubscribe anytime.</p>
+      </div>
+      <div class="lead-success" id="lead-success">
+        <div class="lead-success-icon">&#127881;</div>
+        <h3>Check Your Email!</h3>
+        <p>Your 10% off code is on its way. Ready to book? Check availability now.</p>
+        <a href="#book" class="btn btn-primary" style="margin-top:8px">Book Your Ride &rarr;</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
   <section class="faq" id="faq">
     <div class="container">
       <div class="faq-inner">
@@ -1822,38 +2004,6 @@
             <div class="faq-answer"><p>Yes. Both vehicles are fully highway-capable and street-legal in Pennsylvania. They're built for it — scenic routes, open highways, back roads through Lancaster County. Just bring your standard driver's license and you're good to go.</p></div>
           </div>
         </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- FINAL CTA -->
-  <section class="cta-section" id="book">
-    <div class="container">
-      <h2 class="reveal">Book Your<br>Ride Today</h2>
-      <p class="reveal">Weekends fill up fast — reserve your ride in minutes.</p>
-      <div class="cta-actions reveal">
-        <button class="btn btn-primary" data-stripe-book>Book Your Ride &rarr;</button>
-      </div>
-      <p class="cta-note reveal">Follow us on <a href="https://www.instagram.com/cjsfuntimerentals/" target="_blank" rel="noopener">Instagram</a></p>
-    </div>
-  </section>
-
-  <!-- LEAD CAPTURE -->
-  <section class="lead-section" id="win">
-    <div class="container">
-      <p class="lead-eyebrow reveal">&#127881; First-Time Renter Offer</p>
-      <h2 class="reveal">Get <span>10% Off</span><br>Your First Rental</h2>
-      <p class="reveal">Enter your email and we'll send you a 10% off code for your first booking.</p>
-      <div class="lead-form reveal" id="lead-form">
-        <input type="email" id="lead-email" placeholder="Your Email Address" autocomplete="email" required>
-        <button class="btn btn-outline-orange" id="lead-submit" style="justify-content:center">Send Me the Discount &rarr;</button>
-        <p class="lead-fine">We respect your privacy. No spam — ever. Unsubscribe anytime.</p>
-      </div>
-      <div class="lead-success" id="lead-success">
-        <div class="lead-success-icon">&#127881;</div>
-        <h3>Check Your Email!</h3>
-        <p>Your 10% off code is on its way. Ready to book? Check availability now.</p>
-        <a href="#book" class="btn btn-primary" style="margin-top:8px">Book Your Ride &rarr;</a>
       </div>
     </div>
   </section>

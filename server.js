@@ -154,7 +154,7 @@ app.get('/admin/admin.js',  (req, res) => res.sendFile(path.join(ADMIN_DIR, 'adm
 app.get('/admin/admin.css', (req, res) => res.sendFile(path.join(ADMIN_DIR, 'admin.css')));
 
 // ── Static files (serve site root last) ───────────────────────────────────────
-app.use(express.static(__dirname, { index: 'index.html' }));
+app.use(express.static(__dirname, { index: 'index.html', etag: false, lastModified: false, setHeaders: (res) => res.setHeader('Cache-Control', 'no-cache, no-store') }));
 
 // ── Start ──────────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
