@@ -95,12 +95,6 @@
       background: transparent;
       transition: background 0.3s ease, padding 0.3s ease, box-shadow 0.3s ease;
     }
-    .site-header.scrolled {
-      background: rgba(10,10,10,0.97);
-      padding: 14px 0;
-      box-shadow: 0 1px 0 var(--border);
-      backdrop-filter: blur(12px);
-    }
     .header-inner { display: flex; align-items: center; justify-content: space-between; }
     .header-logo img { height: 64px; width: auto; object-fit: contain; }
     .nav-links { display: flex; align-items: center; gap: 32px; }
@@ -197,9 +191,9 @@
       inset: 0;
       z-index: 2;
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       justify-content: flex-start;
-      padding-top: 120px;
+      padding-top: 80px;
       padding-left: 80px;
     }
     .hero-body .container {
@@ -672,24 +666,92 @@
 
 
     /* ─────────────────────────────────────────
-       PHOTO GALLERY
+       SOCIAL PROOF
     ───────────────────────────────────────── */
-    .gallery { padding: 96px 0; background: var(--black); border-top: 1px solid var(--border); }
-    .gallery-header { margin-bottom: 48px; }
-    .gallery-header h2 { font-family: var(--heading); font-size: clamp(2rem, 4.5vw, 3rem); letter-spacing: 3px; line-height: 1; margin-bottom: 8px; }
-    .gallery-header p { color: var(--muted); font-size: 14px; }
-    .gallery-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
-    .gallery-card { position: relative; overflow: hidden; border-radius: 4px; }
-    .gallery-card-img { width: 100%; aspect-ratio: 9 / 16; object-fit: cover; display: block; transition: transform 0.5s ease; }
-    .gallery-card:hover .gallery-card-img { transform: scale(1.04); }
-    .gallery-card-caption { position: absolute; bottom: 0; left: 0; right: 0; padding: 20px 14px 14px; background: linear-gradient(to top, rgba(0,0,0,0.75), transparent); font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,0.8); opacity: 0; transition: opacity 0.3s ease; }
-    .gallery-card:hover .gallery-card-caption { opacity: 1; }
-    @media (max-width: 1024px) { .gallery-grid { grid-template-columns: repeat(3, 1fr); } }
+    .social-proof { padding: 96px 0; background: var(--black); border-top: 1px solid var(--border); }
+    .social-proof-header { margin-bottom: 48px; }
+    .social-proof-header h2 { font-family: var(--heading); font-size: clamp(2rem, 4.5vw, 3rem); letter-spacing: 3px; line-height: 1; margin-bottom: 8px; }
+    .social-proof-header p { color: var(--muted); font-size: 14px; }
+
+    .sp-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 10px;
+      align-items: start;
+    }
+
+    .sp-card {
+      position: relative;
+      border-radius: 6px;
+      overflow: hidden;
+      background: var(--surface);
+      cursor: default;
+    }
+
+    /* Photo fills top at 9:16 */
+    .sp-card-media {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 9 / 16;
+      overflow: hidden;
+    }
+    .sp-card-media img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.5s ease;
+    }
+    .sp-card:hover .sp-card-media img { transform: scale(1.04); }
+
+    /* Gradient fades photo into review below */
+    .sp-card-media::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 50%;
+      background: linear-gradient(to top, var(--surface), transparent);
+      pointer-events: none;
+    }
+
+    /* Stars sit at the bottom of the photo, overlapping the fade */
+    .sp-card-stars {
+      position: absolute;
+      bottom: 10px; left: 14px;
+      font-size: 11px;
+      letter-spacing: 2px;
+      color: var(--amber);
+      z-index: 1;
+    }
+
+    /* Review text below */
+    .sp-card-review {
+      padding: 12px 14px 16px;
+    }
+    .sp-card-quote {
+      font-size: 12px;
+      line-height: 1.65;
+      color: rgba(255,255,255,0.75);
+      margin-bottom: 10px;
+      font-style: italic;
+    }
+    .sp-card-author {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 0.3px;
+    }
+
+    /* Tablet: 3 columns */
+    @media (max-width: 1024px) {
+      .sp-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    /* Mobile: horizontal scroll, ~2 cards visible */
     @media (max-width: 640px) {
-      .gallery-grid { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; padding-bottom: 12px; }
-      .gallery-grid::-webkit-scrollbar { height: 3px; }
-      .gallery-grid::-webkit-scrollbar-thumb { background: rgba(255,107,0,0.4); border-radius: 2px; }
-      .gallery-card { flex: 0 0 46vw; scroll-snap-align: start; }
+      .sp-grid { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; padding-bottom: 12px; }
+      .sp-grid::-webkit-scrollbar { height: 3px; }
+      .sp-grid::-webkit-scrollbar-thumb { background: rgba(255,107,0,0.4); border-radius: 2px; }
+      .sp-card { flex: 0 0 58vw; scroll-snap-align: start; }
     }
 
     /* ─────────────────────────────────────────
@@ -1695,38 +1757,81 @@
     </div>
   </section>
 
-  <!-- GALLERY -->
-  <section class="gallery" id="gallery">
+  <!-- SOCIAL PROOF -->
+  <section class="social-proof" id="social">
     <div class="container">
-      <div class="gallery-header reveal">
+      <div class="social-proof-header reveal">
         <h2>Real Rides. Real People.</h2>
-        <p>Moments from renters out on the open road.</p>
+        <p>Straight from our renters.</p>
       </div>
-      <div class="gallery-grid">
-        <div class="gallery-card reveal">
-          <img class="gallery-card-img" src="cj_night_rental.jpg" alt="Night rental — CJ's Fun Time Rental" loading="lazy">
-          <div class="gallery-card-caption">Night Cruise</div>
+      <div class="sp-grid">
+
+        <div class="sp-card reveal">
+          <div class="sp-card-media">
+            <img src="cj_night_rental.png" alt="Night rental — CJ's Fun Time Rental Lancaster PA" loading="lazy">
+            <div class="sp-card-stars">★★★★★</div>
+          </div>
+          <div class="sp-card-review">
+            <p class="sp-card-quote">"Chris was a great guy. Beautiful ride, good communication, clean ride and very fun. See you next time!"</p>
+            <p class="sp-card-author">Samuel &nbsp;·&nbsp; Verified Renter</p>
+          </div>
         </div>
-        <div class="gallery-card reveal" style="transition-delay:0.05s">
-          <img class="gallery-card-img" src="cj_couple_rental.jpg" alt="Couple rental — CJ's Fun Time Rental" loading="lazy">
-          <div class="gallery-card-caption">Date Night</div>
+
+        <div class="sp-card reveal" style="transition-delay:0.05s">
+          <div class="sp-card-media">
+            <img src="cj_couple_rental.png" alt="Couple rental — CJ's Fun Time Rental Lancaster PA" loading="lazy">
+            <div class="sp-card-stars">★★★★★</div>
+          </div>
+          <div class="sp-card-review">
+            <p class="sp-card-quote">"Super fun, I highly recommend. Thanks Chris and his wife — really helpful arranging everything."</p>
+            <p class="sp-card-author">DeLisa &nbsp;·&nbsp; Verified Renter</p>
+          </div>
         </div>
-        <div class="gallery-card reveal" style="transition-delay:0.1s">
-          <img class="gallery-card-img" src="cj_hopi_rental.jpg" alt="Hopi rental — CJ's Fun Time Rental" loading="lazy">
-          <div class="gallery-card-caption">Weekend Adventure</div>
+
+        <div class="sp-card reveal" style="transition-delay:0.1s">
+          <div class="sp-card-media">
+            <img src="cj_hopi_rental.png" alt="Hopi rental — CJ's Fun Time Rental Lancaster PA" loading="lazy">
+            <div class="sp-card-stars">★★★★★</div>
+          </div>
+          <div class="sp-card-review">
+            <p class="sp-card-quote">"Extremely easy to work with. He made the process enjoyable and simple. Will work with him again."</p>
+            <p class="sp-card-author">Harold &nbsp;·&nbsp; Verified Renter</p>
+          </div>
         </div>
-        <div class="gallery-card reveal" style="transition-delay:0.15s">
-          <img class="gallery-card-img" src="cj_mam_rental.jpg" alt="Rental experience — CJ's Fun Time Rental" loading="lazy">
-          <div class="gallery-card-caption">Good Times</div>
+
+        <div class="sp-card reveal" style="transition-delay:0.15s">
+          <div class="sp-card-media">
+            <img src="cj_mam_rental.png" alt="Rental experience — CJ's Fun Time Rental Lancaster PA" loading="lazy">
+            <div class="sp-card-stars">★★★★★</div>
+          </div>
+          <div class="sp-card-review">
+            <p class="sp-card-quote">"Mr. Chris was a pleasure to rent from. Used the Can-Am for a veterans ride — absolutely perfect."</p>
+            <p class="sp-card-author">Laressia &nbsp;·&nbsp; Verified Renter</p>
+          </div>
         </div>
-        <div class="gallery-card reveal" style="transition-delay:0.2s">
-          <img class="gallery-card-img" src="cj_double_rental.jpg" alt="Double rental — CJ's Fun Time Rental" loading="lazy">
-          <div class="gallery-card-caption">Double the Fun</div>
+
+        <div class="sp-card reveal" style="transition-delay:0.2s">
+          <div class="sp-card-media">
+            <img src="cj_double_rental.png" alt="Double rental — CJ's Fun Time Rental Lancaster PA" loading="lazy">
+            <div class="sp-card-stars">★★★★★</div>
+          </div>
+          <div class="sp-card-review">
+            <p class="sp-card-quote">"Chris was polite, on time, and the slingshot was fantastic! Had a great ride. Would not hesitate to rent again."</p>
+            <p class="sp-card-author">David &nbsp;·&nbsp; Verified Renter</p>
+          </div>
         </div>
-        <div class="gallery-card reveal" style="transition-delay:0.25s">
-          <img class="gallery-card-img" src="cj_baby_driver.jpg" alt="Open road rental — CJ's Fun Time Rental" loading="lazy">
-          <div class="gallery-card-caption">Born to Ride</div>
+
+        <div class="sp-card reveal" style="transition-delay:0.25s">
+          <div class="sp-card-media">
+            <img src="cj_baby_driver.png" alt="Open road rental — CJ's Fun Time Rental Lancaster PA" loading="lazy">
+            <div class="sp-card-stars">★★★★★</div>
+          </div>
+          <div class="sp-card-review">
+            <p class="sp-card-quote">"Great host. Clean bike, good communication, and a fantastic rental experience from start to finish."</p>
+            <p class="sp-card-author">Verified Guest &nbsp;·&nbsp; Verified Renter</p>
+          </div>
         </div>
+
       </div>
     </div>
   </section>
@@ -1922,13 +2027,6 @@
         });
       }
 
-      // Sticky nav scroll state
-      var siteHeader = document.getElementById('site-header');
-      function updateHeader() {
-        siteHeader.classList.toggle('scrolled', window.scrollY > 60);
-      }
-      window.addEventListener('scroll', updateHeader, { passive: true });
-      updateHeader();
 
       // Hamburger
       var ham = document.getElementById('hamburger');

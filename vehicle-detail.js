@@ -187,12 +187,12 @@
   };
 
   var SOCIAL_PHOTOS = [
-    { src: 'cj_night_rental.jpg',  alt: 'Night rental' },
-    { src: 'cj_couple_rental.jpg', alt: 'Couple rental' },
-    { src: 'cj_hopi_rental.jpg',   alt: 'Hopi rental' },
-    { src: 'cj_mam_rental.jpg',    alt: 'MAM rental' },
-    { src: 'cj_double_rental.jpg', alt: 'Double rental' },
-    { src: 'cj_baby_driver.jpg',   alt: 'Baby Driver rental' },
+    { src: 'cj_night_rental.png',  alt: 'Night rental' },
+    { src: 'cj_couple_rental.png', alt: 'Couple rental' },
+    { src: 'cj_hopi_rental.png',   alt: 'Hopi rental' },
+    { src: 'cj_mam_rental.png',    alt: 'MAM rental' },
+    { src: 'cj_double_rental.png', alt: 'Double rental' },
+    { src: 'cj_baby_driver.png',   alt: 'Baby Driver rental' },
   ];
 
   var SAVINGS = [
