@@ -362,7 +362,7 @@
     /* ─────────────────────────────────────────
        HOW IT WORKS
     ───────────────────────────────────────── */
-    .how { padding: 96px 0; background: var(--black); border-top: 1px solid var(--border); }
+    .how { padding: 96px 0; }
     .how-header { margin-bottom: 64px; }
     .how-header h2 { font-family: var(--heading); font-size: clamp(2rem, 4.5vw, 3rem); letter-spacing: 3px; margin-bottom: 8px; }
     .how-header p { color: var(--muted); font-size: 14px; }
@@ -407,7 +407,7 @@
     /* ─────────────────────────────────────────
        REVIEWS
     ───────────────────────────────────────── */
-    .reviews { padding: 96px 0; border-top: 1px solid var(--border); }
+    .reviews { padding: 96px 0; }
     .reviews-header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 36px; gap: 24px; flex-wrap: wrap; }
     .reviews-header h2 { font-family: var(--heading); font-size: clamp(2rem, 4.5vw, 3rem); letter-spacing: 3px; }
     .reviews-track-wrap {
@@ -464,7 +464,7 @@
     /* ─────────────────────────────────────────
        FAQ
     ───────────────────────────────────────── */
-    .faq { padding: 96px 0; background: var(--black); border-top: 1px solid var(--border); }
+    .faq { padding: 96px 0; }
     .faq-inner { display: grid; grid-template-columns: 1fr 2fr; gap: 80px; align-items: start; }
     .faq-left h2 { font-family: var(--heading); font-size: clamp(2rem, 4vw, 2.8rem); letter-spacing: 3px; line-height: 1.1; margin-bottom: 16px; }
     .faq-left p { font-size: 13px; color: var(--muted); line-height: 1.7; margin-bottom: 24px; }
@@ -505,7 +505,6 @@
       text-align: center;
       position: relative;
       overflow: hidden;
-      border-top: 1px solid var(--border);
     }
     .cta-section::before {
       content: '';
@@ -536,9 +535,6 @@
     ───────────────────────────────────────── */
     .lead-section {
       padding: 100px 0;
-      background: var(--surface);
-      border-top: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
       text-align: center;
       position: relative;
       overflow: hidden;
@@ -646,8 +642,6 @@
        FOOTER
     ───────────────────────────────────────── */
     .site-footer {
-      background: var(--black);
-      border-top: 1px solid var(--border);
       padding: 40px 0;
     }
     .footer-inner {
@@ -1001,7 +995,7 @@
         <div class="faq-left reveal">
           <h2>Common<br>Questions</h2>
           <p>Everything you need to know before you book.</p>
-          <a href="https://www.facebook.com/people/CJs-Fun-Time-Rental/61575102921796/" target="_blank" rel="noopener" class="btn btn-ghost">Ask on Facebook</a>
+          <button class="btn btn-ghost" data-stripe-book>Book Now &rarr;</button>
         </div>
         <div class="faq-list reveal" style="transition-delay:0.1s">
           <div class="faq-item">
@@ -1014,15 +1008,15 @@
           </div>
           <div class="faq-item">
             <button class="faq-question"><span>Where is pickup located?</span><span class="faq-icon">+</span></button>
-            <div class="faq-answer"><p>Based in Lancaster, PA. Message Chris on Facebook for exact pickup details and availability.</p></div>
+            <div class="faq-answer"><p>Based in Lancaster, PA. Exact pickup details are confirmed after booking. Reserve your date online and Chris will follow up with location info.</p></div>
           </div>
           <div class="faq-item">
             <button class="faq-question"><span>How do I book?</span><span class="faq-icon">+</span></button>
-            <div class="faq-answer"><p>Book direct through our Facebook page (no fees!) or through our Turo listing. Facebook is the fastest way to reach Chris.</p></div>
+            <div class="faq-answer"><p>Book directly on this page — choose your vehicle, pick your date, and pay securely online. Weekends fill up fast, so reserve early.</p></div>
           </div>
           <div class="faq-item">
             <button class="faq-question"><span>Is the rental insured?</span><span class="faq-icon">+</span></button>
-            <div class="faq-answer"><p>Yes. Rentals booked through Turo include Turo's protection plan. Message us on Facebook to discuss coverage options for direct bookings.</p></div>
+            <div class="faq-answer"><p>Yes. All rentals include coverage. Full details are provided at booking confirmation. Questions? Reach out through the contact info provided after you reserve.</p></div>
           </div>
           <div class="faq-item">
             <button class="faq-question"><span>Are the Slingshots automatic or manual?</span><span class="faq-icon">+</span></button>
