@@ -88,12 +88,11 @@
        HEADER
     ───────────────────────────────────────── */
     .site-header {
-      position: fixed !important;
+      position: absolute;
       top: 0; left: 0; width: 100%;
-      z-index: 900;
+      z-index: 10;
       padding: 20px 0;
       background: transparent;
-      transition: background 0.3s ease, padding 0.3s ease, box-shadow 0.3s ease;
     }
     .header-inner { display: flex; align-items: center; justify-content: space-between; }
     .header-logo img { height: 64px; width: auto; object-fit: contain; }
@@ -142,7 +141,7 @@
       height: 100svh;
       overflow: hidden;
     }
-    /* header is fixed globally — no override needed here */
+
     .hero {
       position: absolute;
       inset: 0;
@@ -157,7 +156,7 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
-      object-position: center 55%;
+      object-position: center center;
     }
     .hero-overlay {
       position: absolute;
