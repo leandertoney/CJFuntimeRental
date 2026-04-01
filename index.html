@@ -408,25 +408,55 @@
        REVIEWS
     ───────────────────────────────────────── */
     .reviews { padding: 96px 0; border-top: 1px solid var(--border); }
-    .reviews-header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 48px; gap: 24px; flex-wrap: wrap; }
+    .reviews-header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 36px; gap: 24px; flex-wrap: wrap; }
     .reviews-header h2 { font-family: var(--heading); font-size: clamp(2rem, 4.5vw, 3rem); letter-spacing: 3px; }
-    .reviews-header a { font-size: 13px; color: var(--muted); transition: color 0.2s; white-space: nowrap; }
-    .reviews-header a:hover { color: var(--white); }
-    .reviews-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); margin-bottom: 1px; }
-    .review-card { background: var(--surface); padding: 36px 28px; }
-    .review-stars { font-size: 12px; letter-spacing: 2px; color: var(--amber); margin-bottom: 20px; }
+    .reviews-track-wrap {
+      position: relative;
+    }
+    .reviews-track-wrap::after {
+      content: '';
+      position: absolute;
+      top: 0; right: 0;
+      width: 80px; height: 100%;
+      background: linear-gradient(to right, transparent, var(--dark));
+      pointer-events: none;
+      z-index: 1;
+    }
+    .reviews-grid {
+      display: flex;
+      gap: 16px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 16px;
+      cursor: grab;
+    }
+    .reviews-grid:active { cursor: grabbing; }
+    .reviews-grid::-webkit-scrollbar { height: 3px; }
+    .reviews-grid::-webkit-scrollbar-track { background: var(--border); }
+    .reviews-grid::-webkit-scrollbar-thumb { background: rgba(255,107,0,0.4); border-radius: 2px; }
+    .review-card {
+      flex: 0 0 320px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 32px 28px;
+      scroll-snap-align: start;
+      display: flex;
+      flex-direction: column;
+    }
+    .review-stars { font-size: 12px; letter-spacing: 2px; color: var(--amber); margin-bottom: 18px; }
     .review-quote {
       font-size: 14px;
       line-height: 1.75;
       color: rgba(255,255,255,0.8);
       margin-bottom: 24px;
+      flex: 1;
     }
     .review-author { font-size: 12px; color: var(--muted); font-weight: 500; letter-spacing: 0.3px; }
-    .review-source { font-size: 10px; color: rgba(255,255,255,0.2); margin-top: 3px; letter-spacing: 0.5px; text-transform: uppercase; }
 
     @media (max-width: 768px) {
-      .reviews-grid { grid-template-columns: 1fr; }
-      .reviews-header a { display: none; }
+      .review-card { flex: 0 0 280px; }
     }
 
     /* ─────────────────────────────────────────
@@ -885,7 +915,8 @@
         <h2>What Guests Say</h2>
         <p style="font-size:12px;color:var(--muted)">&#10003; 14 verified renters &nbsp;·&nbsp; 5.0 ★★★★★</p>
       </div>
-      <div class="reviews-grid reveal">
+      <div class="reviews-track-wrap">
+      <div class="reviews-grid" id="reviews-grid">
         <div class="review-card">
           <div class="review-stars">★★★★★</div>
           <p class="review-quote">"Chris was a great guy. Beautiful ride, good communication, clean ride and very fun. Thank you! See you next time."</p>
@@ -957,6 +988,7 @@
           <p class="review-author">Leslie &nbsp;·&nbsp; Verified Renter</p>
         </div>
       </div>
+      </div><!-- /.reviews-track-wrap -->
     </div>
   </section>
 
@@ -1101,6 +1133,16 @@
         });
       });
 
+
+      // Reviews drag-to-scroll
+      var rg = document.getElementById('reviews-grid');
+      if (rg) {
+        var isDown = false, startX, scrollLeft;
+        rg.addEventListener('mousedown', function(e) { isDown = true; startX = e.pageX - rg.offsetLeft; scrollLeft = rg.scrollLeft; });
+        rg.addEventListener('mouseleave', function() { isDown = false; });
+        rg.addEventListener('mouseup', function() { isDown = false; });
+        rg.addEventListener('mousemove', function(e) { if (!isDown) return; e.preventDefault(); rg.scrollLeft = scrollLeft - (e.pageX - rg.offsetLeft - startX); });
+      }
 
       // Scroll reveal
       var obs = new IntersectionObserver(function(entries) {
