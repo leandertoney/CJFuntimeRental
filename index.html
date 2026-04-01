@@ -383,48 +383,235 @@
     }
 
     /* ─────────────────────────────────────────
-       HOW IT WORKS
+       HOW IT WORKS — interactive stepper
     ───────────────────────────────────────── */
     .how { padding: 96px 0; }
-    .how-header { margin-bottom: 64px; }
+    .how-header { margin-bottom: 56px; }
     .how-header h2 { font-family: var(--heading); font-size: clamp(2rem, 4.5vw, 3rem); letter-spacing: 3px; margin-bottom: 8px; }
     .how-header p { color: var(--muted); font-size: 14px; }
-    .how-steps {
+
+    .how-stepper {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 48px;
-      position: relative;
+      grid-template-columns: 1fr 1fr;
+      gap: 0 80px;
+      align-items: start;
     }
-    .how-steps::before {
+
+    /* Left: step list */
+    .how-step-list { display: flex; flex-direction: column; }
+    .how-step-item {
+      position: relative;
+      padding: 28px 0 28px 28px;
+      border-left: 2px solid rgba(255,255,255,0.06);
+      cursor: pointer;
+      transition: border-color 0.3s;
+    }
+    .how-step-item::before {
       content: '';
       position: absolute;
-      top: 22px;
-      left: calc(33.33% - 24px);
-      right: calc(33.33% - 24px);
-      height: 1px;
-      background: linear-gradient(to right, rgba(255,107,0,0.4), rgba(255,107,0,0.4));
+      left: -2px; top: 0; bottom: 0;
+      width: 2px;
+      background: var(--orange);
+      transform: scaleY(0);
+      transform-origin: top;
+      transition: transform 0.35s ease;
     }
-    .how-step {}
-    .how-num {
+    .how-step-item.active { border-left-color: transparent; }
+    .how-step-item.active::before { transform: scaleY(1); }
+    .how-step-item.done::before { transform: scaleY(1); background: rgba(255,107,0,0.3); }
+
+    .how-step-num {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+      transition: color 0.2s;
+    }
+    .how-step-item.active .how-step-num { color: var(--orange); }
+    .how-step-title {
       font-family: var(--heading);
-      font-size: 3rem;
+      font-size: clamp(1.3rem, 2.5vw, 1.7rem);
       letter-spacing: 2px;
-      color: var(--orange);
       line-height: 1;
-      margin-bottom: 20px;
+      color: rgba(255,255,255,0.35);
+      transition: color 0.25s;
     }
-    .how-step h3 {
-      font-family: var(--heading);
-      font-size: 1.3rem;
+    .how-step-item.active .how-step-title,
+    .how-step-item:hover .how-step-title { color: var(--white); }
+
+    /* Progress bar inside active item */
+    .how-step-progress {
+      height: 1px;
+      background: rgba(255,255,255,0.07);
+      margin-top: 14px;
+      overflow: hidden;
+      border-radius: 1px;
+      display: none;
+    }
+    .how-step-item.active .how-step-progress { display: block; }
+    .how-step-progress-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--orange);
+      transition: width linear;
+    }
+
+    /* Right: detail panel */
+    .how-detail {
+      position: sticky;
+      top: 100px;
+    }
+    .how-detail-panel { display: none; }
+    .how-detail-panel.active {
+      display: block;
+      animation: howFadeUp 0.35s ease both;
+    }
+    @keyframes howFadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    /* UI mockup cards inside detail panels */
+    .how-ui-mock {
+      background: #1a1a1a;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 28px;
+    }
+    .how-mock-header {
+      font-size: 10px;
+      font-weight: 700;
       letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .how-mock-vehicle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--dark);
+      border: 1px solid var(--orange);
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 8px;
+    }
+    .how-mock-vehicle-row .vname { font-weight: 600; font-size: 13px; color: var(--white); }
+    .how-mock-vehicle-row .vprice { font-family: var(--heading); font-size: 1.1rem; letter-spacing: 1px; color: var(--orange); }
+    .how-mock-vehicle-unsel {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--dark);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 8px;
+      opacity: 0.4;
+    }
+    .how-mock-vehicle-unsel .vname { font-size: 13px; color: rgba(255,255,255,0.6); }
+    .how-mock-vehicle-unsel .vprice { font-family: var(--heading); font-size: 1.1rem; letter-spacing: 1px; color: var(--muted); }
+    .how-mock-date-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .how-mock-date-field {
+      background: var(--dark);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+    .how-mock-date-field .dlabel { font-size: 9px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
+    .how-mock-date-field .dval { font-size: 13px; color: var(--white); font-weight: 500; }
+    .how-mock-confirm { display: flex; flex-direction: column; gap: 10px; }
+    .how-mock-confirm-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+    }
+    .how-mock-confirm-row .cl { color: var(--muted); }
+    .how-mock-confirm-row .cr { color: var(--white); font-weight: 500; }
+    .how-mock-divider { border: none; border-top: 1px solid rgba(255,255,255,0.06); margin: 2px 0; }
+    .how-mock-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #4ade80;
+      margin-top: 6px;
+    }
+    .how-mock-status::before {
+      content: '';
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #4ade80;
+      display: block;
+    }
+    .how-mock-ride-img {
+      width: 100%;
+      height: 90px;
+      object-fit: cover;
+      object-position: center 40%;
+      border-radius: 6px;
+      margin-bottom: 14px;
+      filter: brightness(0.85);
+    }
+    .how-mock-ride-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       margin-bottom: 10px;
     }
-    .how-step p { font-size: 13px; color: var(--muted); line-height: 1.7; }
+    .how-mock-ride-meta .rname { font-family: var(--heading); font-size: 1.1rem; letter-spacing: 2px; }
+    .how-mock-ride-meta .rprice { font-family: var(--heading); font-size: 1.1rem; color: var(--amber); }
+    .how-mock-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+    .how-mock-tag {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 50px;
+      background: rgba(255,107,0,0.1);
+      border: 1px solid rgba(255,107,0,0.3);
+      color: var(--orange);
+    }
+    .how-detail-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--orange);
+      margin-bottom: 12px;
+    }
+    .how-detail-title {
+      font-family: var(--heading);
+      font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+      letter-spacing: 3px;
+      line-height: 1;
+      margin-bottom: 18px;
+    }
+    .how-detail-body {
+      font-size: 14px;
+      color: rgba(255,255,255,0.6);
+      line-height: 1.8;
+      max-width: 380px;
+    }
     .how-cta { margin-top: 56px; }
 
     @media (max-width: 768px) {
-      .how-steps { grid-template-columns: 1fr; gap: 36px; }
-      .how-steps::before { display: none; }
+      .how-stepper { grid-template-columns: 1fr; gap: 0; }
+      .how-detail { position: static; margin-top: 32px; }
     }
 
     /* ─────────────────────────────────────────
@@ -1214,10 +1401,10 @@
             <div class="fleet-card-text">
               <p class="fleet-card-tag">Most Popular &nbsp;·&nbsp; No Moto License</p>
               <h3 class="fleet-card-name">2022 Polaris Slingshot</h3>
-              <p class="fleet-card-specs">3-Wheel Autocycle &nbsp;·&nbsp; 2 Seats &nbsp;·&nbsp; Automatic &nbsp;·&nbsp; Open-Air</p>
+              <p class="fleet-card-specs">3-Wheel Autocycle &nbsp;·&nbsp; 2 Seats &nbsp;·&nbsp; AutoDrive &nbsp;·&nbsp; Open-Air</p>
             </div>
             <div class="fleet-card-price">$180<span>/ day</span></div>
-            <button class="fleet-card-book" data-stripe-vehicle="slingshot_2022">Book This Ride &rarr;</button>
+            <button class="fleet-card-book" data-vehicle-detail="slingshot_2022">View Details &rarr;</button>
           </div>
         </div>
 
@@ -1227,12 +1414,12 @@
           <div class="fleet-card-overlay"></div>
           <div class="fleet-card-info">
             <div class="fleet-card-text">
-              <p class="fleet-card-tag">Great Value</p>
+              <p class="fleet-card-tag">Great Value &nbsp;·&nbsp; Manual</p>
               <h3 class="fleet-card-name">2020 Polaris Slingshot</h3>
-              <p class="fleet-card-specs">3-Wheel Autocycle &nbsp;·&nbsp; 2 Seats &nbsp;·&nbsp; Automatic</p>
+              <p class="fleet-card-specs">3-Wheel Autocycle &nbsp;·&nbsp; 2 Seats &nbsp;·&nbsp; 5-Speed Manual</p>
             </div>
             <div class="fleet-card-price">$180<span>/ day</span></div>
-            <button class="fleet-card-book" data-stripe-vehicle="slingshot_2020">Book This Ride &rarr;</button>
+            <button class="fleet-card-book" data-vehicle-detail="slingshot_2020">View Details &rarr;</button>
           </div>
         </div>
 
@@ -1242,12 +1429,12 @@
           <div class="fleet-card-overlay"></div>
           <div class="fleet-card-info">
             <div class="fleet-card-text">
-              <p class="fleet-card-tag">Touring</p>
+              <p class="fleet-card-tag">Premium Touring</p>
               <h3 class="fleet-card-name">2021 Can-Am Spyder F3</h3>
-              <p class="fleet-card-specs">3-Wheel Stability &nbsp;·&nbsp; 2 Seats &nbsp;·&nbsp; F3 Limited</p>
+              <p class="fleet-card-specs">3-Wheel Stability &nbsp;·&nbsp; 2 Seats &nbsp;·&nbsp; F3 Limited &nbsp;·&nbsp; Heated Grips</p>
             </div>
             <div class="fleet-card-price">$203<span>/ day</span></div>
-            <button class="fleet-card-book" data-stripe-vehicle="canam_spyder">Book This Ride &rarr;</button>
+            <button class="fleet-card-book" data-vehicle-detail="canam_spyder">View Details &rarr;</button>
           </div>
         </div>
 
@@ -1265,22 +1452,49 @@
         <h2>Ready in 3 Steps</h2>
         <p>From booking to riding — simple as that.</p>
       </div>
-      <div class="how-steps">
-        <div class="how-step reveal" style="transition-delay:0.05s">
-          <div class="how-num">01</div>
-          <h3>Book &amp; Pay</h3>
-          <p>Choose your vehicle, pick your date, and pay securely online.</p>
+      <div class="how-stepper reveal">
+
+        <!-- Step list (left) -->
+        <div class="how-step-list">
+          <div class="how-step-item active" data-step="0">
+            <div class="how-step-num">Step 01</div>
+            <div class="how-step-title">Book &amp; Pay</div>
+            <div class="how-step-progress"><div class="how-step-progress-fill"></div></div>
+          </div>
+          <div class="how-step-item" data-step="1">
+            <div class="how-step-num">Step 02</div>
+            <div class="how-step-title">Meet in Lancaster</div>
+            <div class="how-step-progress"><div class="how-step-progress-fill"></div></div>
+          </div>
+          <div class="how-step-item" data-step="2">
+            <div class="how-step-num">Step 03</div>
+            <div class="how-step-title">Hit the Road</div>
+            <div class="how-step-progress"><div class="how-step-progress-fill"></div></div>
+          </div>
         </div>
-        <div class="how-step reveal" style="transition-delay:0.15s">
-          <div class="how-num">02</div>
-          <h3>Meet in Lancaster</h3>
-          <p>Chris walks you through the vehicle. Quick briefing, then you're ready to roll.</p>
+
+        <!-- Detail panel (right) -->
+        <div class="how-detail">
+          <div class="how-detail-panel active" data-panel="0">
+            <div class="how-detail-icon">🗓</div>
+            <div class="how-detail-label">Step 01</div>
+            <h3 class="how-detail-title">Book &amp; Pay</h3>
+            <p class="how-detail-body">Choose your vehicle, pick your date, and pay securely online in minutes. Weekends fill fast — lock in your spot before someone else does.</p>
+          </div>
+          <div class="how-detail-panel" data-panel="1">
+            <div class="how-detail-icon">🤝</div>
+            <div class="how-detail-label">Step 02</div>
+            <h3 class="how-detail-title">Meet in Lancaster</h3>
+            <p class="how-detail-body">Chris meets you at pickup, walks you through the vehicle, and answers any questions. Quick briefing — then you're ready to roll.</p>
+          </div>
+          <div class="how-detail-panel" data-panel="2">
+            <div class="how-detail-icon">🛣</div>
+            <div class="how-detail-label">Step 03</div>
+            <h3 class="how-detail-title">Hit the Road</h3>
+            <p class="how-detail-body">Explore Central PA on three wheels. No motorcycle experience needed — just a valid driver's license and a sense of adventure.</p>
+          </div>
         </div>
-        <div class="how-step reveal" style="transition-delay:0.25s">
-          <div class="how-num">03</div>
-          <h3>Hit the Road</h3>
-          <p>Explore Central PA on three wheels. No experience needed — just bring your driver's license.</p>
-        </div>
+
       </div>
       <div class="how-cta reveal">
         <button class="btn btn-primary" data-stripe-book>Reserve Your Ride &rarr;</button>
@@ -1483,6 +1697,66 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', function() {
+
+      // ── How It Works stepper ──────────────────
+      (function() {
+        var STEP_DURATION = 4000;
+        var items    = Array.from(document.querySelectorAll('.how-step-item'));
+        var panels   = Array.from(document.querySelectorAll('.how-detail-panel'));
+        var current  = 0;
+        var timer    = null;
+        var fillTimer = null;
+
+        function activate(idx) {
+          items.forEach(function(el, i) {
+            el.classList.toggle('active', i === idx);
+            el.classList.toggle('done',   i < idx);
+            var fill = el.querySelector('.how-step-progress-fill');
+            if (fill) { fill.style.transition = 'none'; fill.style.width = '0%'; }
+          });
+          panels.forEach(function(el, i) {
+            el.classList.toggle('active', i === idx);
+          });
+          // animate progress bar
+          var activeFill = items[idx].querySelector('.how-step-progress-fill');
+          if (activeFill) {
+            requestAnimationFrame(function() {
+              requestAnimationFrame(function() {
+                activeFill.style.transition = 'width ' + STEP_DURATION + 'ms linear';
+                activeFill.style.width = '100%';
+              });
+            });
+          }
+          current = idx;
+        }
+
+        function next() {
+          activate((current + 1) % items.length);
+        }
+
+        function startAuto() {
+          clearInterval(timer);
+          timer = setInterval(next, STEP_DURATION);
+        }
+
+        items.forEach(function(el, i) {
+          el.addEventListener('click', function() {
+            clearInterval(timer);
+            activate(i);
+            startAuto();
+          });
+        });
+
+        // pause on hover over the whole stepper
+        var stepper = document.querySelector('.how-stepper');
+        if (stepper) {
+          stepper.addEventListener('mouseenter', function() { clearInterval(timer); });
+          stepper.addEventListener('mouseleave', function() { startAuto(); });
+        }
+
+        activate(0);
+        startAuto();
+      })();
 
       // Lead capture form
       var leadSubmit = document.getElementById('lead-submit');
@@ -1803,6 +2077,9 @@
 
     </div>
   </div>
+
+  <!-- VEHICLE DETAIL PANEL -->
+  <script src="vehicle-detail.js"></script>
 
   <!-- STRIPE PAYMENT INTEGRATION -->
   <!-- Stripe.js is loaded but only activates when STRIPE_ENABLED = true in stripe.config.js -->

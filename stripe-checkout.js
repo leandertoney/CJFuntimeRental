@@ -60,11 +60,39 @@
 
   // ── Modal open / close ─────────────────────────────────────────────────────
 
-  function openModal(preselectedVehicle) {
+  function openModal(preselectedVehicle, prefillDates) {
     var modal = $('booking-modal');
     if (!modal) return;
-    goToStep(1);
-    if (preselectedVehicle) preselectVehicle(preselectedVehicle);
+
+    if (preselectedVehicle) {
+      // If dates were pre-filled from vehicle detail panel, skip to step 2 or 3
+      if (prefillDates && (prefillDates.startDate || prefillDates.endDate)) {
+        state.startDate = prefillDates.startDate || null;
+        state.startTime = prefillDates.startTime || null;
+        state.endDate   = prefillDates.endDate   || null;
+        state.endTime   = prefillDates.endTime   || null;
+
+        // Pre-fill the date inputs
+        if ($('bm-start-date')) $('bm-start-date').value = state.startDate || '';
+        if ($('bm-start-time')) $('bm-start-time').value = state.startTime || '09:00';
+        if ($('bm-end-date'))   $('bm-end-date').value   = state.endDate   || '';
+        if ($('bm-end-time'))   $('bm-end-time').value   = state.endTime   || '09:00';
+
+        preselectVehicle(preselectedVehicle);
+        if (state.startDate && state.endDate) {
+          buildSummary();
+          goToStep(3);
+        } else {
+          goToStep(2);
+        }
+      } else {
+        goToStep(1);
+        preselectVehicle(preselectedVehicle);
+      }
+    } else {
+      goToStep(1);
+    }
+
     modal.setAttribute('aria-hidden', 'false');
     modal.classList.add('open');
     document.body.style.overflow = 'hidden';
