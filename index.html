@@ -252,8 +252,10 @@
     }
 
     @media (max-width: 768px) {
-      .hero-body { padding-bottom: 80px; }
+      .hero-body { padding-top: 72px; padding-left: 0; padding-bottom: 80px; }
       .hero-scroll { display: none; }
+      .hero-ctas { flex-direction: column; gap: 10px; width: 100%; }
+      .hero-ctas .btn { width: 100%; justify-content: center; }
     }
 
 
@@ -369,6 +371,7 @@
     }
 
     @media (max-width: 768px) {
+      .fleet { padding: 64px 0; }
       .fleet-grid { grid-template-columns: 1fr; }
       .fleet-card:first-child { grid-column: 1; }
       .fleet-card:first-child .fleet-card-photo { aspect-ratio: 4/3; }
@@ -605,8 +608,10 @@
     .how-cta { margin-top: 56px; }
 
     @media (max-width: 768px) {
+      .how { padding: 64px 0; }
       .how-stepper { grid-template-columns: 1fr; gap: 0; }
       .how-detail { position: static; margin-top: 32px; }
+      .how-cta { margin-top: 36px; }
     }
 
     /* ─────────────────────────────────────────
@@ -752,10 +757,12 @@
     .faq-icon { flex-shrink: 0; width: 18px; height: 18px; border: 1px solid rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1; color: var(--orange); transition: transform 0.3s ease; }
     .faq-item.open .faq-icon { transform: rotate(45deg); }
     .faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease, padding 0.35s ease; font-size: 13px; color: var(--muted); line-height: 1.75; }
-    .faq-item.open .faq-answer { max-height: 200px; padding-bottom: 20px; }
+    .faq-item.open .faq-answer { max-height: 400px; padding-bottom: 20px; }
 
     @media (max-width: 768px) {
+      .faq { padding: 64px 0; }
       .faq-inner { grid-template-columns: 1fr; gap: 32px; }
+      .faq-left .btn { display: none; }
     }
 
     /* ─────────────────────────────────────────
@@ -896,7 +903,9 @@
       line-height: 1.6;
     }
     @media (max-width: 768px) {
+      .cta-section { padding: 80px 0; }
       .lead-section { padding: 72px 0; }
+      .reviews { padding: 64px 0; }
     }
 
     /* ─────────────────────────────────────────
@@ -1076,8 +1085,10 @@
     } /* end prefers-reduced-motion */
 
     @media (max-width: 768px) {
-      .footer-inner { flex-direction: column; align-items: flex-start; gap: 20px; }
-      .footer-right { text-align: left; }
+      .footer-inner { flex-direction: column; align-items: center; gap: 20px; text-align: center; }
+      .footer-right { text-align: center; }
+      .footer-nav { gap: 16px; }
+      .footer-bottom { align-items: center; }
     }
 
     /* MOBILE STICKY */
@@ -1525,6 +1536,14 @@
     .bm-nav .btn-back:hover { color: var(--white); border-color: rgba(255,255,255,0.2); }
     .bm-nav .btn-next { flex: 1; }
     .bm-note { font-size: 11px; color: var(--muted); text-align: center; margin-top: 14px; line-height: 1.6; }
+
+    @media (max-width: 480px) {
+      .booking-modal { padding: 0; align-items: flex-end; }
+      .booking-modal-inner { border-radius: 16px 16px 0 0; max-height: 95vh; }
+      .bm-row { grid-template-columns: 1fr; }
+      .bm-panel { padding: 20px 18px; }
+      .bm-steps { padding: 0 18px; }
+    }
 
     /* Fleet card "Book" button */
     .fleet-card-book {
