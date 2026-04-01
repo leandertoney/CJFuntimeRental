@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <script type="application/ld+json">
-  {"@context":"https://schema.org","@type":"LocalBusiness","name":"CJ's Fun Time Rental","description":"Polaris Slingshot and Can-Am Spyder rentals in Lancaster, PA","address":{"@type":"PostalAddress","addressLocality":"Lancaster","addressRegion":"PA","addressCountry":"US"},"url":"https://cjsfuntimerental.com","sameAs":["https://www.facebook.com/people/CJs-Fun-Time-Rental/61575102921796/","https://turo.com/us/en/drivers/44355733","https://www.instagram.com/cjsfuntimerentals/"],"aggregateRating":{"@type":"AggregateRating","ratingValue":"5","reviewCount":"47"}}
+  {"@context":"https://schema.org","@type":"LocalBusiness","name":"CJ's Fun Time Rental","description":"Polaris Slingshot and Can-Am Spyder rentals in Lancaster, PA","address":{"@type":"PostalAddress","addressLocality":"Lancaster","addressRegion":"PA","addressCountry":"US"},"url":"https://cjsfuntimerental.com","sameAs":["https://www.facebook.com/people/CJs-Fun-Time-Rental/61575102921796/","https://turo.com/us/en/drivers/44355733","https://www.instagram.com/cjsfuntimerentals/"],"aggregateRating":{"@type":"AggregateRating","ratingValue":"5","reviewCount":"14"}}
   </script>
   <style>
     :root {
@@ -241,38 +241,6 @@
       .hero-scroll { display: none; }
     }
 
-    /* ─────────────────────────────────────────
-       REVIEW MARQUEE
-    ───────────────────────────────────────── */
-    .marquee-bar {
-      background: var(--black);
-      border-top: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
-      padding: 16px 0;
-      overflow: hidden;
-    }
-    .marquee-track {
-      display: flex;
-      width: max-content;
-      animation: marquee 35s linear infinite;
-    }
-    .marquee-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      white-space: nowrap;
-      padding: 0 48px;
-      font-size: 13px;
-      color: rgba(255,255,255,0.55);
-    }
-    .marquee-item .stars { color: var(--amber); font-size: 11px; letter-spacing: 1px; }
-    .marquee-item .quote { font-style: italic; }
-    .marquee-item .author { color: rgba(255,255,255,0.3); font-size: 11px; }
-    .marquee-sep { color: rgba(255,107,0,0.4); padding: 0 4px; }
-    @keyframes marquee {
-      0% { transform: translateX(0); }
-      100% { transform: translateX(-50%); }
-    }
 
     /* ─────────────────────────────────────────
        FLEET
@@ -444,7 +412,7 @@
     .reviews-header h2 { font-family: var(--heading); font-size: clamp(2rem, 4.5vw, 3rem); letter-spacing: 3px; }
     .reviews-header a { font-size: 13px; color: var(--muted); transition: color 0.2s; white-space: nowrap; }
     .reviews-header a:hover { color: var(--white); }
-    .reviews-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); }
+    .reviews-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); margin-bottom: 1px; }
     .review-card { background: var(--surface); padding: 36px 28px; }
     .review-stars { font-size: 12px; letter-spacing: 2px; color: var(--amber); margin-bottom: 20px; }
     .review-quote {
@@ -685,7 +653,6 @@
       *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
       .reveal { opacity: 1; transform: none; }
       .hero-img-wrap img { animation: none; }
-      .marquee-track { animation: none; }
     }
 
     /* ─────────────────────────────────────────
@@ -817,41 +784,6 @@
 
   </div><!-- /.hero-wrap -->
 
-  <!-- REVIEW MARQUEE -->
-  <div class="marquee-bar">
-    <div class="marquee-track" id="marquee-track">
-      <div class="marquee-item">
-        <span class="stars">★★★★★</span>
-        <span class="quote">"Chris was a great guy. Beautiful ride, good communication, very fun."</span>
-        <span class="author">— Verified Renter</span>
-      </div>
-      <div class="marquee-item"><span class="marquee-sep">·</span></div>
-      <div class="marquee-item">
-        <span class="stars">★★★★★</span>
-        <span class="quote">"Extremely easy to work with. He made the process enjoyable and simple."</span>
-        <span class="author">— Verified Renter</span>
-      </div>
-      <div class="marquee-item"><span class="marquee-sep">·</span></div>
-      <div class="marquee-item">
-        <span class="stars">★★★★★</span>
-        <span class="quote">"Great host. Clean bike, good communication, fantastic experience!"</span>
-        <span class="author">— Verified Renter</span>
-      </div>
-      <div class="marquee-item"><span class="marquee-sep">·</span></div>
-      <div class="marquee-item">
-        <span class="stars">★★★★★</span>
-        <span class="quote">"Mr. Chris was a pleasure to rent from. Highly recommend!"</span>
-        <span class="author">— Verified Renter</span>
-      </div>
-      <div class="marquee-item"><span class="marquee-sep">·</span></div>
-      <div class="marquee-item">
-        <span class="stars">★★★★★</span>
-        <span class="quote">"Super fun — thanks Chris and his wife for the great experience!"</span>
-        <span class="author">— Verified Renter</span>
-      </div>
-      <div class="marquee-item"><span class="marquee-sep">·</span></div>
-    </div>
-  </div>
 
   <!-- FLEET -->
   <section class="fleet" id="fleet">
@@ -951,23 +883,78 @@
     <div class="container">
       <div class="reviews-header reveal">
         <h2>What Guests Say</h2>
-        <p style="font-size:12px;color:var(--muted)">&#10003; All reviews from verified renters</p>
+        <p style="font-size:12px;color:var(--muted)">&#10003; 14 verified renters &nbsp;·&nbsp; 5.0 ★★★★★</p>
       </div>
       <div class="reviews-grid reveal">
         <div class="review-card">
           <div class="review-stars">★★★★★</div>
-          <p class="review-quote">"Chris was a great guy. Beautiful ride, good communication, clean ride and very fun. Would definitely rent again."</p>
-          <p class="review-author">Verified Renter</p>
+          <p class="review-quote">"Chris was a great guy. Beautiful ride, good communication, clean ride and very fun. Thank you! See you next time."</p>
+          <p class="review-author">Samuel &nbsp;·&nbsp; Verified Renter</p>
         </div>
         <div class="review-card">
           <div class="review-stars">★★★★★</div>
-          <p class="review-quote">"Extremely easy to work with. He made the process enjoyable and simple. Super fun — highly recommend!"</p>
-          <p class="review-author">Verified Renter</p>
+          <p class="review-quote">"Super fun, I highly recommend. Thanks Chris and his wife — good communication and really helpful arranging pickup and drop off."</p>
+          <p class="review-author">DeLisa &nbsp;·&nbsp; Verified Renter</p>
         </div>
         <div class="review-card">
           <div class="review-stars">★★★★★</div>
-          <p class="review-quote">"Great host. Clean bike, good communication, and a fantastic rental experience from start to finish."</p>
-          <p class="review-author">Verified Renter</p>
+          <p class="review-quote">"Chris was a great and accommodating host."</p>
+          <p class="review-author">Dwayne &nbsp;·&nbsp; Verified Renter</p>
+        </div>
+        <div class="review-card">
+          <div class="review-stars">★★★★★</div>
+          <p class="review-quote">"Extremely easy to work with. He made the process enjoyable and simple. I will work with him again and would recommend him to anyone."</p>
+          <p class="review-author">Harold &nbsp;·&nbsp; Verified Renter</p>
+        </div>
+        <div class="review-card">
+          <div class="review-stars">★★★★★</div>
+          <p class="review-quote">"Chris is a great host and has cool vehicles!"</p>
+          <p class="review-author">Justin &nbsp;·&nbsp; Verified Renter</p>
+        </div>
+        <div class="review-card">
+          <div class="review-stars">★★★★★</div>
+          <p class="review-quote">"Chris was very helpful and the ride was super fun."</p>
+          <p class="review-author">Dean &nbsp;·&nbsp; Verified Renter</p>
+        </div>
+        <div class="review-card">
+          <div class="review-stars">★★★★★</div>
+          <p class="review-quote">"Chris was very friendly and on time with the rental. Great guy — can't wait to rent again!"</p>
+          <p class="review-author">Jorge &nbsp;·&nbsp; Verified Renter</p>
+        </div>
+        <div class="review-card">
+          <div class="review-stars">★★★★★</div>
+          <p class="review-quote">"Mr. Chris was a pleasure to rent from. I used the Can-Am for a ride with my coworkers for veterans and it was perfect. I will definitely rent again!"</p>
+          <p class="review-author">Laressia &nbsp;·&nbsp; Verified Renter</p>
+        </div>
+        <div class="review-card">
+          <div class="review-stars">★★★★★</div>
+          <p class="review-quote">"Chris was polite, on time, and the slingshot was fantastic! Had a great ride. I would not hesitate to rent again."</p>
+          <p class="review-author">David &nbsp;·&nbsp; Verified Renter</p>
+        </div>
+        <div class="review-card">
+          <div class="review-stars">★★★★★</div>
+          <p class="review-quote">"Booking with Chris was a great first time experience! The slingshot was clean and drove great. Chris was accommodating with a change due to weather and was on time for pickup and drop off."</p>
+          <p class="review-author">Ijeoma &nbsp;·&nbsp; Verified Renter</p>
+        </div>
+        <div class="review-card">
+          <div class="review-stars">★★★★★</div>
+          <p class="review-quote">"Second time renting from Chris. He and his wife are very good hosts. Will rent again, and would recommend to others!"</p>
+          <p class="review-author">Ian &nbsp;·&nbsp; Verified Renter</p>
+        </div>
+        <div class="review-card">
+          <div class="review-stars">★★★★★</div>
+          <p class="review-quote">"Great host. Clean bike, good communication, and a great rental experience!"</p>
+          <p class="review-author">Ian &nbsp;·&nbsp; Verified Renter</p>
+        </div>
+        <div class="review-card">
+          <div class="review-stars">★★★★★</div>
+          <p class="review-quote">"Great new slingshot, great communication — will rent again."</p>
+          <p class="review-author">Mike &nbsp;·&nbsp; Verified Renter</p>
+        </div>
+        <div class="review-card">
+          <div class="review-stars">★★★★★</div>
+          <p class="review-quote">"Thanks for everything! Wonderful people — next time we take all three!"</p>
+          <p class="review-author">Leslie &nbsp;·&nbsp; Verified Renter</p>
         </div>
       </div>
     </div>
@@ -1114,9 +1101,6 @@
         });
       });
 
-      // Marquee duplication
-      var track = document.getElementById('marquee-track');
-      track.innerHTML += track.innerHTML;
 
       // Scroll reveal
       var obs = new IntersectionObserver(function(entries) {
