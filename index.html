@@ -666,92 +666,60 @@
 
 
     /* ─────────────────────────────────────────
-       SOCIAL PROOF
+       SOCIAL PROOF MARQUEE
     ───────────────────────────────────────── */
-    .social-proof { padding: 96px 0; background: var(--black); border-top: 1px solid var(--border); }
-    .social-proof-header { margin-bottom: 48px; }
+    .social-proof {
+      padding: 96px 0;
+      background: var(--black);
+      border-top: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .social-proof-header { margin-bottom: 48px; padding: 0 28px; max-width: 1160px; margin-left: auto; margin-right: auto; }
     .social-proof-header h2 { font-family: var(--heading); font-size: clamp(2rem, 4.5vw, 3rem); letter-spacing: 3px; line-height: 1; margin-bottom: 8px; }
     .social-proof-header p { color: var(--muted); font-size: 14px; }
 
-    .sp-grid {
-      display: grid;
-      grid-template-columns: repeat(6, 1fr);
-      gap: 10px;
-      align-items: start;
-    }
-
-    .sp-card {
-      position: relative;
-      border-radius: 6px;
+    .sp-marquee-wrap {
       overflow: hidden;
-      background: var(--surface);
-      cursor: default;
+      /* Edge fade */
+      -webkit-mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+      mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
     }
-
-    /* Photo fills top at 9:16 */
-    .sp-card-media {
+    .sp-track {
+      display: flex;
+      gap: 20px;
+      width: max-content;
+      animation: spScroll 32s linear infinite;
+    }
+    .sp-track:hover { animation-play-state: paused; }
+    @keyframes spScroll {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-50%); }
+    }
+    .sp-card {
+      flex: 0 0 auto;
+      width: 260px;
+      border-radius: 8px;
+      overflow: hidden;
       position: relative;
+    }
+    .sp-card img {
       width: 100%;
       aspect-ratio: 9 / 16;
-      overflow: hidden;
-    }
-    .sp-card-media img {
-      width: 100%; height: 100%;
       object-fit: cover;
       display: block;
       transition: transform 0.5s ease;
     }
-    .sp-card:hover .sp-card-media img { transform: scale(1.04); }
-
-    /* Gradient fades photo into review below */
-    .sp-card-media::after {
-      content: '';
-      position: absolute;
-      bottom: 0; left: 0; right: 0;
-      height: 50%;
-      background: linear-gradient(to top, var(--surface), transparent);
-      pointer-events: none;
-    }
-
-    /* Stars sit at the bottom of the photo, overlapping the fade */
+    .sp-card:hover img { transform: scale(1.03); }
     .sp-card-stars {
       position: absolute;
-      bottom: 10px; left: 14px;
-      font-size: 11px;
+      bottom: 14px; left: 14px;
+      font-size: 13px;
       letter-spacing: 2px;
       color: var(--amber);
-      z-index: 1;
     }
-
-    /* Review text below */
-    .sp-card-review {
-      padding: 12px 14px 16px;
-    }
-    .sp-card-quote {
-      font-size: 12px;
-      line-height: 1.65;
-      color: rgba(255,255,255,0.75);
-      margin-bottom: 10px;
-      font-style: italic;
-    }
-    .sp-card-author {
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--muted);
-      letter-spacing: 0.3px;
-    }
-
-    /* Tablet: 3 columns */
-    @media (max-width: 1024px) {
-      .sp-grid { grid-template-columns: repeat(3, 1fr); }
-    }
-
-    /* Mobile: horizontal scroll, ~2 cards visible */
-    @media (max-width: 640px) {
-      .sp-grid { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; padding-bottom: 12px; }
-      .sp-grid::-webkit-scrollbar { height: 3px; }
-      .sp-grid::-webkit-scrollbar-thumb { background: rgba(255,107,0,0.4); border-radius: 2px; }
-      .sp-card { flex: 0 0 58vw; scroll-snap-align: start; }
+    @media (max-width: 768px) {
+      .sp-card { width: 200px; }
+      .sp-track { gap: 14px; }
     }
 
     /* ─────────────────────────────────────────
@@ -1549,55 +1517,60 @@
   </section>
   <!-- SOCIAL PROOF -->
   <section class="social-proof" id="social">
-    <div class="container">
-      <div class="social-proof-header reveal">
-        <h2>Out on the Road</h2>
-        <p>Lancaster, PA and beyond.</p>
+    <div class="social-proof-header reveal">
+      <h2>Out on the Road</h2>
+      <p>Lancaster, PA and beyond.</p>
+    </div>
+    <div class="sp-marquee-wrap">
+      <div class="sp-track" id="sp-track">
+      <div class="sp-card">
+        <img src="cj_night_rental.png" alt="Night rental — CJ's Fun Time Rental Lancaster PA" loading="lazy">
+        <div class="sp-card-stars">★★★★★</div>
       </div>
-      <div class="sp-grid">
-
-        <div class="sp-card reveal">
-          <div class="sp-card-media">
-            <img src="cj_night_rental.png" alt="Night rental — CJ's Fun Time Rental Lancaster PA" loading="lazy">
-            <div class="sp-card-stars">★★★★★</div>
-          </div>
-          </div>
-
-        <div class="sp-card reveal" style="transition-delay:0.05s">
-          <div class="sp-card-media">
-            <img src="cj_couple_rental.png" alt="Couple rental — CJ's Fun Time Rental Lancaster PA" loading="lazy">
-            <div class="sp-card-stars">★★★★★</div>
-          </div>
-          </div>
-
-        <div class="sp-card reveal" style="transition-delay:0.1s">
-          <div class="sp-card-media">
-            <img src="cj_hopi_rental.png" alt="Hopi rental — CJ's Fun Time Rental Lancaster PA" loading="lazy">
-            <div class="sp-card-stars">★★★★★</div>
-          </div>
-          </div>
-
-        <div class="sp-card reveal" style="transition-delay:0.15s">
-          <div class="sp-card-media">
-            <img src="cj_mam_rental.png" alt="Rental experience — CJ's Fun Time Rental Lancaster PA" loading="lazy">
-            <div class="sp-card-stars">★★★★★</div>
-          </div>
-          </div>
-
-        <div class="sp-card reveal" style="transition-delay:0.2s">
-          <div class="sp-card-media">
-            <img src="cj_double_rental.png" alt="Double rental — CJ's Fun Time Rental Lancaster PA" loading="lazy">
-            <div class="sp-card-stars">★★★★★</div>
-          </div>
-          </div>
-
-        <div class="sp-card reveal" style="transition-delay:0.25s">
-          <div class="sp-card-media">
-            <img src="cj_baby_driver.png" alt="Open road rental — CJ's Fun Time Rental Lancaster PA" loading="lazy">
-            <div class="sp-card-stars">★★★★★</div>
-          </div>
-          </div>
-
+      <div class="sp-card">
+        <img src="cj_couple_rental.png" alt="Couple rental — CJ's Fun Time Rental Lancaster PA" loading="lazy">
+        <div class="sp-card-stars">★★★★★</div>
+      </div>
+      <div class="sp-card">
+        <img src="cj_hopi_rental.png" alt="Hopi rental — CJ's Fun Time Rental Lancaster PA" loading="lazy">
+        <div class="sp-card-stars">★★★★★</div>
+      </div>
+      <div class="sp-card">
+        <img src="cj_mam_rental.png" alt="Rental experience — CJ's Fun Time Rental Lancaster PA" loading="lazy">
+        <div class="sp-card-stars">★★★★★</div>
+      </div>
+      <div class="sp-card">
+        <img src="cj_double_rental.png" alt="Double rental — CJ's Fun Time Rental Lancaster PA" loading="lazy">
+        <div class="sp-card-stars">★★★★★</div>
+      </div>
+      <div class="sp-card">
+        <img src="cj_baby_driver.png" alt="Open road rental — CJ's Fun Time Rental Lancaster PA" loading="lazy">
+        <div class="sp-card-stars">★★★★★</div>
+      </div>
+      <div class="sp-card">
+        <img src="cj_night_rental.png" alt="Night rental — CJ's Fun Time Rental Lancaster PA" loading="lazy">
+        <div class="sp-card-stars">★★★★★</div>
+      </div>
+      <div class="sp-card">
+        <img src="cj_couple_rental.png" alt="Couple rental — CJ's Fun Time Rental Lancaster PA" loading="lazy">
+        <div class="sp-card-stars">★★★★★</div>
+      </div>
+      <div class="sp-card">
+        <img src="cj_hopi_rental.png" alt="Hopi rental — CJ's Fun Time Rental Lancaster PA" loading="lazy">
+        <div class="sp-card-stars">★★★★★</div>
+      </div>
+      <div class="sp-card">
+        <img src="cj_mam_rental.png" alt="Rental experience — CJ's Fun Time Rental Lancaster PA" loading="lazy">
+        <div class="sp-card-stars">★★★★★</div>
+      </div>
+      <div class="sp-card">
+        <img src="cj_double_rental.png" alt="Double rental — CJ's Fun Time Rental Lancaster PA" loading="lazy">
+        <div class="sp-card-stars">★★★★★</div>
+      </div>
+      <div class="sp-card">
+        <img src="cj_baby_driver.png" alt="Open road rental — CJ's Fun Time Rental Lancaster PA" loading="lazy">
+        <div class="sp-card-stars">★★★★★</div>
+      </div>
       </div>
     </div>
   </section>
