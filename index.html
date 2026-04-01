@@ -265,13 +265,14 @@
     .fleet-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 2px;
+      gap: 16px;
     }
     .fleet-card {
       position: relative;
       overflow: hidden;
-      background: var(--surface);
+      background: transparent;
       cursor: pointer;
+      border-radius: 4px;
     }
     .fleet-card:first-child {
       grid-column: 1 / -1;
@@ -444,8 +445,7 @@
     }
     .review-card {
       flex: 0 0 300px;
-      background: var(--surface);
-      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.04);
       border-radius: 4px;
       padding: 28px 24px;
       display: flex;
