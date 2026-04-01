@@ -14,8 +14,8 @@
 
   var FACEBOOK_URL = 'https://www.facebook.com/people/CJs-Fun-Time-Rental/61575102921796/';
 
-  // Savings thresholds (days → discount %)
-  var SAVINGS = [
+  // Savings thresholds — overridable via admin config (window.CJFR_SAVINGS)
+  var SAVINGS = window.CJFR_SAVINGS || [
     { days: 7, pct: 15, label: 'Weekly discount' },
     { days: 3, pct: 10, label: '3-day discount' },
   ];

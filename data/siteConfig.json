@@ -1,0 +1,128 @@
+{
+  "_version": 1,
+  "sectionOrder": ["header", "hero", "fleet", "how", "reviews", "faq", "ctaSection", "leadCapture"],
+  "sections": {
+    "header":      { "visible": true },
+    "hero":        { "visible": true },
+    "fleet":       { "visible": true },
+    "how":         { "visible": true },
+    "reviews":     { "visible": true },
+    "faq":         { "visible": true },
+    "ctaSection":  { "visible": true },
+    "leadCapture": { "visible": true }
+  },
+  "vehicles": {
+    "slingshot_2022": {
+      "available":  true,
+      "name":       "2022 Polaris Slingshot",
+      "tag":        "Most Popular · No Moto License",
+      "specs":      "3-Wheel Autocycle · 2 Seats · AutoDrive · Open-Air",
+      "ratePerDay": 180
+    },
+    "slingshot_2020": {
+      "available":  true,
+      "name":       "2020 Polaris Slingshot",
+      "tag":        "Great Value · Manual",
+      "specs":      "3-Wheel Autocycle · 2 Seats · 5-Speed Manual",
+      "ratePerDay": 180
+    },
+    "canam_spyder": {
+      "available":  true,
+      "name":       "2021 Can-Am Spyder F3 Limited",
+      "tag":        "Premium Touring",
+      "specs":      "3-Wheel Stability · 2 Seats · F3 Limited · Heated Grips",
+      "ratePerDay": 203
+    }
+  },
+  "copy": {
+    "hero": {
+      "headline":    "<span style=\"color:var(--orange)\">Polaris Slingshot</span><br>Rental Lancaster, PA",
+      "subheadline": "No motorcycle license needed. Just show up and ride.",
+      "ctaPrimary":  "Book Your Ride →",
+      "ctaSecondary":"Get 10% Off →"
+    },
+    "fleet": {
+      "headline": "Choose<br>Your Ride",
+      "subtext":  "Three vehicles. All 3-wheel. All automatic. All open-air. Starting at $180/day."
+    },
+    "how": {
+      "headline":   "Ready in 3 Steps",
+      "subtext":    "From booking to riding — simple as that.",
+      "step1Title": "Book & Pay",
+      "step1Body":  "Choose your vehicle, pick your date, and pay securely online in minutes. Weekends fill fast — lock in your spot before someone else does.",
+      "step2Title": "Meet in Lancaster",
+      "step2Body":  "Chris meets you at pickup, walks you through the vehicle, and answers any questions. Quick briefing — then you're ready to roll.",
+      "step3Title": "Hit the Road",
+      "step3Body":  "Explore Central PA on three wheels. No motorcycle experience needed — just a valid driver's license and a sense of adventure."
+    },
+    "reviews": {
+      "headline":    "What Guests Say",
+      "ratingLine":  "✓ 14 verified renters · 5.0 ★★★★★"
+    },
+    "faq": {
+      "headline": "Common<br>Questions",
+      "subtext":  "Everything you need to know before you book."
+    },
+    "leadCapture": {
+      "eyebrow":    "🎉 First-Time Renter Offer",
+      "headline":   "Get <span>10% Off</span><br>Your First Rental",
+      "body":       "Enter your email and we'll send you a 10% off code for your first booking.",
+      "buttonText": "Send Me the Discount →",
+      "finePrint":  "We respect your privacy. No spam — ever. Unsubscribe anytime."
+    },
+    "cta": {
+      "headline":   "Book Your<br>Ride Today",
+      "body":       "Weekends fill up fast — reserve your ride in minutes.",
+      "buttonText": "Book Your Ride →"
+    }
+  },
+  "faqs": [
+    {
+      "id":       "faq-1",
+      "question": "Do I need a motorcycle license?",
+      "answer":   "No. In Pennsylvania the Slingshot is classified as an autocycle — a regular driver's license is all you need.",
+      "visible":  true
+    },
+    {
+      "id":       "faq-2",
+      "question": "How many people can ride?",
+      "answer":   "Each vehicle seats 2 people comfortably.",
+      "visible":  true
+    },
+    {
+      "id":       "faq-3",
+      "question": "Where is pickup located?",
+      "answer":   "Based in Lancaster, PA. Exact pickup details are confirmed after booking. Reserve your date online and Chris will follow up with location info.",
+      "visible":  true
+    },
+    {
+      "id":       "faq-4",
+      "question": "How do I book?",
+      "answer":   "Book directly on this page — choose your vehicle, pick your date, and pay securely online. Weekends fill up fast, so reserve early.",
+      "visible":  true
+    },
+    {
+      "id":       "faq-5",
+      "question": "Is the rental insured?",
+      "answer":   "Yes. All rentals include coverage. Full details are provided at booking confirmation. Questions? Reach out through the contact info provided after you reserve.",
+      "visible":  true
+    },
+    {
+      "id":       "faq-6",
+      "question": "Are the Slingshots automatic or manual?",
+      "answer":   "Our Polaris Slingshots are manual transmission — and that's actually a good thing. Many drivers find manual far more engaging and thrilling than an automatic slingshot. The extra control makes the ride feel more connected and exciting.",
+      "visible":  true
+    },
+    {
+      "id":       "faq-7",
+      "question": "Can I take it on the highway?",
+      "answer":   "Absolutely. Both the Slingshot and Spyder are highway-capable and perfect for scenic routes across Central PA.",
+      "visible":  true
+    }
+  ],
+  "discounts": [
+    { "days": 7, "pct": 15, "label": "Weekly discount", "enabled": true },
+    { "days": 3, "pct": 10, "label": "3-day discount",  "enabled": true }
+  ],
+  "blockedDates": []
+}
