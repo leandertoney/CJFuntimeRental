@@ -206,10 +206,17 @@
       text-shadow: 0 2px 30px rgba(0,0,0,0.4);
     }
     .hero-body p {
-      font-size: clamp(1rem, 2vw, 1.2rem);
-      color: rgba(255,255,255,0.8);
-      max-width: 560px;
-      line-height: 1.65;
+      font-size: clamp(1rem, 2vw, 1.15rem);
+      color: rgba(255,255,255,0.75);
+      max-width: 480px;
+      line-height: 1.6;
+      margin-bottom: 36px;
+    }
+    .hero-ctas {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
     }
     .hero-scroll {
       position: absolute;
@@ -804,9 +811,12 @@
     <div class="hero-body">
       <div class="container">
         <img src="cj_funtime_logo.png" alt="CJ's Fun Time Rental Logo" class="hero-logo">
-        <p class="hero-label">Lancaster, PA &nbsp;·&nbsp; Polaris Slingshot &amp; Can-Am Spyder Rental</p>
-        <h1>Rent a Polaris<br>Slingshot in<br><span style="color:var(--orange)">Lancaster, PA</span></h1>
-        <p>Open-air, three-wheeled thrill rides — no motorcycle license required. Book a Polaris Slingshot or Can-Am Spyder by the day and explore Central Pennsylvania in style.</p>
+        <h1>Polaris Slingshot<br>Rental in <span style="color:var(--orange)">Lancaster, PA</span></h1>
+        <p>No motorcycle license needed. Just show up and ride.</p>
+        <div class="hero-ctas">
+          <a href="#book" class="btn btn-primary">Book Your Ride &rarr;</a>
+          <a href="#win" class="btn btn-ghost">Win a Free Rental</a>
+        </div>
       </div>
     </div>
     <div class="hero-scroll">
