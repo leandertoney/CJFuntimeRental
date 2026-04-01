@@ -82,21 +82,13 @@
        HEADER
     ───────────────────────────────────────── */
     .site-header {
-      position: fixed;
-      top: 0; left: 0; width: 100%;
-      z-index: 1000;
-      padding: 18px 0;
-      transition: background 0.3s ease, padding 0.3s ease;
-    }
-    .site-header.scrolled {
-      background: rgba(10,10,10,0.96);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      padding: 12px 0;
-      border-bottom: 1px solid var(--border);
+      position: relative;
+      width: 100%;
+      padding: 28px 0;
+      background: transparent;
     }
     .header-inner { display: flex; align-items: center; justify-content: space-between; }
-    .header-logo img { height: 48px; width: auto; border-radius: 4px; object-fit: contain; }
+    .header-logo img { height: 72px; width: auto; object-fit: contain; }
     .nav-links { display: flex; align-items: center; gap: 32px; }
     .nav-links a {
       font-size: 13px;
@@ -136,10 +128,15 @@
     /* ─────────────────────────────────────────
        HERO — full-bleed image, almost no text
     ───────────────────────────────────────── */
-    .hero {
-      position: relative;
+    .hero-wrap {
+      display: flex;
+      flex-direction: column;
       height: 100vh;
       height: 100svh;
+    }
+    .hero {
+      position: relative;
+      flex: 1;
       overflow: hidden;
     }
     .hero-img-wrap {
@@ -581,6 +578,8 @@
 </head>
 <body>
 
+  <div class="hero-wrap">
+
   <!-- HEADER -->
   <header class="site-header" id="site-header">
     <div class="container header-inner">
@@ -617,6 +616,8 @@
       <div class="hero-scroll-line"></div>
     </div>
   </section>
+
+  </div><!-- /.hero-wrap -->
 
   <!-- REVIEW MARQUEE -->
   <div class="marquee-bar">
@@ -856,12 +857,6 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-
-      // Header scroll
-      var header = document.getElementById('site-header');
-      window.addEventListener('scroll', function() {
-        header.classList.toggle('scrolled', window.scrollY > 50);
-      }, { passive: true });
 
       // Hamburger
       var ham = document.getElementById('hamburger');
