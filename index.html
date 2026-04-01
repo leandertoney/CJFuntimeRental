@@ -1048,11 +1048,9 @@
     <div class="container">
       <p class="lead-eyebrow reveal">&#127881; First-Time Renter Offer</p>
       <h2 class="reveal">Get <span>10% Off</span><br>Your First Rental</h2>
-      <p class="reveal">Drop your info below and we'll send you a discount code for 10% off your first booking. No strings attached.</p>
+      <p class="reveal">Enter your email and we'll send you a 10% off code for your first booking.</p>
       <div class="lead-form reveal" id="lead-form">
-        <input type="text" id="lead-name" placeholder="Your Name" autocomplete="name" required>
-        <input type="email" id="lead-email" placeholder="Email Address" autocomplete="email" required>
-        <input type="tel" id="lead-phone" placeholder="Phone Number (optional)" autocomplete="tel">
+        <input type="email" id="lead-email" placeholder="Your Email Address" autocomplete="email" required>
         <button class="btn btn-primary" id="lead-submit">Send Me the Discount &rarr;</button>
         <p class="lead-fine">We respect your privacy. No spam — ever. Unsubscribe anytime.</p>
       </div>
@@ -1096,16 +1094,13 @@
       var leadSubmit = document.getElementById('lead-submit');
       if (leadSubmit) {
         leadSubmit.addEventListener('click', function() {
-          var name  = document.getElementById('lead-name').value.trim();
           var email = document.getElementById('lead-email').value.trim();
-          var phone = document.getElementById('lead-phone').value.trim();
-          if (!name || !email) {
-            document.getElementById('lead-name').style.borderColor  = name  ? '' : 'rgba(255,107,0,0.8)';
-            document.getElementById('lead-email').style.borderColor = email ? '' : 'rgba(255,107,0,0.8)';
+          if (!email) {
+            document.getElementById('lead-email').style.borderColor = 'rgba(255,107,0,0.8)';
             return;
           }
           var leads = JSON.parse(localStorage.getItem('cjfr_leads') || '[]');
-          leads.push({ name: name, email: email, phone: phone, date: new Date().toISOString() });
+          leads.push({ email: email, date: new Date().toISOString() });
           localStorage.setItem('cjfr_leads', JSON.stringify(leads));
           document.getElementById('lead-form').style.display    = 'none';
           document.getElementById('lead-success').style.display = 'flex';
