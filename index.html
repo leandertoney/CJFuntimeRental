@@ -175,8 +175,9 @@
       inset: 0;
       z-index: 2;
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: flex-start;
+      padding-top: 60px;
     }
     .hero-body .container {
       display: flex;
@@ -184,17 +185,13 @@
       align-items: flex-start;
       text-align: left;
     }
-    .hero-logo {
-      width: 100px;
-      margin-bottom: 20px;
-    }
     .hero-body h1 {
       font-family: var(--heading);
-      font-size: clamp(2.6rem, 6vw, 5rem);
+      font-size: clamp(2.4rem, 5.5vw, 4.5rem);
       letter-spacing: 3px;
       line-height: 0.95;
       margin-bottom: 16px;
-      max-width: 580px;
+      max-width: 520px;
       text-shadow: 0 2px 30px rgba(0,0,0,0.4);
     }
     .hero-body p {
@@ -802,8 +799,7 @@
     <div class="hero-overlay"></div>
     <div class="hero-body">
       <div class="container">
-        <img src="cj_funtime_logo.png" alt="CJ's Fun Time Rental Logo" class="hero-logo">
-        <h1>Polaris Slingshot Rental<br><span style="color:var(--orange)">Lancaster, PA</span></h1>
+        <h1>Polaris Slingshot<br><span style="color:var(--orange)">Rental Lancaster, PA</span></h1>
         <p>No motorcycle license needed. Just show up and ride.</p>
         <div class="hero-ctas">
           <a href="#book" class="btn btn-primary">Book Your Ride &rarr;</a>
