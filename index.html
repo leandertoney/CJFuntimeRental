@@ -1284,35 +1284,135 @@
   </script>
 
   <!-- BOOKING MODAL -->
-  <div id="booking-modal" class="booking-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="booking-modal-title">
+  <div id="booking-modal" class="booking-modal" aria-hidden="true" role="dialog" aria-modal="true">
     <div class="booking-modal-inner">
-      <button class="booking-modal-close" data-modal-close aria-label="Close">&times;</button>
-      <h2 id="booking-modal-title">Choose Your Ride</h2>
-      <p class="booking-modal-sub">Select a vehicle below to reserve your date and pay securely.</p>
-      <div class="booking-modal-vehicles">
-        <button class="booking-vehicle-btn" data-stripe-vehicle="slingshot_2022">
-          <div class="bv-info">
-            <span class="bv-name">2022 Polaris Slingshot</span>
-            <span class="bv-tag">Most Popular · No Moto License</span>
-          </div>
-          <span class="bv-price">$180 / day</span>
-        </button>
-        <button class="booking-vehicle-btn" data-stripe-vehicle="slingshot_2020">
-          <div class="bv-info">
-            <span class="bv-name">2020 Polaris Slingshot</span>
-            <span class="bv-tag">Great Value</span>
-          </div>
-          <span class="bv-price">$180 / day</span>
-        </button>
-        <button class="booking-vehicle-btn" data-stripe-vehicle="canam_spyder">
-          <div class="bv-info">
-            <span class="bv-name">2021 Can-Am Spyder F3</span>
-            <span class="bv-tag">Touring</span>
-          </div>
-          <span class="bv-price">$203 / day</span>
-        </button>
+      <button class="booking-modal-close" id="bm-close" aria-label="Close">&times;</button>
+
+      <!-- Step tabs -->
+      <div class="bm-steps">
+        <div class="bm-step-tab active" data-step="1">1. Your Ride</div>
+        <div class="bm-step-tab" data-step="2">2. Trip Details</div>
+        <div class="bm-step-tab" data-step="3">3. Review &amp; Pay</div>
       </div>
-      <p class="booking-modal-note">Secure payment powered by Stripe</p>
+
+      <!-- Step 1: Vehicle -->
+      <div class="bm-panel active" id="bm-panel-1">
+        <h3>Choose Your Ride</h3>
+        <p>Select the vehicle you'd like to book.</p>
+        <div class="bm-vehicles">
+          <button class="bm-vehicle-btn" data-vehicle="slingshot_2022" data-rate="180" data-label="2022 Polaris Slingshot">
+            <div class="bv-info">
+              <span class="bv-name">2022 Polaris Slingshot</span>
+              <span class="bv-tag">Most Popular &nbsp;·&nbsp; No Moto License &nbsp;·&nbsp; Manual</span>
+            </div>
+            <span class="bv-price">$180 / day</span>
+          </button>
+          <button class="bm-vehicle-btn" data-vehicle="slingshot_2020" data-rate="180" data-label="2020 Polaris Slingshot">
+            <div class="bv-info">
+              <span class="bv-name">2020 Polaris Slingshot</span>
+              <span class="bv-tag">Great Value &nbsp;·&nbsp; No Moto License &nbsp;·&nbsp; Manual</span>
+            </div>
+            <span class="bv-price">$180 / day</span>
+          </button>
+          <button class="bm-vehicle-btn" data-vehicle="canam_spyder" data-rate="203" data-label="2021 Can-Am Spyder F3 Limited">
+            <div class="bv-info">
+              <span class="bv-name">2021 Can-Am Spyder F3 Limited</span>
+              <span class="bv-tag">Touring &nbsp;·&nbsp; No Moto License</span>
+            </div>
+            <span class="bv-price">$203 / day</span>
+          </button>
+        </div>
+        <div class="bm-nav">
+          <button class="btn btn-primary bm-nav-next" id="bm-step1-next" disabled>Continue to Trip Details &rarr;</button>
+        </div>
+      </div>
+
+      <!-- Step 2: Trip Details -->
+      <div class="bm-panel" id="bm-panel-2">
+        <h3>Trip Details</h3>
+        <p>Set your dates, times, and pickup location.</p>
+        <div class="bm-row">
+          <div class="bm-field">
+            <label>Trip Start Date</label>
+            <input type="date" id="bm-start-date">
+          </div>
+          <div class="bm-field">
+            <label>Start Time</label>
+            <input type="time" id="bm-start-time" value="09:00">
+          </div>
+        </div>
+        <div class="bm-row">
+          <div class="bm-field">
+            <label>Trip End Date</label>
+            <input type="date" id="bm-end-date">
+          </div>
+          <div class="bm-field">
+            <label>End Time</label>
+            <input type="time" id="bm-end-time" value="09:00">
+          </div>
+        </div>
+        <div class="bm-row">
+          <div class="bm-field full">
+            <label>Pickup &amp; Return Location</label>
+            <input type="text" id="bm-pickup" value="Lancaster, PA" readonly>
+            <span class="bm-location-note">&#128205; Pickup &amp; return in Lancaster, PA</span>
+          </div>
+        </div>
+        <div class="bm-nav">
+          <button class="btn-back" id="bm-step2-back">&larr; Back</button>
+          <button class="btn btn-primary" id="bm-step2-next">Review Your Trip &rarr;</button>
+        </div>
+      </div>
+
+      <!-- Step 3: Review & Pay -->
+      <div class="bm-panel" id="bm-panel-3">
+        <h3>Review &amp; Pay</h3>
+        <p>Confirm your trip details before checkout.</p>
+        <div class="bm-summary-vehicle">
+          <span id="bm-summary-vehicle-name">—</span>
+          <span id="bm-summary-rate">—</span>
+        </div>
+        <div class="bm-summary-rows">
+          <div class="bm-summary-row">
+            <span class="label">Pickup &amp; Return</span>
+            <span class="value">Lancaster, PA</span>
+          </div>
+          <div class="bm-summary-row">
+            <span class="label">Trip Start</span>
+            <span class="value" id="bm-summary-start">—</span>
+          </div>
+          <div class="bm-summary-row">
+            <span class="label">Trip End</span>
+            <span class="value" id="bm-summary-end">—</span>
+          </div>
+          <div class="bm-summary-row">
+            <span class="label">Duration</span>
+            <span class="value" id="bm-summary-days">—</span>
+          </div>
+          <div class="bm-summary-row saving" id="bm-savings-row" style="display:none">
+            <span class="label">Trip Savings</span>
+            <span class="value" id="bm-summary-savings">—</span>
+          </div>
+        </div>
+        <hr class="bm-divider">
+        <div class="bm-summary-total">
+          <span>Estimated Total</span>
+          <span class="total-price" id="bm-summary-total">—</span>
+        </div>
+        <hr class="bm-divider">
+        <div class="bm-inclusions">
+          <div class="bm-inclusion-item">Insurance &amp; protection included</div>
+          <div class="bm-inclusion-item">600 miles included per trip</div>
+          <div class="bm-inclusion-item">Pickup &amp; return in Lancaster, PA</div>
+          <div class="bm-inclusion-item">No motorcycle license required</div>
+        </div>
+        <div class="bm-nav">
+          <button class="btn-back" id="bm-step3-back">&larr; Back</button>
+          <button class="btn btn-primary" id="bm-checkout-btn">Book &amp; Pay Securely &rarr;</button>
+        </div>
+        <p class="bm-note">&#128274; Secure checkout powered by Stripe. You won't be charged until the next step.</p>
+      </div>
+
     </div>
   </div>
 

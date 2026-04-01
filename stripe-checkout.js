@@ -1,8 +1,10 @@
 /**
- * CJ's Fun Time Rental — Stripe Checkout Handler
+ * CJ's Fun Time Rental — Booking Flow + Stripe Checkout
  *
- * Wires up "Book with Card" buttons to Stripe Payment Links.
- * Falls back to Facebook booking when STRIPE_ENABLED is false.
+ * Handles the 3-step booking modal:
+ *   Step 1 — Vehicle selection
+ *   Step 2 — Trip dates / times / location
+ *   Step 3 — Order summary + Stripe checkout
  *
  * Requires stripe.config.js to be loaded first.
  */
@@ -12,106 +14,220 @@
 
   var FACEBOOK_URL = 'https://www.facebook.com/people/CJs-Fun-Time-Rental/61575102921796/';
 
-  /**
-   * Redirect to the appropriate payment destination for a given vehicle key.
-   * @param {string} vehicleKey - one of the keys in STRIPE_PAYMENT_LINKS
-   */
-  function bookVehicle(vehicleKey) {
-    if (!window.STRIPE_ENABLED) {
-      window.open(FACEBOOK_URL, '_blank', 'noopener,noreferrer');
-      return;
-    }
+  // Savings thresholds (days → discount %)
+  var SAVINGS = [
+    { days: 7, pct: 15, label: 'Weekly discount' },
+    { days: 3, pct: 10, label: '3-day discount' },
+  ];
 
-    var link = window.STRIPE_PAYMENT_LINKS && window.STRIPE_PAYMENT_LINKS[vehicleKey];
+  // State
+  var state = {
+    vehicle: null,   // { key, label, rate }
+    startDate: null,
+    startTime: null,
+    endDate: null,
+    endTime: null,
+  };
 
-    if (!link || link.indexOf('REPLACE') !== -1) {
-      console.warn('[Stripe] Payment link not configured for: ' + vehicleKey + '. Falling back to Facebook.');
-      window.open(FACEBOOK_URL, '_blank', 'noopener,noreferrer');
-      return;
-    }
+  // ── Helpers ────────────────────────────────────────────────────────────────
 
-    // Redirect to Stripe Payment Link
-    window.location.href = link;
+  function $(id) { return document.getElementById(id); }
+
+  function formatDate(dateStr, timeStr) {
+    if (!dateStr) return '—';
+    var d = new Date(dateStr + 'T' + (timeStr || '00:00'));
+    return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+      + ' at ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   }
 
-  /**
-   * Generic "book now" — used for CTAs that are not vehicle-specific.
-   * Opens booking modal if available, otherwise goes straight to the
-   * first available payment link or Facebook.
-   */
-  function bookNow() {
-    var modal = document.getElementById('booking-modal');
-    if (modal) {
-      openModal(modal);
-      return;
-    }
-    // No modal — fall back directly
-    bookVehicle('slingshot_2022');
+  function calcDays() {
+    if (!state.startDate || !state.endDate) return 0;
+    var start = new Date(state.startDate + 'T' + (state.startTime || '00:00'));
+    var end   = new Date(state.endDate   + 'T' + (state.endTime   || '00:00'));
+    var ms = end - start;
+    if (ms <= 0) return 0;
+    return Math.ceil(ms / (1000 * 60 * 60 * 24));
   }
 
-  // ─── Modal helpers ────────────────────────────────────────────────────────
+  function calcSavings(days, baseTotal) {
+    for (var i = 0; i < SAVINGS.length; i++) {
+      if (days >= SAVINGS[i].days) {
+        return { label: SAVINGS[i].label, amount: Math.round(baseTotal * SAVINGS[i].pct / 100) };
+      }
+    }
+    return null;
+  }
 
-  function openModal(modal) {
+  // ── Modal open / close ─────────────────────────────────────────────────────
+
+  function openModal(preselectedVehicle) {
+    var modal = $('booking-modal');
+    if (!modal) return;
+    goToStep(1);
+    if (preselectedVehicle) preselectVehicle(preselectedVehicle);
     modal.setAttribute('aria-hidden', 'false');
     modal.classList.add('open');
     document.body.style.overflow = 'hidden';
-    // Focus first interactive element
-    var first = modal.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-    if (first) setTimeout(function () { first.focus(); }, 50);
   }
 
-  function closeModal(modal) {
+  function closeModal() {
+    var modal = $('booking-modal');
+    if (!modal) return;
     modal.setAttribute('aria-hidden', 'true');
     modal.classList.remove('open');
     document.body.style.overflow = '';
   }
 
-  // ─── Init ─────────────────────────────────────────────────────────────────
+  // ── Steps ──────────────────────────────────────────────────────────────────
+
+  function goToStep(n) {
+    // Panels
+    [1, 2, 3].forEach(function (i) {
+      var panel = $('bm-panel-' + i);
+      if (panel) panel.classList.toggle('active', i === n);
+    });
+    // Tabs
+    document.querySelectorAll('.bm-step-tab').forEach(function (tab) {
+      var s = parseInt(tab.getAttribute('data-step'));
+      tab.classList.toggle('active', s === n);
+      tab.classList.toggle('done', s < n);
+    });
+    // Scroll modal to top
+    var inner = document.querySelector('.booking-modal-inner');
+    if (inner) inner.scrollTop = 0;
+  }
+
+  // ── Vehicle selection ──────────────────────────────────────────────────────
+
+  function preselectVehicle(key) {
+    var btn = document.querySelector('.bm-vehicle-btn[data-vehicle="' + key + '"]');
+    if (btn) selectVehicleBtn(btn);
+  }
+
+  function selectVehicleBtn(btn) {
+    document.querySelectorAll('.bm-vehicle-btn').forEach(function (b) { b.classList.remove('selected'); });
+    btn.classList.add('selected');
+    state.vehicle = {
+      key:   btn.getAttribute('data-vehicle'),
+      label: btn.getAttribute('data-label'),
+      rate:  parseInt(btn.getAttribute('data-rate'), 10),
+    };
+    var nextBtn = $('bm-step1-next');
+    if (nextBtn) nextBtn.disabled = false;
+  }
+
+  // ── Summary builder ────────────────────────────────────────────────────────
+
+  function buildSummary() {
+    if (!state.vehicle) return;
+    var days     = calcDays();
+    var baseTotal = state.vehicle.rate * (days || 1);
+    var savings   = days > 1 ? calcSavings(days, baseTotal) : null;
+    var finalTotal = savings ? baseTotal - savings.amount : baseTotal;
+
+    $('bm-summary-vehicle-name').textContent = state.vehicle.label;
+    $('bm-summary-rate').textContent         = '$' + state.vehicle.rate + ' / day';
+    $('bm-summary-start').textContent        = formatDate(state.startDate, state.startTime);
+    $('bm-summary-end').textContent          = formatDate(state.endDate,   state.endTime);
+    $('bm-summary-days').textContent         = days ? days + (days === 1 ? ' day' : ' days') : '—';
+
+    var savingsRow = $('bm-savings-row');
+    if (savings) {
+      $('bm-summary-savings').textContent = '−$' + savings.amount + ' (' + savings.label + ')';
+      savingsRow.style.display = 'flex';
+    } else {
+      savingsRow.style.display = 'none';
+    }
+
+    $('bm-summary-total').textContent = days ? '$' + finalTotal : '$' + state.vehicle.rate + ' / day';
+  }
+
+  // ── Checkout ───────────────────────────────────────────────────────────────
+
+  function checkout() {
+    if (!state.vehicle) return;
+
+    if (!window.STRIPE_ENABLED) {
+      window.open(FACEBOOK_URL, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    var link = window.STRIPE_PAYMENT_LINKS && window.STRIPE_PAYMENT_LINKS[state.vehicle.key];
+    if (!link || link.indexOf('REPLACE') !== -1) {
+      console.warn('[Stripe] Payment link not configured for: ' + state.vehicle.key);
+      window.open(FACEBOOK_URL, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    window.location.href = link;
+  }
+
+  // ── Init ───────────────────────────────────────────────────────────────────
 
   document.addEventListener('DOMContentLoaded', function () {
 
-    // Wire up vehicle-specific book buttons (fleet cards)
+    // Vehicle buttons in modal
+    document.querySelectorAll('.bm-vehicle-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () { selectVehicleBtn(this); });
+    });
+
+    // Step 1 → 2
+    var s1next = $('bm-step1-next');
+    if (s1next) s1next.addEventListener('click', function () { goToStep(2); });
+
+    // Step 2 → back / next
+    var s2back = $('bm-step2-back');
+    if (s2back) s2back.addEventListener('click', function () { goToStep(1); });
+
+    var s2next = $('bm-step2-next');
+    if (s2next) s2next.addEventListener('click', function () {
+      state.startDate = $('bm-start-date').value;
+      state.startTime = $('bm-start-time').value;
+      state.endDate   = $('bm-end-date').value;
+      state.endTime   = $('bm-end-time').value;
+      buildSummary();
+      goToStep(3);
+    });
+
+    // Step 3 → back / checkout
+    var s3back = $('bm-step3-back');
+    if (s3back) s3back.addEventListener('click', function () { goToStep(2); });
+
+    var checkoutBtn = $('bm-checkout-btn');
+    if (checkoutBtn) checkoutBtn.addEventListener('click', checkout);
+
+    // Close button
+    var closeBtn = $('bm-close');
+    if (closeBtn) closeBtn.addEventListener('click', closeModal);
+
+    // Backdrop click
+    var modal = $('booking-modal');
+    if (modal) modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
+
+    // Escape key
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && modal && modal.classList.contains('open')) closeModal();
+    });
+
+    // Fleet card "Book This Ride" buttons — open modal pre-selecting vehicle
     document.querySelectorAll('[data-stripe-vehicle]').forEach(function (btn) {
       btn.addEventListener('click', function (e) {
         e.preventDefault();
-        bookVehicle(this.getAttribute('data-stripe-vehicle'));
+        openModal(this.getAttribute('data-stripe-vehicle'));
       });
     });
 
-    // Wire up generic book-now buttons
+    // Generic "Book Now" buttons — open modal on step 1
     document.querySelectorAll('[data-stripe-book]').forEach(function (btn) {
       btn.addEventListener('click', function (e) {
         e.preventDefault();
-        bookNow();
+        openModal(null);
       });
     });
 
-    // Modal close button
-    document.querySelectorAll('[data-modal-close]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var modal = document.getElementById('booking-modal');
-        if (modal) closeModal(modal);
-      });
-    });
-
-    // Close modal on backdrop click
-    var modal = document.getElementById('booking-modal');
-    if (modal) {
-      modal.addEventListener('click', function (e) {
-        if (e.target === modal) closeModal(modal);
-      });
-    }
-
-    // Close modal on Escape key
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') {
-        var m = document.getElementById('booking-modal');
-        if (m && m.classList.contains('open')) closeModal(m);
-      }
-    });
   });
 
-  // Expose for inline onclick use if needed
-  window.CJStripe = { bookVehicle: bookVehicle, bookNow: bookNow };
+  // Expose for external use
+  window.CJStripe = { openModal: openModal, closeModal: closeModal };
 
 }());
