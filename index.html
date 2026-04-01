@@ -176,46 +176,38 @@
       z-index: 2;
       display: flex;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
     }
     .hero-body .container {
       display: flex;
       flex-direction: column;
-      align-items: center;
-      text-align: center;
+      align-items: flex-start;
+      text-align: left;
     }
     .hero-logo {
-      width: 120px;
+      width: 100px;
       margin-bottom: 20px;
-    }
-    .hero-label {
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 3px;
-      text-transform: uppercase;
-      color: var(--orange);
-      margin-bottom: 16px;
     }
     .hero-body h1 {
       font-family: var(--heading);
-      font-size: clamp(3.2rem, 9vw, 7rem);
+      font-size: clamp(2.6rem, 6vw, 5rem);
       letter-spacing: 3px;
       line-height: 0.95;
-      margin-bottom: 24px;
-      max-width: 820px;
+      margin-bottom: 16px;
+      max-width: 580px;
       text-shadow: 0 2px 30px rgba(0,0,0,0.4);
     }
     .hero-body p {
-      font-size: clamp(1rem, 2vw, 1.15rem);
+      font-size: clamp(0.95rem, 1.8vw, 1.1rem);
       color: rgba(255,255,255,0.75);
-      max-width: 480px;
+      max-width: 400px;
       line-height: 1.6;
-      margin-bottom: 36px;
+      margin-bottom: 32px;
     }
     .hero-ctas {
       display: flex;
       gap: 14px;
-      justify-content: center;
+      justify-content: flex-start;
       flex-wrap: wrap;
     }
     .hero-scroll {
@@ -811,7 +803,7 @@
     <div class="hero-body">
       <div class="container">
         <img src="cj_funtime_logo.png" alt="CJ's Fun Time Rental Logo" class="hero-logo">
-        <h1>Polaris Slingshot<br>Rental in <span style="color:var(--orange)">Lancaster, PA</span></h1>
+        <h1>Polaris Slingshot Rental<br><span style="color:var(--orange)">Lancaster, PA</span></h1>
         <p>No motorcycle license needed. Just show up and ride.</p>
         <div class="hero-ctas">
           <a href="#book" class="btn btn-primary">Book Your Ride &rarr;</a>
@@ -853,7 +845,7 @@
 
         <!-- 2020 Slingshot -->
         <div class="fleet-card">
-          <img src="cj_orange_sling.jpg" class="fleet-card-photo" alt="2020 Polaris Slingshot rental Lancaster PA">
+          <img src="gray_polaris_front.png" class="fleet-card-photo" alt="2020 Polaris Slingshot rental Lancaster PA">
           <div class="fleet-card-overlay"></div>
           <div class="fleet-card-info">
             <div class="fleet-card-text">
