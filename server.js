@@ -159,14 +159,14 @@ app.get('/admin/admin.css', (req, res) => res.sendFile(path.join(ADMIN_DIR, 'adm
 const COMING_SOON = process.env.COMING_SOON === 'true';
 
 app.get('/', (req, res) => {
-  const file = COMING_SOON ? 'coming-soon.html' : 'index.html';
+  const file = COMING_SOON ? 'index.html' : 'full-site.html';
   res.setHeader('Cache-Control', 'no-cache, no-store');
   res.sendFile(path.join(__dirname, file));
 });
 
 app.get('/site', (req, res) => {
   res.setHeader('Cache-Control', 'no-cache, no-store');
-  res.sendFile(path.join(__dirname, 'index.html'));
+  res.sendFile(path.join(__dirname, 'full-site.html'));
 });
 
 // ── Static files (serve site root last) ───────────────────────────────────────
