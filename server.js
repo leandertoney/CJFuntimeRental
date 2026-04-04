@@ -153,8 +153,24 @@ app.get('/admin', (req, res) => res.sendFile(path.join(ADMIN_DIR, 'index.html'))
 app.get('/admin/admin.js',  (req, res) => res.sendFile(path.join(ADMIN_DIR, 'admin.js')));
 app.get('/admin/admin.css', (req, res) => res.sendFile(path.join(ADMIN_DIR, 'admin.css')));
 
+// ── Coming soon mode ───────────────────────────────────────────────────────────
+// Set COMING_SOON=true in .env to show the holding page.
+// The full site remains at /site for client preview.
+const COMING_SOON = process.env.COMING_SOON === 'true';
+
+app.get('/', (req, res) => {
+  const file = COMING_SOON ? 'coming-soon.html' : 'index.html';
+  res.setHeader('Cache-Control', 'no-cache, no-store');
+  res.sendFile(path.join(__dirname, file));
+});
+
+app.get('/site', (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store');
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
 // ── Static files (serve site root last) ───────────────────────────────────────
-app.use(express.static(__dirname, { index: 'index.html', etag: false, lastModified: false, setHeaders: (res) => res.setHeader('Cache-Control', 'no-cache, no-store') }));
+app.use(express.static(__dirname, { index: false, etag: false, lastModified: false, setHeaders: (res) => res.setHeader('Cache-Control', 'no-cache, no-store') }));
 
 // ── Start ──────────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
