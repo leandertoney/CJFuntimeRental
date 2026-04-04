@@ -1,6 +1,6 @@
 const { Resend } = require('resend');
 
-const FROM = 'CJ\'s Fun Time Rental <bookings@cjsfuntimerental.com>';
+const FROM = 'CJ\'s Fun Time Rental <bookings@cjfuntimerentals.com>';
 
 // Initialised lazily so dotenv has already run by the time server.js requires this
 let _resend;
@@ -97,7 +97,7 @@ async function sendDiscountCode(email) {
     </table>
 
     <div style="text-align:center;">
-      ${btn('Book Your Ride &rarr;', 'https://cjsfuntimerental.com')}
+      ${btn('Book Your Ride &rarr;', 'https://cjfuntimerentals.com')}
     </div>
 
     <p style="font-size:12px;color:#555555;margin-top:28px;text-align:center;line-height:1.6;">
