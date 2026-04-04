@@ -4,6 +4,7 @@ const express = require('express');
 const session = require('express-session');
 const path    = require('path');
 const fs      = require('fs').promises;
+const { sendDiscountCode, sendBookingConfirmation, sendOwnerBookingAlert, sendPickupReminder } = require('./emails');
 
 const CONFIG_PATH = path.join(__dirname, 'data', 'siteConfig.json');
 const LEADS_PATH  = path.join(__dirname, 'data', 'leads.json');
@@ -131,7 +132,30 @@ app.post('/api/leads', async (req, res) => {
     date:      new Date().toISOString()
   });
   await fs.writeFile(LEADS_PATH, JSON.stringify(leads, null, 2), 'utf8');
+
+  // Fire discount code email — don't block the response
+  sendDiscountCode(email.trim().toLowerCase()).catch((err) => {
+    console.error('Discount email failed:', err.message);
+  });
+
   res.json({ ok: true });
+});
+
+// Booking confirmation — called after successful Stripe payment
+app.post('/api/booking-confirmed', async (req, res) => {
+  const { email, name, vehicle, startDate, endDate, days, total, savings } = req.body;
+  if (!email || !vehicle || !startDate) return res.status(400).json({ error: 'Missing fields' });
+
+  try {
+    await Promise.all([
+      sendBookingConfirmation({ email, name, vehicle, startDate, endDate, days, total, savings }),
+      sendOwnerBookingAlert({ name, email, phone: req.body.phone, vehicle, startDate, endDate, days, total })
+    ]);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Booking email failed:', err.message);
+    res.status(500).json({ error: 'Email send failed' });
+  }
 });
 
 // Protected — admin only
