@@ -25,12 +25,9 @@ const base = (content) => `<!DOCTYPE html>
         <!-- Header -->
         <tr>
           <td style="padding:0 0 32px 0;text-align:center;border-bottom:1px solid rgba(255,255,255,0.07);">
-            <div style="font-family:Impact,'Arial Narrow',sans-serif;font-size:26px;letter-spacing:4px;font-weight:900;color:#ffffff;">
-              CJ'S FUN TIME RENTAL
-            </div>
-            <div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#FF6B00;margin-top:4px;">
-              Lancaster, PA
-            </div>
+            <a href="https://cjfuntimerentals.com" style="display:inline-block;">
+              <img src="https://cjfuntimerentals.com/cj_funtime_logo.png" alt="CJ's Fun Time Rental" width="140" style="display:block;height:auto;margin:0 auto;">
+            </a>
           </td>
         </tr>
 
@@ -76,7 +73,8 @@ const detail = (label, value) =>
 
 
 // ── 1. Lead capture — discount code ───────────────────────────────────────────
-async function sendDiscountCode(email) {
+async function sendDiscountCode(email, code) {
+  code = code || 'FIRST10';
   const html = base(`
     ${h1('Your 10% Off<br>${orange("Code Is Here")}')}
     <p style="font-size:15px;color:rgba(255,255,255,0.6);margin:16px 0 32px;line-height:1.7;">
@@ -85,8 +83,8 @@ async function sendDiscountCode(email) {
 
     <div style="background:#1a1a1a;border:1px solid rgba(255,107,0,0.3);border-radius:10px;padding:28px;text-align:center;margin-bottom:32px;">
       <div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#FF6B00;margin-bottom:10px;">Your Discount Code</div>
-      <div style="font-family:Impact,'Arial Narrow',sans-serif;font-size:42px;letter-spacing:6px;color:#FF6B00;">FIRST10</div>
-      <div style="font-size:12px;color:#888888;margin-top:10px;">10% off your first rental &nbsp;·&nbsp; No expiry</div>
+      <div style="font-family:Impact,'Arial Narrow',sans-serif;font-size:42px;letter-spacing:6px;color:#FF6B00;">${code}</div>
+      <div style="font-size:12px;color:#888888;margin-top:10px;">10% off your first rental &nbsp;·&nbsp; Single use &nbsp;·&nbsp; No expiry</div>
     </div>
 
     <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:8px;">

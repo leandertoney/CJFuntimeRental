@@ -4,7 +4,38 @@ const express = require('express');
 const session = require('express-session');
 const path    = require('path');
 const fs      = require('fs').promises;
+const crypto  = require('crypto');
 const { sendDiscountCode, sendBookingConfirmation, sendOwnerBookingAlert, sendPickupReminder } = require('./emails');
+
+// ── Stripe (only active when key is set) ──────────────────────────────────────
+function getStripe() {
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key || key.startsWith('sk_REPLACE')) return null;
+  return require('stripe')(key);
+}
+
+async function createStripePromoCode(email) {
+  const stripe = getStripe();
+  if (!stripe) {
+    // Stripe not connected yet — return a unique random code stored locally
+    return 'FIRST10-' + crypto.randomBytes(4).toString('hex').toUpperCase();
+  }
+  // Create a unique single-use coupon + promo code tied to this customer
+  const coupon = await stripe.coupons.create({
+    percent_off:  10,
+    duration:     'once',
+    name:         '10% Off First Rental',
+    max_redemptions: 1,
+    metadata:     { email }
+  });
+  const promo = await stripe.promotionCodes.create({
+    coupon:          coupon.id,
+    max_redemptions: 1,
+    metadata:        { email },
+    code:            'FIRST10-' + crypto.randomBytes(4).toString('hex').toUpperCase()
+  });
+  return promo.code;
+}
 
 const CONFIG_PATH = path.join(__dirname, 'data', 'siteConfig.json');
 const LEADS_PATH  = path.join(__dirname, 'data', 'leads.json');
@@ -133,10 +164,17 @@ app.post('/api/leads', async (req, res) => {
   });
   await fs.writeFile(LEADS_PATH, JSON.stringify(leads, null, 2), 'utf8');
 
-  // Fire discount code email — don't block the response
-  sendDiscountCode(email.trim().toLowerCase()).catch((err) => {
-    console.error('Discount email failed:', err.message);
-  });
+  // Generate unique promo code and send discount email — don't block the response
+  createStripePromoCode(email.trim().toLowerCase())
+    .then(code => {
+      // Store code against the lead
+      leads[0].promoCode = code;
+      return fs.writeFile(LEADS_PATH, JSON.stringify(leads, null, 2), 'utf8')
+        .then(() => sendDiscountCode(email.trim().toLowerCase(), code));
+    })
+    .catch((err) => {
+      console.error('Discount email failed:', err.message);
+    });
 
   res.json({ ok: true });
 });
