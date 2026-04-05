@@ -113,6 +113,9 @@
     [1, 2, 3].forEach(function (i) {
       var panel = $('bm-panel-' + i);
       if (panel) panel.classList.toggle('active', i === n);
+      // Show/hide pinned nav row for this step
+      var nav = $('bm-nav-' + i);
+      if (nav) nav.style.display = (i === n) ? 'flex' : 'none';
     });
     // Tabs
     document.querySelectorAll('.bm-step-tab').forEach(function (tab) {
@@ -120,9 +123,9 @@
       tab.classList.toggle('active', s === n);
       tab.classList.toggle('done', s < n);
     });
-    // Scroll modal to top
-    var inner = document.querySelector('.booking-modal-inner');
-    if (inner) inner.scrollTop = 0;
+    // Scroll scrollable panel area to top
+    var scroll = document.querySelector('.bm-panel-scroll');
+    if (scroll) scroll.scrollTop = 0;
   }
 
   // ── Vehicle selection ──────────────────────────────────────────────────────
