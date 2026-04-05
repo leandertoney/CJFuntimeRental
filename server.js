@@ -231,8 +231,51 @@ app.get('/site', (req, res) => {
   res.sendFile(path.join(__dirname, 'full-site.html'));
 });
 
+// ── Landing pages ──────────────────────────────────────────────────────────────
+const landingPages = [
+  'slingshot-rental-lancaster-pa',
+  'slingshot-rental-near-york-pa',
+  'slingshot-rental-near-harrisburg-pa',
+  'slingshot-rental-near-reading-pa',
+  'can-am-spyder-rental-pa',
+  'scenic-routes-lancaster-pa',
+];
+landingPages.forEach(slug => {
+  app.get(`/${slug}`, (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache, no-store');
+    res.sendFile(path.join(__dirname, 'pages', `${slug}.html`));
+  });
+});
+
+// ── Blog ───────────────────────────────────────────────────────────────────────
+app.get('/blog', (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store');
+  res.sendFile(path.join(__dirname, 'blog', 'index.html'));
+});
+app.get('/blog/:slug', (req, res) => {
+  const slug = req.params.slug.replace(/[^a-z0-9-]/gi, '');
+  res.setHeader('Cache-Control', 'no-cache, no-store');
+  res.sendFile(path.join(__dirname, 'blog', `${slug}.html`), err => {
+    if (err) res.status(404).sendFile(path.join(__dirname, 'full-site.html'));
+  });
+});
+
 // ── Static files (serve site root last) ───────────────────────────────────────
-app.use(express.static(__dirname, { index: false, etag: false, lastModified: false, setHeaders: (res) => res.setHeader('Cache-Control', 'no-cache, no-store') }));
+app.use(express.static(__dirname, {
+  index: false,
+  etag: true,
+  lastModified: true,
+  setHeaders: (res, filePath) => {
+    const isHtml = filePath.endsWith('.html');
+    const isData = filePath.includes('/data/');
+    if (isHtml || isData) {
+      res.setHeader('Cache-Control', 'no-cache, no-store');
+    } else {
+      // Images, JS, CSS, fonts — cache for 1 week
+      res.setHeader('Cache-Control', 'public, max-age=604800, stale-while-revalidate=86400');
+    }
+  }
+}));
 
 // ── Start ──────────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
