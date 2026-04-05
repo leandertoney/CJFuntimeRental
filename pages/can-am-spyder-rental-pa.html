@@ -74,14 +74,17 @@
     .comp-card ul li { font-size:13px; color:var(--muted); padding-left:16px; position:relative; }
     .comp-card ul li::before { content:'·'; position:absolute; left:0; color:var(--orange); }
     .site-footer { padding:48px 0 32px; border-top:1px solid var(--border); }
-    .footer-inner { display:grid; grid-template-columns:1.4fr 1fr 1fr 1fr; gap:48px; padding-bottom:40px; border-bottom:1px solid var(--border); }
+    .footer-brand { display:flex; align-items:center; justify-content:space-between; padding-bottom:32px; border-bottom:1px solid var(--border); margin-bottom:32px; flex-wrap:wrap; gap:16px; }
+    .footer-logo img { height:36px; width:auto; object-fit:contain; }
+    .footer-social { display:flex; gap:16px; align-items:center; }
+    .footer-social a { display:flex; align-items:center; color:var(--muted); transition:color 0.2s; }
+    .footer-social a:hover { color:var(--white); }
+    .footer-social svg { width:20px; height:20px; fill:currentColor; }
+    .footer-inner { display:grid; grid-template-columns:1fr 1fr 1fr; gap:48px; padding-bottom:40px; border-bottom:1px solid var(--border); align-items:start; }
     .footer-col-label { font-size:10px; letter-spacing:2px; text-transform:uppercase; color:rgba(255,255,255,0.35); margin-bottom:14px; display:block; }
     .footer-nav { display:flex; flex-direction:column; gap:10px; }
     .footer-nav a { font-size:12px; color:var(--muted); transition:color 0.2s; width:fit-content; }
     .footer-nav a:hover { color:var(--white); }
-    .footer-social { display:flex; gap:16px; margin-top:16px; }
-    .footer-social a { color:var(--muted); transition:color 0.2s; }
-    .footer-social svg { width:20px; height:20px; fill:currentColor; }
     .footer-bottom { display:flex; justify-content:space-between; align-items:center; padding-top:20px; flex-wrap:wrap; gap:8px; }
     .footer-copy { font-size:11px; color:rgba(255,255,255,0.35); }
     .footer-built { font-size:11px; }
@@ -218,16 +221,19 @@
 
   <footer class="site-footer">
     <div class="container">
-      <div class="footer-inner">
-        <div>
-          <a href="/"><img src="/cj_funtime_logo.png" alt="CJ's Fun Time Rental" style="height:40px;margin-bottom:12px;"></a>
-          <p style="font-size:12px;color:var(--muted);line-height:1.7;">Polaris Slingshot &amp; Can-Am Spyder rentals in Lancaster, PA. No motorcycle license required.</p>
-          <div class="footer-social">
-            <a href="https://www.facebook.com/people/CJs-Fun-Time-Rental/61575102921796/" target="_blank" rel="noopener" aria-label="Facebook"><svg viewBox="0 0 24 24"><path d="M24 12.073C24 5.406 18.627 0 12 0S0 5.406 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047v-2.66c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.235 2.686.235v2.97h-1.513c-1.491 0-1.956.93-1.956 1.874v2.278h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/></svg></a>
-            <a href="https://www.instagram.com/cjsfuntimerentals/" target="_blank" rel="noopener" aria-label="Instagram"><svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg></a>
-          </div>
+      <div class="footer-brand">
+        <a href="/" class="footer-logo"><img src="/cj_funtime_logo.png" alt="CJ's Fun Time Rental"></a>
+        <div class="footer-social">
+          <a href="https://www.facebook.com/people/CJs-Fun-Time-Rental/61575102921796/" target="_blank" rel="noopener" aria-label="Facebook">
+            <svg viewBox="0 0 24 24"><path d="M24 12.073C24 5.406 18.627 0 12 0S0 5.406 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047v-2.66c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.235 2.686.235v2.97h-1.513c-1.491 0-1.956.93-1.956 1.874v2.278h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/></svg>
+          </a>
+          <a href="https://www.instagram.com/cjsfuntimerentals/" target="_blank" rel="noopener" aria-label="Instagram">
+            <svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+          </a>
         </div>
-        <div>
+      </div>
+      <div class="footer-inner">
+        <div class="footer-col">
           <span class="footer-col-label">Site</span>
           <nav class="footer-nav">
             <a href="/#fleet">Our Fleet</a>
@@ -237,28 +243,29 @@
             <a href="/#book">Book Now</a>
           </nav>
         </div>
-        <div>
+        <div class="footer-col">
           <span class="footer-col-label">Locations</span>
           <nav class="footer-nav">
             <a href="/slingshot-rental-lancaster-pa">Lancaster, PA</a>
             <a href="/slingshot-rental-near-york-pa">Near York, PA</a>
             <a href="/slingshot-rental-near-harrisburg-pa">Near Harrisburg, PA</a>
             <a href="/slingshot-rental-near-reading-pa">Near Reading, PA</a>
-            <a href="/can-am-spyder-rental-pa">Can-Am Spyder PA</a>
+            <a href="/can-am-spyder-rental-pa">Can-Am Spyder Rental, PA</a>
           </nav>
         </div>
-        <div>
+        <div class="footer-col">
           <span class="footer-col-label">Rides &amp; Routes</span>
           <nav class="footer-nav">
             <a href="/scenic-routes-lancaster-pa">Scenic Routes from Lancaster</a>
             <a href="/blog/best-scenic-drives-lancaster-pa">Best Drives in Central PA</a>
             <a href="/blog/do-you-need-motorcycle-license-polaris-slingshot-pa">PA License Guide</a>
             <a href="/blog/polaris-slingshot-vs-can-am-spyder">Slingshot vs Can-Am Spyder</a>
+            <a href="/blog/what-is-a-polaris-slingshot">What Is a Polaris Slingshot?</a>
           </nav>
         </div>
       </div>
       <div class="footer-bottom">
-        <p class="footer-copy">&copy; 2025 CJ's Fun Time Rental · Lancaster, PA</p>
+        <p class="footer-copy">&copy; 2025 CJ's Fun Time Rental &nbsp;&middot;&nbsp; Lancaster, PA</p>
         <p class="footer-built">Built by <a href="https://universoleappstudios.com" target="_blank" rel="noopener">UNIVERSOLE APP STUDIOS</a></p>
       </div>
     </div>

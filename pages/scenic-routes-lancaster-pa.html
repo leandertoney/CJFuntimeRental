@@ -54,6 +54,34 @@
     .lp-hero p { font-size:16px; color:var(--muted); max-width:600px; line-height:1.75; margin-bottom:32px; }
     .lp-hero-actions { display:flex; gap:16px; flex-wrap:wrap; }
 
+    /* COVER GRID */
+    .covers-section { padding:64px 0; border-bottom:1px solid var(--border); }
+    .covers-section h2 { font-family:var(--heading); font-size:clamp(1.6rem,3vw,2.2rem); letter-spacing:3px; margin-bottom:8px; }
+    .covers-section > .container > p { font-size:13px; color:var(--muted); margin-bottom:36px; }
+    .covers-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+    .cover-card { position:relative; border-radius:12px; overflow:hidden; aspect-ratio:3/4; cursor:pointer; text-decoration:none; display:block; }
+    .cover-card img { width:100%; height:100%; object-fit:cover; display:block; transition:transform 0.4s ease; }
+    .cover-card:hover img { transform:scale(1.04); }
+    .cover-card-overlay { position:absolute; inset:0; background:linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0) 100%); }
+    /* Watermark logos — top-left and bottom-right */
+    .cover-card-logo-tl,
+    .cover-card-logo-br { position:absolute; width:72px; height:72px; overflow:hidden; pointer-events:none; z-index:2; opacity:0.4; }
+    .cover-card-logo-tl { top:10px; left:10px; }
+    .cover-card-logo-br { bottom:10px; right:10px; }
+    .cover-card-logo-tl img,
+    .cover-card-logo-br img { width:100%; height:100%; object-fit:contain; display:block; }
+    /* Top strip: number only */
+    .cover-card-top { position:absolute; top:0; left:0; right:0; display:flex; justify-content:flex-end; align-items:flex-start; padding:16px 18px; }
+    .cover-card-num { font-family:var(--heading); font-size:1.1rem; letter-spacing:3px; color:rgba(255,255,255,0.35); }
+    /* Bottom strip: tag + title + stats + cta — always pinned to bottom */
+    .cover-card-bottom { position:absolute; bottom:0; left:0; right:0; padding:16px 18px 18px; }
+    .cover-card-tag { font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--orange); margin-bottom:5px; display:block; }
+    .cover-card-title { font-family:var(--heading); font-size:1.05rem; letter-spacing:2px; line-height:1.2; color:var(--white); margin-bottom:8px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+    .cover-card-stats { display:flex; gap:12px; margin-bottom:10px; }
+    .cover-stat { font-size:10px; color:rgba(255,255,255,0.55); }
+    .cover-stat strong { display:block; font-family:var(--heading); font-size:0.95rem; letter-spacing:1px; color:var(--white); }
+    .cover-download-hint { display:flex; align-items:center; gap:5px; font-size:10px; letter-spacing:1px; text-transform:uppercase; color:rgba(255,107,0,0.9); }
+
     /* ROUTE CARDS */
     .routes-grid { display:flex; flex-direction:column; gap:0; }
     .route-card { padding:56px 0; border-bottom:1px solid var(--border); }
@@ -87,20 +115,38 @@
 
     /* FOOTER */
     .site-footer { padding:48px 0 32px; border-top:1px solid var(--border); }
-    .footer-inner { display:grid; grid-template-columns:1.4fr 1fr 1fr 1fr; gap:48px; padding-bottom:40px; border-bottom:1px solid var(--border); }
+    .footer-brand { display:flex; align-items:center; justify-content:space-between; padding-bottom:32px; border-bottom:1px solid var(--border); margin-bottom:32px; flex-wrap:wrap; gap:16px; }
+    .footer-logo img { height:36px; width:auto; object-fit:contain; }
+    .footer-social { display:flex; gap:16px; align-items:center; }
+    .footer-social a { display:flex; align-items:center; color:var(--muted); transition:color 0.2s; }
+    .footer-social a:hover { color:var(--white); }
+    .footer-social svg { width:20px; height:20px; fill:currentColor; }
+    .footer-inner { display:grid; grid-template-columns:1fr 1fr 1fr; gap:48px; padding-bottom:40px; border-bottom:1px solid var(--border); align-items:start; }
     .footer-col-label { font-size:10px; letter-spacing:2px; text-transform:uppercase; color:rgba(255,255,255,0.35); margin-bottom:14px; display:block; }
     .footer-nav { display:flex; flex-direction:column; gap:10px; }
     .footer-nav a { font-size:12px; color:var(--muted); transition:color 0.2s; width:fit-content; }
     .footer-nav a:hover { color:var(--white); }
-    .footer-social { display:flex; gap:16px; margin-top:16px; }
-    .footer-social a { color:var(--muted); transition:color 0.2s; }
-    .footer-social svg { width:20px; height:20px; fill:currentColor; }
     .footer-bottom { display:flex; justify-content:space-between; align-items:center; padding-top:20px; flex-wrap:wrap; gap:8px; }
     .footer-copy { font-size:11px; color:rgba(255,255,255,0.35); }
     .footer-built { font-size:11px; }
     .footer-built a { color:var(--orange); }
-    @media(max-width:900px) { .route-body{grid-template-columns:1fr;} .route-stats{gap:20px;} .route-stat{text-align:left;} }
-    @media(max-width:768px) { .footer-inner{grid-template-columns:1fr 1fr;gap:32px;} .nav-links{display:none;} .route-header{flex-direction:column;gap:16px;} .cta-strip{flex-direction:column;text-align:center;} }
+    /* ROUTE MODAL */
+    .route-modal-backdrop { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:200; overflow-y:auto; padding:40px 20px; }
+    .route-modal-backdrop.open { display:block; }
+    .route-modal { background:var(--surface); border:1px solid var(--border); border-radius:16px; max-width:820px; margin:0 auto; overflow:hidden; position:relative; }
+    .route-modal-img { width:100%; height:280px; object-fit:cover; display:block; }
+    .route-modal-body { padding:36px 40px 40px; }
+    .route-modal-close { position:absolute; top:16px; right:16px; background:rgba(0,0,0,0.6); border:none; color:var(--white); width:36px; height:36px; border-radius:50%; font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; line-height:1; z-index:10; }
+    .route-modal-close:hover { background:rgba(0,0,0,0.9); }
+    .route-modal-tag { font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--orange); margin-bottom:10px; display:block; }
+    .route-modal-title { font-family:var(--heading); font-size:clamp(1.6rem,3vw,2.2rem); letter-spacing:3px; line-height:1.1; margin-bottom:20px; }
+    .route-modal-stats { display:flex; gap:32px; flex-wrap:wrap; margin-bottom:28px; padding-bottom:24px; border-bottom:1px solid var(--border); }
+    .route-modal-stat-num { font-family:var(--heading); font-size:1.5rem; letter-spacing:2px; color:var(--white); display:block; }
+    .route-modal-stat-label { font-size:10px; letter-spacing:1px; text-transform:uppercase; color:var(--muted); }
+    .route-modal-content { display:grid; grid-template-columns:1fr 1fr; gap:32px; }
+    .route-modal-actions { display:flex; gap:12px; flex-wrap:wrap; margin-top:28px; padding-top:24px; border-top:1px solid var(--border); }
+    @media(max-width:900px) { .route-body{grid-template-columns:1fr;} .route-modal-content{grid-template-columns:1fr;} }
+    @media(max-width:768px) { .footer-inner{grid-template-columns:1fr 1fr;gap:32px;} .nav-links{display:none;} .cta-strip{flex-direction:column;text-align:center;} .route-modal-body{padding:24px;} }
     @media(max-width:480px) { .footer-inner{grid-template-columns:1fr;} }
   </style>
 </head>
@@ -131,354 +177,147 @@
     </div>
   </section>
 
-  <div class="container">
-    <div class="routes-grid">
+  <!-- COVER GRID -->
+  <section class="covers-section">
+    <div class="container">
+      <h2>Route Guides</h2>
+      <p>Click any cover to see the full route — directions, highlights, and a downloadable guide.</p>
+      <div class="covers-grid">
 
-      <!-- ROUTE 1 -->
-      <div class="route-card">
-        <div class="route-header">
-          <div style="display:flex;align-items:flex-start;gap:20px;flex:1;">
-            <div class="route-number">01</div>
-            <div class="route-title-block">
-              <span class="route-tag">River Loop · Half Day</span>
-              <h2>Lancaster to Holtwood &amp; Susquehanna Loop</h2>
+        <a class="cover-card" href="#" data-route="holtwood">
+          <img src="/public/routes/holtwood-susquehanna-loop.jpg" alt="Holtwood Susquehanna Loop route guide">
+          <div class="cover-card-overlay"></div>
+          <div class="cover-card-logo-tl"><img src="/cj_funtime_logo.png" alt=""></div>
+          <div class="cover-card-logo-br"><img src="/cj_funtime_logo.png" alt=""></div>
+            <div class="cover-card-top">
+              <span class="cover-card-num">01</span>
             </div>
-          </div>
-          <div class="route-stats">
-            <div class="route-stat">
-              <div class="route-stat-num">~55</div>
-              <div class="route-stat-label">Miles</div>
+            <div class="cover-card-bottom">
+              <span class="cover-card-tag">River Loop · Half Day</span>
+              <div class="cover-card-title">Holtwood &amp; Susquehanna Loop</div>
+              <div class="cover-card-stats">
+                <div class="cover-stat"><strong>~55 mi</strong>Distance</div>
+                <div class="cover-stat"><strong>2–3 hrs</strong>Total Time</div>
+              </div>
+              <div class="cover-download-hint">→ View Route</div>
             </div>
-            <div class="route-stat">
-              <div class="route-stat-num">2–3 hrs</div>
-              <div class="route-stat-label">Total Time</div>
+        </a>
+
+        <a class="cover-card" href="#" data-route="amish">
+          <img src="/public/routes/amish-country-route-340.jpg" alt="Amish Country Route 340 guide">
+          <div class="cover-card-overlay"></div>
+          <div class="cover-card-logo-tl"><img src="/cj_funtime_logo.png" alt=""></div>
+          <div class="cover-card-logo-br"><img src="/cj_funtime_logo.png" alt=""></div>
+            <div class="cover-card-top">
+              <span class="cover-card-num">02</span>
             </div>
-          </div>
-        </div>
-        <div class="route-body">
-          <div class="route-desc">
-            <p>This is the locals' favorite. You drop south out of Lancaster toward the Susquehanna River and follow it through some of the most dramatic gorge scenery in the county. The road narrows, the tree canopy closes in, and by the time you reach Holtwood Dam you've left the city behind completely.</p>
-            <p>The Holtwood section runs along the river on River Road — a twisting, tree-lined stretch that hugs the bank of the Susquehanna. There are overlooks, a nature preserve, and almost no traffic mid-week. Coming back north through Safe Harbor and Columbia closes the loop on a high note: the Columbia-Wrightsville bridge over the river is one of the most iconic crossings in Central PA.</p>
-            <p>This ride is best done in the late morning to catch the light on the river. Pack a stop at the Holtwood overlook — it's one of the best views in Lancaster County.</p>
-          </div>
-          <div class="route-details">
-            <div class="route-detail-row">
-              <span class="route-detail-label">Route</span>
-              <span class="route-detail-value">Lancaster → PA-324 South → River Road → Holtwood → Safe Harbor → PA-441 North → Columbia → PA-462 East → Lancaster</span>
+            <div class="cover-card-bottom">
+              <span class="cover-card-tag">Amish Country · Half Day</span>
+              <div class="cover-card-title">Amish Country Back Roads — Route 340</div>
+              <div class="cover-card-stats">
+                <div class="cover-stat"><strong>~50 mi</strong>Distance</div>
+                <div class="cover-stat"><strong>2 hrs</strong>Total Time</div>
+              </div>
+              <div class="cover-download-hint">→ View Route</div>
             </div>
-            <div class="route-detail-row">
-              <span class="route-detail-label">Distance</span>
-              <span class="route-detail-value">~55 miles round trip</span>
+        </a>
+
+        <a class="cover-card" href="#" data-route="conestoga">
+          <img src="/public/routes/conestoga-run.jpg" alt="Conestoga Run route guide">
+          <div class="cover-card-overlay"></div>
+          <div class="cover-card-logo-tl"><img src="/cj_funtime_logo.png" alt=""></div>
+          <div class="cover-card-logo-br"><img src="/cj_funtime_logo.png" alt=""></div>
+            <div class="cover-card-top">
+              <span class="cover-card-num">03</span>
             </div>
-            <div class="route-detail-row">
-              <span class="route-detail-label">Drive Time</span>
-              <span class="route-detail-value">2–3 hours with stops</span>
+            <div class="cover-card-bottom">
+              <span class="cover-card-tag">Creek Ride · Half Day</span>
+              <div class="cover-card-title">Conestoga Run</div>
+              <div class="cover-card-stats">
+                <div class="cover-stat"><strong>~40 mi</strong>Distance</div>
+                <div class="cover-stat"><strong>1.5–2 hrs</strong>Total Time</div>
+              </div>
+              <div class="cover-download-hint">→ View Route</div>
             </div>
-            <div class="route-detail-row">
-              <span class="route-detail-label">Best For</span>
-              <span class="route-detail-value">River scenery, gorge roads, wildlife, half-day ride</span>
+        </a>
+
+        <a class="cover-card" href="#" data-route="wrightsville">
+          <img src="/public/routes/wrightsville-columbia-cross-ride.jpg" alt="Wrightsville Columbia Cross Ride guide">
+          <div class="cover-card-overlay"></div>
+          <div class="cover-card-logo-tl"><img src="/cj_funtime_logo.png" alt=""></div>
+          <div class="cover-card-logo-br"><img src="/cj_funtime_logo.png" alt=""></div>
+            <div class="cover-card-top">
+              <span class="cover-card-num">04</span>
             </div>
-            <div class="route-highlights">
-              <h4>Highlights</h4>
-              <ul class="highlight-list">
-                <li>Holtwood Dam overlook — Susquehanna gorge views</li>
-                <li>River Road — narrow, winding, tree-lined</li>
-                <li>Safe Harbor marina and boat launch</li>
-                <li>Columbia-Wrightsville bridge crossing</li>
-              </ul>
+            <div class="cover-card-bottom">
+              <span class="cover-card-tag">Cross-County · Half Day</span>
+              <div class="cover-card-title">Wrightsville–Columbia–York County Cross Ride</div>
+              <div class="cover-card-stats">
+                <div class="cover-stat"><strong>~65 mi</strong>Distance</div>
+                <div class="cover-stat"><strong>2.5–3 hrs</strong>Total Time</div>
+              </div>
+              <div class="cover-download-hint">→ View Route</div>
             </div>
-          </div>
-        </div>
+        </a>
+
+        <a class="cover-card" href="#" data-route="fulllancaster">
+          <img src="/public/routes/full-lancaster-county-loop.jpg" alt="Full Lancaster County Loop route guide">
+          <div class="cover-card-overlay"></div>
+          <div class="cover-card-logo-tl"><img src="/cj_funtime_logo.png" alt=""></div>
+          <div class="cover-card-logo-br"><img src="/cj_funtime_logo.png" alt=""></div>
+            <div class="cover-card-top">
+              <span class="cover-card-num">05</span>
+            </div>
+            <div class="cover-card-bottom">
+              <span class="cover-card-tag">Full County Loop · Full Day</span>
+              <div class="cover-card-title">Full Lancaster County Loop</div>
+              <div class="cover-card-stats">
+                <div class="cover-stat"><strong>~110 mi</strong>Distance</div>
+                <div class="cover-stat"><strong>4–5 hrs</strong>Total Time</div>
+              </div>
+              <div class="cover-download-hint">→ View Route</div>
+            </div>
+        </a>
+
+        <a class="cover-card" href="#" data-route="coveredbridge">
+          <img src="/public/routes/covered-bridge-north-loop.jpg" alt="Covered Bridge North Loop route guide">
+          <div class="cover-card-overlay"></div>
+          <div class="cover-card-logo-tl"><img src="/cj_funtime_logo.png" alt=""></div>
+          <div class="cover-card-logo-br"><img src="/cj_funtime_logo.png" alt=""></div>
+            <div class="cover-card-top">
+              <span class="cover-card-num">06</span>
+            </div>
+            <div class="cover-card-bottom">
+              <span class="cover-card-tag">Covered Bridge Ride · Half Day</span>
+              <div class="cover-card-title">Lancaster North Loop — Lititz &amp; Covered Bridges</div>
+              <div class="cover-card-stats">
+                <div class="cover-stat"><strong>~45 mi</strong>Distance</div>
+                <div class="cover-stat"><strong>2 hrs</strong>Total Time</div>
+              </div>
+              <div class="cover-download-hint">→ View Route</div>
+            </div>
+        </a>
+
       </div>
+    </div>
+  </section>
 
-      <!-- ROUTE 2 -->
-      <div class="route-card">
-        <div class="route-header">
-          <div style="display:flex;align-items:flex-start;gap:20px;flex:1;">
-            <div class="route-number">02</div>
-            <div class="route-title-block">
-              <span class="route-tag">Amish Country · Half Day</span>
-              <h2>Amish Country Back Roads — Route 340 &amp; Columbia River Road</h2>
-            </div>
-          </div>
-          <div class="route-stats">
-            <div class="route-stat">
-              <div class="route-stat-num">~50</div>
-              <div class="route-stat-label">Miles</div>
-            </div>
-            <div class="route-stat">
-              <div class="route-stat-num">2 hrs</div>
-              <div class="route-stat-label">Total Time</div>
-            </div>
-          </div>
-        </div>
-        <div class="route-body">
-          <div class="route-desc">
-            <p>Route 340 — "Old Philadelphia Pike" — is the spine of Lancaster County's Amish Country. It runs east-west through the heart of the county connecting Bird-in-Hand, Intercourse, and Smoketown. Horse-drawn buggies share the road on weekends, so this one is more about the scenery and pace than the speed.</p>
-            <p>The best version of this loop adds the Columbia River Road portion on the way back: head west toward Columbia on PA-462, then drop down to the river for a stretch before completing the loop. You get farmland going out, river coming back — two completely different landscapes in under 50 miles.</p>
-            <p>Stop at one of the farm stands along Route 340 for fresh produce and baked goods. The Intercourse area has multiple stands and a market — good midpoint break before you continue west.</p>
-          </div>
-          <div class="route-details">
-            <div class="route-detail-row">
-              <span class="route-detail-label">Route</span>
-              <span class="route-detail-value">Lancaster → PA-340 East → Bird-in-Hand → Intercourse → PA-772 West → Leola → PA-23 West → Columbia → River Road South → PA-462 East → Lancaster</span>
-            </div>
-            <div class="route-detail-row">
-              <span class="route-detail-label">Distance</span>
-              <span class="route-detail-value">~50 miles</span>
-            </div>
-            <div class="route-detail-row">
-              <span class="route-detail-label">Drive Time</span>
-              <span class="route-detail-value">2 hours with stops</span>
-            </div>
-            <div class="route-detail-row">
-              <span class="route-detail-label">Best For</span>
-              <span class="route-detail-value">Amish Country scenery, farm stands, first-time riders</span>
-            </div>
-            <div class="route-highlights">
-              <h4>Highlights</h4>
-              <ul class="highlight-list">
-                <li>Route 340 Amish farmland — buggies, barns, and open fields</li>
-                <li>Bird-in-Hand Farmers Market (Tues, Fri, Sat)</li>
-                <li>Intercourse roadside stands and baked goods</li>
-                <li>Columbia-Wrightsville bridge river crossing</li>
-              </ul>
-            </div>
-          </div>
-        </div>
+  <!-- ROUTE MODAL -->
+  <div class="route-modal-backdrop" id="routeModal">
+    <div class="route-modal">
+      <button class="route-modal-close" id="modalClose">&#x2715;</button>
+      <img class="route-modal-img" id="modalImg" src="" alt="">
+      <div class="route-modal-body">
+        <span class="route-modal-tag" id="modalTag"></span>
+        <div class="route-modal-title" id="modalTitle"></div>
+        <div class="route-modal-stats" id="modalStats"></div>
+        <div class="route-modal-content" id="modalContent"></div>
+        <div class="route-modal-actions" id="modalActions"></div>
       </div>
+    </div>
+  </div>
 
-      <!-- ROUTE 3 -->
-      <div class="route-card">
-        <div class="route-header">
-          <div style="display:flex;align-items:flex-start;gap:20px;flex:1;">
-            <div class="route-number">03</div>
-            <div class="route-title-block">
-              <span class="route-tag">Creek Ride · Half Day</span>
-              <h2>Conestoga Run</h2>
-            </div>
-          </div>
-          <div class="route-stats">
-            <div class="route-stat">
-              <div class="route-stat-num">~40</div>
-              <div class="route-stat-label">Miles</div>
-            </div>
-            <div class="route-stat">
-              <div class="route-stat-num">1.5–2 hrs</div>
-              <div class="route-stat-label">Total Time</div>
-            </div>
-          </div>
-        </div>
-        <div class="route-body">
-          <div class="route-desc">
-            <p>The Conestoga Run is a local gem — a ride that follows the Conestoga River south and west from Lancaster through some of the county's most wooded and rural terrain. It's a route that locals do on motorcycles and rarely gets the attention it deserves from visiting riders.</p>
-            <p>The road hugs the creek for much of the run, alternating between tight tree-lined stretches and open river flats. The southern section toward Martic Forge and Pequea is particularly good — forested, quiet, and completely off the tourist circuit. This is the anti-Route 340: fewer buggies, fewer cars, and more road to yourself.</p>
-            <p>This one pairs well with the Holtwood loop — start with the Conestoga Run heading south, then swing east along the river to Holtwood for a longer half-day combination ride.</p>
-          </div>
-          <div class="route-details">
-            <div class="route-detail-row">
-              <span class="route-detail-label">Route</span>
-              <span class="route-detail-value">Lancaster → PA-324 South → Conestoga Road → Martic Forge → Pequea → Conestoga → PA-324 North → Lancaster</span>
-            </div>
-            <div class="route-detail-row">
-              <span class="route-detail-label">Distance</span>
-              <span class="route-detail-value">~40 miles</span>
-            </div>
-            <div class="route-detail-row">
-              <span class="route-detail-label">Drive Time</span>
-              <span class="route-detail-value">1.5–2 hours</span>
-            </div>
-            <div class="route-detail-row">
-              <span class="route-detail-label">Best For</span>
-              <span class="route-detail-value">Wooded back roads, off the tourist path, creek views</span>
-            </div>
-            <div class="route-highlights">
-              <h4>Highlights</h4>
-              <ul class="highlight-list">
-                <li>Conestoga River road sections — tree canopy, quiet roads</li>
-                <li>Martic Forge historic area</li>
-                <li>Pequea — small river community, scenic overlook</li>
-                <li>Pairs well with the Holtwood loop</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ROUTE 4 -->
-      <div class="route-card">
-        <div class="route-header">
-          <div style="display:flex;align-items:flex-start;gap:20px;flex:1;">
-            <div class="route-number">04</div>
-            <div class="route-title-block">
-              <span class="route-tag">Cross-County · Half Day</span>
-              <h2>Wrightsville–Columbia–York County Cross Ride</h2>
-            </div>
-          </div>
-          <div class="route-stats">
-            <div class="route-stat">
-              <div class="route-stat-num">~65</div>
-              <div class="route-stat-label">Miles</div>
-            </div>
-            <div class="route-stat">
-              <div class="route-stat-num">2.5–3 hrs</div>
-              <div class="route-stat-label">Total Time</div>
-            </div>
-          </div>
-        </div>
-        <div class="route-body">
-          <div class="route-desc">
-            <p>This route crosses the Susquehanna into York County, giving you a real taste of two counties in a single ride. Head west from Lancaster along the river road to Columbia, cross the bridge into Wrightsville, then explore the back roads of eastern York County before looping back.</p>
-            <p>York County's eastern townships — Hellam, Wrightsville, York Haven — are almost entirely devoid of tourist traffic and have excellent riding roads. Rolling hills, farm fields, and small river towns that haven't changed much in 50 years. The ride back across the Susquehanna at dusk is one of the better views in Central PA.</p>
-            <p>This is a great route if you want to extend your ride beyond Lancaster County without committing to a multi-hour highway run. It keeps you on two-lane roads the whole way.</p>
-          </div>
-          <div class="route-details">
-            <div class="route-detail-row">
-              <span class="route-detail-label">Route</span>
-              <span class="route-detail-value">Lancaster → PA-462 West → Columbia → Bridge to Wrightsville → PA-462 West → Hellam → York Haven → PA-83 South → Red Lion → PA-372 East → Peach Bottom → PA-372 East back toward Lancaster</span>
-            </div>
-            <div class="route-detail-row">
-              <span class="route-detail-label">Distance</span>
-              <span class="route-detail-value">~65 miles</span>
-            </div>
-            <div class="route-detail-row">
-              <span class="route-detail-label">Drive Time</span>
-              <span class="route-detail-value">2.5–3 hours with stops</span>
-            </div>
-            <div class="route-detail-row">
-              <span class="route-detail-label">Best For</span>
-              <span class="route-detail-value">Two-county exploration, river crossings, back-road variety</span>
-            </div>
-            <div class="route-highlights">
-              <h4>Highlights</h4>
-              <ul class="highlight-list">
-                <li>Columbia-Wrightsville Susquehanna bridge crossing</li>
-                <li>Eastern York County back roads — low traffic</li>
-                <li>York Haven and the lower river communities</li>
-                <li>Peach Bottom nuclear plant overlook on the river</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ROUTE 5 -->
-      <div class="route-card">
-        <div class="route-header">
-          <div style="display:flex;align-items:flex-start;gap:20px;flex:1;">
-            <div class="route-number">05</div>
-            <div class="route-title-block">
-              <span class="route-tag">Full County Loop · Full Day</span>
-              <h2>Full Lancaster County Loop — Ephrata · Parkesburg · Holtwood · Marietta · Back</h2>
-            </div>
-          </div>
-          <div class="route-stats">
-            <div class="route-stat">
-              <div class="route-stat-num">~110</div>
-              <div class="route-stat-label">Miles</div>
-            </div>
-            <div class="route-stat">
-              <div class="route-stat-num">4–5 hrs</div>
-              <div class="route-stat-label">Total Time</div>
-            </div>
-          </div>
-        </div>
-        <div class="route-body">
-          <div class="route-desc">
-            <p>This is the big one — a full loop around Lancaster County that hits every terrain type: northern farmland, eastern Amish Country, southern river gorge, and western river towns. At 110 miles, it uses about a sixth of your 600-mile allowance and takes the better part of a day.</p>
-            <p>Starting north through Ephrata and Akron, you pass through some of the most productive farmland in the county before swinging east toward Parkesburg and Coatesville in Chester County. The southern leg drops into the Susquehanna gorge near Holtwood — the same section as Route 1 above, but approached from the east. Then you follow the river north through Marietta, one of the most well-preserved river towns in PA, and back into Lancaster to close the loop.</p>
-            <p>Plan for lunch in Marietta or along the river. This is the best full-day ride from Lancaster — and it rarely disappoints in any season. Fall color in October makes this route exceptional.</p>
-          </div>
-          <div class="route-details">
-            <div class="route-detail-row">
-              <span class="route-detail-label">Route</span>
-              <span class="route-detail-value">Lancaster → PA-272 North → Ephrata → Akron → PA-322 East → Parkesburg → PA-372 West → Quarryville → PA-272 South → Holtwood → River Road North → Safe Harbor → PA-441 North → Marietta → PA-23 East → Lancaster</span>
-            </div>
-            <div class="route-detail-row">
-              <span class="route-detail-label">Distance</span>
-              <span class="route-detail-value">~110 miles</span>
-            </div>
-            <div class="route-detail-row">
-              <span class="route-detail-label">Drive Time</span>
-              <span class="route-detail-value">4–5 hours with stops</span>
-            </div>
-            <div class="route-detail-row">
-              <span class="route-detail-label">Best For</span>
-              <span class="route-detail-value">Full-day riders, all-terrain variety, fall foliage season</span>
-            </div>
-            <div class="route-highlights">
-              <h4>Highlights</h4>
-              <ul class="highlight-list">
-                <li>Ephrata Cloister historic site (optional stop)</li>
-                <li>Holtwood Dam and Susquehanna gorge</li>
-                <li>Marietta — historic river town, great lunch stop</li>
-                <li>Covers all four quadrants of Lancaster County</li>
-                <li>Best in October for fall color</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ROUTE 6 -->
-      <div class="route-card">
-        <div class="route-header">
-          <div style="display:flex;align-items:flex-start;gap:20px;flex:1;">
-            <div class="route-number">06</div>
-            <div class="route-title-block">
-              <span class="route-tag">Covered Bridge Ride · Half Day</span>
-              <h2>Lancaster North Loop — Lititz &amp; Covered Bridge Back Roads</h2>
-            </div>
-          </div>
-          <div class="route-stats">
-            <div class="route-stat">
-              <div class="route-stat-num">~45</div>
-              <div class="route-stat-label">Miles</div>
-            </div>
-            <div class="route-stat">
-              <div class="route-stat-num">2 hrs</div>
-              <div class="route-stat-label">Total Time</div>
-            </div>
-          </div>
-        </div>
-        <div class="route-body">
-          <div class="route-desc">
-            <p>Lancaster County has more covered bridges than any other county in Pennsylvania — 29 at last count. The Northern Loop concentrates the highest density of them in a 45-mile circuit through Lititz, Rothsville, and the back roads of northern Lancaster County.</p>
-            <p>Lititz itself is worth a stop — it consistently ranks as one of Pennsylvania's coolest small towns. The downtown has a craft brewery, the world's only pretzel museum, and Sturgis Pretzel House (the oldest in America). From Lititz, the route continues north and east through covered bridge country on smaller township roads.</p>
-            <p>The bridges on this route include the Pinetown, Bucher's Mill, and Hunsecker Mill covered bridges — all single-lane wooden structures that date back to the 1800s. Some are open to traffic, some are pedestrian-only. The roads connecting them are the real reward: quiet, tree-shaded, and empty.</p>
-          </div>
-          <div class="route-details">
-            <div class="route-detail-row">
-              <span class="route-detail-label">Route</span>
-              <span class="route-detail-value">Lancaster → PA-501 North → Lititz → PA-772 East → Rothsville → Newport Road North → Covered Bridge Road → Hunsecker Road → PA-272 South → Lancaster</span>
-            </div>
-            <div class="route-detail-row">
-              <span class="route-detail-label">Distance</span>
-              <span class="route-detail-value">~45 miles</span>
-            </div>
-            <div class="route-detail-row">
-              <span class="route-detail-label">Drive Time</span>
-              <span class="route-detail-value">2 hours with stops</span>
-            </div>
-            <div class="route-detail-row">
-              <span class="route-detail-label">Best For</span>
-              <span class="route-detail-value">Covered bridge enthusiasts, small-town stops, photo opportunities</span>
-            </div>
-            <div class="route-highlights">
-              <h4>Highlights</h4>
-              <ul class="highlight-list">
-                <li>Lititz — craft brewery, Sturgis Pretzel House, walkable downtown</li>
-                <li>Pinetown Covered Bridge — over Muddy Creek</li>
-                <li>Hunsecker Mill Covered Bridge — one of the most photographed in PA</li>
-                <li>Northern Lancaster County township roads — quiet, tree-lined</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </div>
-
-    </div><!-- /routes-grid -->
-
+  <div class="container" style="padding-top:64px;padding-bottom:64px;">
     <!-- CTA STRIP -->
     <div class="cta-strip">
       <div>
@@ -487,21 +326,100 @@
       </div>
       <a href="/#book" class="btn btn-primary" style="font-size:15px;padding:15px 32px;white-space:nowrap;">Book Your Ride →</a>
     </div>
+  </div>
 
-  </div><!-- /container -->
+  <!-- HIDDEN ROUTE DATA (used by modal JS) -->
+  <div id="routeData" style="display:none">
+
+    <div data-id="holtwood">
+      <span data-tag>River Loop · Half Day</span>
+      <span data-title>Lancaster to Holtwood &amp; Susquehanna Loop</span>
+      <span data-img>/public/routes/holtwood-susquehanna-loop.jpg</span>
+      <span data-imgalt>Susquehanna River gorge at Holtwood, Lancaster County</span>
+      <span data-dlname>CJs-Holtwood-Susquehanna-Loop.jpg</span>
+      <span data-miles>~55 mi</span>
+      <span data-time>2–3 hrs</span>
+      <div data-desc><p>This is the locals' favorite. You drop south out of Lancaster toward the Susquehanna River and follow it through some of the most dramatic gorge scenery in the county. The road narrows, the tree canopy closes in, and by the time you reach Holtwood Dam you've left the city behind completely.</p><p>The Holtwood section runs along the river on River Road — a twisting, tree-lined stretch that hugs the bank of the Susquehanna. There are overlooks, a nature preserve, and almost no traffic mid-week. Coming back north through Safe Harbor and Columbia closes the loop on a high note: the Columbia-Wrightsville bridge over the river is one of the most iconic crossings in Central PA.</p><p>This ride is best done in the late morning to catch the light on the river. Pack a stop at the Holtwood overlook — it's one of the best views in Lancaster County.</p></div>
+      <div data-details><div class="route-detail-row"><span class="route-detail-label">Route</span><span class="route-detail-value">Lancaster → PA-324 South → River Road → Holtwood → Safe Harbor → PA-441 North → Columbia → PA-462 East → Lancaster</span></div><div class="route-detail-row"><span class="route-detail-label">Distance</span><span class="route-detail-value">~55 miles round trip</span></div><div class="route-detail-row"><span class="route-detail-label">Drive Time</span><span class="route-detail-value">2–3 hours with stops</span></div><div class="route-detail-row"><span class="route-detail-label">Best For</span><span class="route-detail-value">River scenery, gorge roads, wildlife, half-day ride</span></div><div class="route-highlights"><h4>Highlights</h4><ul class="highlight-list"><li>Holtwood Dam overlook — Susquehanna gorge views</li><li>River Road — narrow, winding, tree-lined</li><li>Safe Harbor marina and boat launch</li><li>Columbia-Wrightsville bridge crossing</li></ul></div></div>
+    </div>
+
+    <div data-id="amish">
+      <span data-tag>Amish Country · Half Day</span>
+      <span data-title>Amish Country Back Roads — Route 340 &amp; Columbia River Road</span>
+      <span data-img>/public/routes/amish-country-route-340.jpg</span>
+      <span data-imgalt>Amish Country farmland along Route 340 Lancaster PA</span>
+      <span data-dlname>CJs-Amish-Country-Route-340.jpg</span>
+      <span data-miles>~50 mi</span>
+      <span data-time>2 hrs</span>
+      <div data-desc><p>Route 340 — "Old Philadelphia Pike" — is the spine of Lancaster County's Amish Country. It runs east-west through the heart of the county connecting Bird-in-Hand, Intercourse, and Smoketown. Horse-drawn buggies share the road on weekends, so this one is more about the scenery and pace than the speed.</p><p>The best version of this loop adds the Columbia River Road portion on the way back: head west toward Columbia on PA-462, then drop down to the river for a stretch before completing the loop. You get farmland going out, river coming back — two completely different landscapes in under 50 miles.</p><p>Stop at one of the farm stands along Route 340 for fresh produce and baked goods. The Intercourse area has multiple stands and a market — good midpoint break before you continue west.</p></div>
+      <div data-details><div class="route-detail-row"><span class="route-detail-label">Route</span><span class="route-detail-value">Lancaster → PA-340 East → Bird-in-Hand → Intercourse → PA-772 West → Leola → PA-23 West → Columbia → River Road South → PA-462 East → Lancaster</span></div><div class="route-detail-row"><span class="route-detail-label">Distance</span><span class="route-detail-value">~50 miles</span></div><div class="route-detail-row"><span class="route-detail-label">Drive Time</span><span class="route-detail-value">2 hours with stops</span></div><div class="route-detail-row"><span class="route-detail-label">Best For</span><span class="route-detail-value">Amish Country scenery, farm stands, first-time riders</span></div><div class="route-highlights"><h4>Highlights</h4><ul class="highlight-list"><li>Route 340 Amish farmland — buggies, barns, and open fields</li><li>Bird-in-Hand Farmers Market (Tues, Fri, Sat)</li><li>Intercourse roadside stands and baked goods</li><li>Columbia-Wrightsville bridge river crossing</li></ul></div></div>
+    </div>
+
+    <div data-id="conestoga">
+      <span data-tag>Creek Ride · Half Day</span>
+      <span data-title>Conestoga Run</span>
+      <span data-img>/public/routes/conestoga-run.jpg</span>
+      <span data-imgalt>Conestoga Creek tree-lined road Lancaster County PA</span>
+      <span data-dlname>CJs-Conestoga-Run.jpg</span>
+      <span data-miles>~40 mi</span>
+      <span data-time>1.5–2 hrs</span>
+      <div data-desc><p>The Conestoga Run is a local gem — a ride that follows the Conestoga River south and west from Lancaster through some of the county's most wooded and rural terrain. It's a route that locals do on motorcycles and rarely gets the attention it deserves from visiting riders.</p><p>The road hugs the creek for much of the run, alternating between tight tree-lined stretches and open river flats. The southern section toward Martic Forge and Pequea is particularly good — forested, quiet, and completely off the tourist circuit. This is the anti-Route 340: fewer buggies, fewer cars, and more road to yourself.</p><p>This one pairs well with the Holtwood loop — start with the Conestoga Run heading south, then swing east along the river to Holtwood for a longer half-day combination ride.</p></div>
+      <div data-details><div class="route-detail-row"><span class="route-detail-label">Route</span><span class="route-detail-value">Lancaster → PA-324 South → Conestoga Road → Martic Forge → Pequea → Conestoga → PA-324 North → Lancaster</span></div><div class="route-detail-row"><span class="route-detail-label">Distance</span><span class="route-detail-value">~40 miles</span></div><div class="route-detail-row"><span class="route-detail-label">Drive Time</span><span class="route-detail-value">1.5–2 hours</span></div><div class="route-detail-row"><span class="route-detail-label">Best For</span><span class="route-detail-value">Wooded back roads, off the tourist path, creek views</span></div><div class="route-highlights"><h4>Highlights</h4><ul class="highlight-list"><li>Conestoga River road sections — tree canopy, quiet roads</li><li>Martic Forge historic area</li><li>Pequea — small river community, scenic overlook</li><li>Pairs well with the Holtwood loop</li></ul></div></div>
+    </div>
+
+    <div data-id="wrightsville">
+      <span data-tag>Cross-County · Half Day</span>
+      <span data-title>Wrightsville–Columbia–York County Cross Ride</span>
+      <span data-img>/public/routes/wrightsville-columbia-cross-ride.jpg</span>
+      <span data-imgalt>Columbia-Wrightsville bridge over the Susquehanna River Pennsylvania</span>
+      <span data-dlname>CJs-Wrightsville-Columbia-Cross-Ride.jpg</span>
+      <span data-miles>~65 mi</span>
+      <span data-time>2.5–3 hrs</span>
+      <div data-desc><p>This route crosses the Susquehanna into York County, giving you a real taste of two counties in a single ride. Head west from Lancaster along the river road to Columbia, cross the bridge into Wrightsville, then explore the back roads of eastern York County before looping back.</p><p>York County's eastern townships — Hellam, Wrightsville, York Haven — are almost entirely devoid of tourist traffic and have excellent riding roads. Rolling hills, farm fields, and small river towns that haven't changed much in 50 years. The ride back across the Susquehanna at dusk is one of the better views in Central PA.</p><p>This is a great route if you want to extend your ride beyond Lancaster County without committing to a multi-hour highway run. It keeps you on two-lane roads the whole way.</p></div>
+      <div data-details><div class="route-detail-row"><span class="route-detail-label">Route</span><span class="route-detail-value">Lancaster → PA-462 West → Columbia → Bridge to Wrightsville → Hellam → York Haven → PA-83 South → Red Lion → PA-372 East → Peach Bottom → PA-372 East back toward Lancaster</span></div><div class="route-detail-row"><span class="route-detail-label">Distance</span><span class="route-detail-value">~65 miles</span></div><div class="route-detail-row"><span class="route-detail-label">Drive Time</span><span class="route-detail-value">2.5–3 hours with stops</span></div><div class="route-detail-row"><span class="route-detail-label">Best For</span><span class="route-detail-value">Two-county exploration, river crossings, back-road variety</span></div><div class="route-highlights"><h4>Highlights</h4><ul class="highlight-list"><li>Columbia-Wrightsville Susquehanna bridge crossing</li><li>Eastern York County back roads — low traffic</li><li>York Haven and the lower river communities</li><li>Peach Bottom nuclear plant overlook on the river</li></ul></div></div>
+    </div>
+
+    <div data-id="fulllancaster">
+      <span data-tag>Full County Loop · Full Day</span>
+      <span data-title>Full Lancaster County Loop — Ephrata · Parkesburg · Holtwood · Marietta · Back</span>
+      <span data-img>/public/routes/full-lancaster-county-loop.jpg</span>
+      <span data-imgalt>Aerial view of Lancaster County Pennsylvania countryside</span>
+      <span data-dlname>CJs-Full-Lancaster-County-Loop.jpg</span>
+      <span data-miles>~110 mi</span>
+      <span data-time>4–5 hrs</span>
+      <div data-desc><p>This is the big one — a full loop around Lancaster County that hits every terrain type: northern farmland, eastern Amish Country, southern river gorge, and western river towns. At 110 miles, it uses about a sixth of your 600-mile allowance and takes the better part of a day.</p><p>Starting north through Ephrata and Akron, you pass through some of the most productive farmland in the county before swinging east toward Parkesburg. The southern leg drops into the Susquehanna gorge near Holtwood. Then you follow the river north through Marietta — one of the most well-preserved river towns in PA — and back into Lancaster to close the loop.</p><p>Plan for lunch in Marietta or along the river. This is the best full-day ride from Lancaster — and it rarely disappoints in any season. Fall color in October makes this route exceptional.</p></div>
+      <div data-details><div class="route-detail-row"><span class="route-detail-label">Route</span><span class="route-detail-value">Lancaster → PA-272 North → Ephrata → Akron → PA-322 East → Parkesburg → PA-372 West → Quarryville → PA-272 South → Holtwood → River Road North → Safe Harbor → PA-441 North → Marietta → PA-23 East → Lancaster</span></div><div class="route-detail-row"><span class="route-detail-label">Distance</span><span class="route-detail-value">~110 miles</span></div><div class="route-detail-row"><span class="route-detail-label">Drive Time</span><span class="route-detail-value">4–5 hours with stops</span></div><div class="route-detail-row"><span class="route-detail-label">Best For</span><span class="route-detail-value">Full-day riders, all-terrain variety, fall foliage season</span></div><div class="route-highlights"><h4>Highlights</h4><ul class="highlight-list"><li>Ephrata Cloister historic site (optional stop)</li><li>Holtwood Dam and Susquehanna gorge</li><li>Marietta — historic river town, great lunch stop</li><li>Covers all four quadrants of Lancaster County</li><li>Best in October for fall color</li></ul></div></div>
+    </div>
+
+    <div data-id="coveredbridge">
+      <span data-tag>Covered Bridge Ride · Half Day</span>
+      <span data-title>Lancaster North Loop — Lititz &amp; Covered Bridge Back Roads</span>
+      <span data-img>/public/routes/covered-bridge-north-loop.jpg</span>
+      <span data-imgalt>Historic covered bridge in autumn Lancaster County Pennsylvania</span>
+      <span data-dlname>CJs-Covered-Bridge-North-Loop.jpg</span>
+      <span data-miles>~45 mi</span>
+      <span data-time>2 hrs</span>
+      <div data-desc><p>Lancaster County has more covered bridges than any other county in Pennsylvania — 29 at last count. The Northern Loop concentrates the highest density of them in a 45-mile circuit through Lititz, Rothsville, and the back roads of northern Lancaster County.</p><p>Lititz itself is worth a stop — it consistently ranks as one of Pennsylvania's coolest small towns. The downtown has a craft brewery, the world's only pretzel museum, and Sturgis Pretzel House (the oldest in America). From Lititz, the route continues north and east through covered bridge country on smaller township roads.</p><p>The bridges on this route include the Pinetown, Bucher's Mill, and Hunsecker Mill covered bridges — all single-lane wooden structures that date back to the 1800s. Some are open to traffic, some are pedestrian-only. The roads connecting them are the real reward: quiet, tree-shaded, and empty.</p></div>
+      <div data-details><div class="route-detail-row"><span class="route-detail-label">Route</span><span class="route-detail-value">Lancaster → PA-501 North → Lititz → PA-772 East → Rothsville → Newport Road North → Covered Bridge Road → Hunsecker Road → PA-272 South → Lancaster</span></div><div class="route-detail-row"><span class="route-detail-label">Distance</span><span class="route-detail-value">~45 miles</span></div><div class="route-detail-row"><span class="route-detail-label">Drive Time</span><span class="route-detail-value">2 hours with stops</span></div><div class="route-detail-row"><span class="route-detail-label">Best For</span><span class="route-detail-value">Covered bridge enthusiasts, small-town stops, photo opportunities</span></div><div class="route-highlights"><h4>Highlights</h4><ul class="highlight-list"><li>Lititz — craft brewery, Sturgis Pretzel House, walkable downtown</li><li>Pinetown Covered Bridge — over Muddy Creek</li><li>Hunsecker Mill Covered Bridge — one of the most photographed in PA</li><li>Northern Lancaster County township roads — quiet, tree-lined</li></ul></div></div>
+    </div>
+
+  </div><!-- /routeData -->
 
   <footer class="site-footer">
     <div class="container">
-      <div class="footer-inner">
-        <div>
-          <a href="/"><img src="/cj_funtime_logo.png" alt="CJ's Fun Time Rental" style="height:40px;margin-bottom:12px;"></a>
-          <p style="font-size:12px;color:var(--muted);line-height:1.7;">Polaris Slingshot &amp; Can-Am Spyder rentals in Lancaster, PA. No motorcycle license required.</p>
-          <div class="footer-social">
-            <a href="https://www.facebook.com/people/CJs-Fun-Time-Rental/61575102921796/" target="_blank" rel="noopener" aria-label="Facebook"><svg viewBox="0 0 24 24"><path d="M24 12.073C24 5.406 18.627 0 12 0S0 5.406 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047v-2.66c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.235 2.686.235v2.97h-1.513c-1.491 0-1.956.93-1.956 1.874v2.278h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/></svg></a>
-            <a href="https://www.instagram.com/cjsfuntimerentals/" target="_blank" rel="noopener" aria-label="Instagram"><svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg></a>
-          </div>
+      <div class="footer-brand">
+        <a href="/" class="footer-logo"><img src="/cj_funtime_logo.png" alt="CJ's Fun Time Rental"></a>
+        <div class="footer-social">
+          <a href="https://www.facebook.com/people/CJs-Fun-Time-Rental/61575102921796/" target="_blank" rel="noopener" aria-label="Facebook">
+            <svg viewBox="0 0 24 24"><path d="M24 12.073C24 5.406 18.627 0 12 0S0 5.406 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047v-2.66c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.235 2.686.235v2.97h-1.513c-1.491 0-1.956.93-1.956 1.874v2.278h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/></svg>
+          </a>
+          <a href="https://www.instagram.com/cjsfuntimerentals/" target="_blank" rel="noopener" aria-label="Instagram">
+            <svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+          </a>
         </div>
-        <div>
+      </div>
+      <div class="footer-inner">
+        <div class="footer-col">
           <span class="footer-col-label">Site</span>
           <nav class="footer-nav">
             <a href="/#fleet">Our Fleet</a>
@@ -511,32 +429,104 @@
             <a href="/#book">Book Now</a>
           </nav>
         </div>
-        <div>
+        <div class="footer-col">
           <span class="footer-col-label">Locations</span>
           <nav class="footer-nav">
             <a href="/slingshot-rental-lancaster-pa">Lancaster, PA</a>
             <a href="/slingshot-rental-near-york-pa">Near York, PA</a>
             <a href="/slingshot-rental-near-harrisburg-pa">Near Harrisburg, PA</a>
             <a href="/slingshot-rental-near-reading-pa">Near Reading, PA</a>
-            <a href="/can-am-spyder-rental-pa">Can-Am Spyder PA</a>
+            <a href="/can-am-spyder-rental-pa">Can-Am Spyder Rental, PA</a>
           </nav>
         </div>
-        <div>
+        <div class="footer-col">
           <span class="footer-col-label">Rides &amp; Routes</span>
           <nav class="footer-nav">
             <a href="/scenic-routes-lancaster-pa">Scenic Routes from Lancaster</a>
             <a href="/blog/best-scenic-drives-lancaster-pa">Best Drives in Central PA</a>
             <a href="/blog/do-you-need-motorcycle-license-polaris-slingshot-pa">PA License Guide</a>
             <a href="/blog/polaris-slingshot-vs-can-am-spyder">Slingshot vs Can-Am Spyder</a>
+            <a href="/blog/what-is-a-polaris-slingshot">What Is a Polaris Slingshot?</a>
           </nav>
         </div>
       </div>
       <div class="footer-bottom">
-        <p class="footer-copy">&copy; 2025 CJ's Fun Time Rental · Lancaster, PA</p>
+        <p class="footer-copy">&copy; 2025 CJ's Fun Time Rental &nbsp;&middot;&nbsp; Lancaster, PA</p>
         <p class="footer-built">Built by <a href="https://universoleappstudios.com" target="_blank" rel="noopener">UNIVERSOLE APP STUDIOS</a></p>
       </div>
     </div>
   </footer>
+
+  <script>
+  (function() {
+    var routes = {};
+    var dataEl = document.getElementById('routeData');
+    if (!dataEl) return;
+    dataEl.querySelectorAll('[data-id]').forEach(function(el) {
+      var id = el.getAttribute('data-id');
+      routes[id] = {
+        tag:    el.querySelector('[data-tag]').innerHTML,
+        title:  el.querySelector('[data-title]').innerHTML,
+        img:    el.querySelector('[data-img]').textContent.trim(),
+        imgalt: el.querySelector('[data-imgalt]').textContent.trim(),
+        dlname: el.querySelector('[data-dlname]').textContent.trim(),
+        miles:  el.querySelector('[data-miles]').textContent.trim(),
+        time:   el.querySelector('[data-time]').textContent.trim(),
+        desc:   el.querySelector('[data-desc]').innerHTML,
+        details:el.querySelector('[data-details]').innerHTML
+      };
+    });
+
+    var backdrop = document.getElementById('routeModal');
+    var closeBtn = document.getElementById('modalClose');
+    var modalImg = document.getElementById('modalImg');
+    var modalTag = document.getElementById('modalTag');
+    var modalTitle = document.getElementById('modalTitle');
+    var modalStats = document.getElementById('modalStats');
+    var modalContent = document.getElementById('modalContent');
+    var modalActions = document.getElementById('modalActions');
+
+    function openModal(id) {
+      var r = routes[id];
+      if (!r) return;
+      modalImg.src = r.img;
+      modalImg.alt = r.imgalt;
+      modalTag.innerHTML = r.tag;
+      modalTitle.innerHTML = r.title;
+      modalStats.innerHTML =
+        '<div><span class="route-modal-stat-num">' + r.miles + '</span><span class="route-modal-stat-label">Distance</span></div>' +
+        '<div><span class="route-modal-stat-num">' + r.time + '</span><span class="route-modal-stat-label">Total Time</span></div>';
+      modalContent.innerHTML =
+        '<div class="route-desc">' + r.desc + '</div>' +
+        '<div class="route-details">' + r.details + '</div>';
+      modalActions.innerHTML =
+        '<a href="' + r.img + '" download="' + r.dlname + '" class="btn btn-primary">&#8595; Download Route Guide</a>' +
+        '<a href="/#book" class="btn btn-ghost">Book a Slingshot &rarr;</a>';
+      backdrop.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+      backdrop.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    document.querySelectorAll('.cover-card[data-route]').forEach(function(card) {
+      card.addEventListener('click', function(e) {
+        e.preventDefault();
+        openModal(this.getAttribute('data-route'));
+      });
+    });
+
+    closeBtn.addEventListener('click', closeModal);
+    backdrop.addEventListener('click', function(e) {
+      if (e.target === backdrop) closeModal();
+    });
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') closeModal();
+    });
+  })();
+  </script>
 
 </body>
 </html>
