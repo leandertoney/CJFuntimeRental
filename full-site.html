@@ -1682,6 +1682,44 @@
     .bm-field input[readonly] { color: var(--muted); cursor: default; }
     .bm-location-note { font-size: 11px; color: rgba(255,107,0,0.7); margin-top: 4px; }
 
+    /* Duration preset buttons */
+    .bm-duration-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+    .bm-duration-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      cursor: pointer;
+      text-align: left;
+      transition: border-color 0.15s, background 0.15s;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .bm-duration-btn:hover { border-color: rgba(255,107,0,0.4); }
+    .bm-duration-btn.selected {
+      border-color: var(--orange);
+      background: rgba(255,107,0,0.08);
+    }
+    .bmd-label { font-size: 13px; font-weight: 600; color: var(--white); }
+    .bmd-sub { font-size: 11px; color: var(--muted); }
+    .bm-duration-btn.selected .bmd-label { color: var(--orange); }
+
+    /* Static location display */
+    .bm-location-info {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-top: 8px;
+    }
+    .bm-location-pin { font-size: 18px; flex-shrink: 0; line-height: 1.3; }
+    .bm-location-name { display: block; font-size: 13px; font-weight: 600; color: var(--white); }
+    .bm-location-detail { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
+
     /* Order summary */
     .bm-summary-vehicle {
       display: flex;
@@ -2569,32 +2607,60 @@
         <!-- Step 2: Trip Details -->
         <div class="bm-panel" id="bm-panel-2">
           <h3>Trip Details</h3>
-          <p>Set your dates, times, and pickup location.</p>
-          <div class="bm-row">
-            <div class="bm-field">
-              <label>Trip Start Date</label>
-              <input type="date" id="bm-start-date">
-            </div>
-            <div class="bm-field">
-              <label>Start Time</label>
-              <input type="time" id="bm-start-time" value="09:00">
+          <p>Choose your pickup date and rental duration.</p>
+
+          <!-- Duration presets -->
+          <div class="bm-field" style="margin-bottom:20px;">
+            <label>Rental Duration</label>
+            <div class="bm-duration-btns" id="bm-duration-btns">
+              <button type="button" class="bm-duration-btn" data-duration="half-am">
+                <span class="bmd-label">Half Day — AM</span>
+                <span class="bmd-sub">9:00 AM – 1:00 PM</span>
+              </button>
+              <button type="button" class="bm-duration-btn" data-duration="half-pm">
+                <span class="bmd-label">Half Day — PM</span>
+                <span class="bmd-sub">1:00 PM – 6:00 PM</span>
+              </button>
+              <button type="button" class="bm-duration-btn" data-duration="full">
+                <span class="bmd-label">Full Day</span>
+                <span class="bmd-sub">9:00 AM – 6:00 PM</span>
+              </button>
+              <button type="button" class="bm-duration-btn" data-duration="multi">
+                <span class="bmd-label">Multi-Day</span>
+                <span class="bmd-sub">Custom dates</span>
+              </button>
             </div>
           </div>
-          <div class="bm-row">
-            <div class="bm-field">
-              <label>Trip End Date</label>
-              <input type="date" id="bm-end-date">
-            </div>
-            <div class="bm-field">
-              <label>End Time</label>
-              <input type="time" id="bm-end-time" value="09:00">
+
+          <!-- Single-day date picker (half day / full day) -->
+          <div id="bm-single-date-wrap" class="bm-field" style="display:none; margin-bottom:20px;">
+            <label>Pickup Date</label>
+            <input type="date" id="bm-start-date">
+            <input type="hidden" id="bm-end-date">
+            <input type="hidden" id="bm-start-time" value="09:00">
+            <input type="hidden" id="bm-end-time" value="18:00">
+          </div>
+
+          <!-- Multi-day date pickers -->
+          <div id="bm-multi-date-wrap" style="display:none;">
+            <div class="bm-row">
+              <div class="bm-field">
+                <label>Start Date</label>
+                <input type="date" id="bm-multi-start-date">
+              </div>
+              <div class="bm-field">
+                <label>End Date</label>
+                <input type="date" id="bm-multi-end-date">
+              </div>
             </div>
           </div>
-          <div class="bm-row">
-            <div class="bm-field full">
-              <label>Pickup &amp; Return Location</label>
-              <input type="text" id="bm-pickup" value="Lancaster, PA" readonly>
-              <span class="bm-location-note">&#128205; Pickup &amp; return in Lancaster, PA</span>
+
+          <!-- Pickup location — static info, not a form field -->
+          <div class="bm-location-info">
+            <span class="bm-location-pin">&#128205;</span>
+            <div>
+              <span class="bm-location-name">Lancaster, PA</span>
+              <span class="bm-location-detail">Chris will confirm your exact pickup spot after booking</span>
             </div>
           </div>
         </div>

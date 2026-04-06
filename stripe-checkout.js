@@ -236,29 +236,82 @@
     var s1next = $('bm-step1-next');
     if (s1next) s1next.addEventListener('click', function () { goToStep(2); });
 
+    // Duration preset buttons
+    var selectedDuration = null;
+    document.querySelectorAll('.bm-duration-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        document.querySelectorAll('.bm-duration-btn').forEach(function (b) { b.classList.remove('selected'); });
+        this.classList.add('selected');
+        selectedDuration = this.getAttribute('data-duration');
+
+        var singleWrap = $('bm-single-date-wrap');
+        var multiWrap  = $('bm-multi-date-wrap');
+
+        if (selectedDuration === 'multi') {
+          singleWrap.style.display = 'none';
+          multiWrap.style.display  = 'block';
+        } else {
+          singleWrap.style.display = 'block';
+          multiWrap.style.display  = 'none';
+          // Pre-set hidden time fields based on selection
+          var times = {
+            'half-am': { start: '09:00', end: '13:00' },
+            'half-pm': { start: '13:00', end: '18:00' },
+            'full':    { start: '09:00', end: '18:00' }
+          };
+          var t = times[selectedDuration];
+          if (t) {
+            $('bm-start-time').value = t.start;
+            $('bm-end-time').value   = t.end;
+          }
+        }
+      });
+    });
+
     // Step 2 → back / next
     var s2back = $('bm-step2-back');
     if (s2back) s2back.addEventListener('click', function () { goToStep(1); });
 
     var s2next = $('bm-step2-next');
     if (s2next) s2next.addEventListener('click', function () {
-      var startVal = $('bm-start-date').value;
-      var endVal   = $('bm-end-date').value;
-
-      if (!startVal || !endVal) {
-        alert('Please select both a start and end date.');
-        return;
-      }
-      if (new Date(endVal) <= new Date(startVal)) {
-        alert('Return date must be after pickup date.');
+      if (!selectedDuration) {
+        alert('Please select a rental duration.');
         return;
       }
 
-      // Check blocked dates from site config
+      var startVal, endVal, startTime, endTime;
+
+      if (selectedDuration === 'multi') {
+        startVal  = $('bm-multi-start-date').value;
+        endVal    = $('bm-multi-end-date').value;
+        startTime = '09:00';
+        endTime   = '18:00';
+        if (!startVal || !endVal) {
+          alert('Please select both a start and end date.');
+          return;
+        }
+        if (new Date(endVal) <= new Date(startVal)) {
+          alert('Return date must be after pickup date.');
+          return;
+        }
+      } else {
+        startVal  = $('bm-start-date').value;
+        endVal    = startVal; // same day for half/full
+        startTime = $('bm-start-time').value;
+        endTime   = $('bm-end-time').value;
+        if (!startVal) {
+          alert('Please select a pickup date.');
+          return;
+        }
+        // Copy end date from single date input
+        $('bm-end-date').value = startVal;
+      }
+
+      // Check blocked dates
       var blocked = (window.SITE_CONFIG && window.SITE_CONFIG.blockedDates) || [];
-      var start = new Date(startVal);
-      var end   = new Date(endVal);
-      for (var d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
+      var checkStart = new Date(startVal);
+      var checkEnd   = new Date(endVal);
+      for (var d = new Date(checkStart); d <= checkEnd; d.setDate(d.getDate() + 1)) {
         var iso = d.toISOString().split('T')[0];
         if (blocked.indexOf(iso) !== -1) {
           alert('Sorry, ' + iso + ' is unavailable. Please choose different dates.');
@@ -267,9 +320,9 @@
       }
 
       state.startDate = startVal;
-      state.startTime = $('bm-start-time').value;
+      state.startTime = startTime;
       state.endDate   = endVal;
-      state.endTime   = $('bm-end-time').value;
+      state.endTime   = endTime;
       buildSummary();
       goToStep(3);
     });
