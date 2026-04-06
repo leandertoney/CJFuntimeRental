@@ -1,6 +1,16 @@
 (function () {
   'use strict';
 
+  var ADMIN_API = 'https://yzdtevrwystezhbmgcwn.supabase.co/functions/v1/admin';
+
+  function adminPassword() {
+    return localStorage.getItem('cjfr_admin_pw') || '';
+  }
+
+  function adminHeaders(extra) {
+    return Object.assign({ 'Content-Type': 'application/json', 'x-admin-password': adminPassword() }, extra || {});
+  }
+
   var cfg = null;
   var activeSection = 'overview';
   var calYear, calMonth;
@@ -108,9 +118,10 @@
 
   // ── Auth ─────────────────────────────────────────────────────
   function checkAuth() {
-    fetch('/api/auth/me')
-      .then(function (r) { return r.json(); })
-      .then(function (data) { if (data.loggedIn) showAdmin(); })
+    var pw = adminPassword();
+    if (!pw) return;
+    fetch(ADMIN_API + '/config', { headers: adminHeaders() })
+      .then(function (r) { if (r.ok) showAdmin(); })
       .catch(function () {});
   }
 
@@ -124,7 +135,7 @@
       btn.disabled = true;
       btn.textContent = 'Signing in…';
 
-      fetch('/api/auth/login', {
+      fetch(ADMIN_API + '/auth/login', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ password: pw })
@@ -132,6 +143,7 @@
       .then(function (r) { return r.json(); })
       .then(function (data) {
         if (data.ok) {
+          localStorage.setItem('cjfr_admin_pw', pw);
           showAdmin();
         } else {
           showLoginError(data.error || 'Invalid password');
@@ -140,7 +152,7 @@
         }
       })
       .catch(function () {
-        showLoginError('Server error — is the server running?');
+        showLoginError('Network error — check your connection.');
         btn.disabled = false;
         btn.textContent = 'Sign In';
       });
@@ -158,14 +170,12 @@
 
   function bindLogoutBtn() {
     document.getElementById('logout-btn').addEventListener('click', function () {
-      fetch('/api/auth/logout', { method: 'POST' })
-        .then(function () {
-          document.body.className = 'not-logged-in';
-          document.getElementById('login-password').value = '';
-          document.getElementById('login-error').classList.add('hidden');
-          document.getElementById('login-btn').disabled = false;
-          document.getElementById('login-btn').textContent = 'Sign In';
-        });
+      localStorage.removeItem('cjfr_admin_pw');
+      document.body.className = 'not-logged-in';
+      document.getElementById('login-password').value = '';
+      document.getElementById('login-error').classList.add('hidden');
+      document.getElementById('login-btn').disabled = false;
+      document.getElementById('login-btn').textContent = 'Sign In';
     });
   }
 
@@ -178,7 +188,7 @@
 
   // ── Config ───────────────────────────────────────────────────
   function loadConfig() {
-    return fetch('/api/config')
+    return fetch(ADMIN_API + '/config', { headers: adminHeaders() })
       .then(function (r) { return r.json(); })
       .then(function (data) { cfg = data; });
   }
@@ -192,9 +202,9 @@
 
   function saveConfig() {
     setSaveStatus('Saving…');
-    fetch('/api/config', {
+    fetch(ADMIN_API + '/config', {
       method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: adminHeaders(),
       body:    JSON.stringify(cfg)
     })
     .then(function (r) { return r.json(); })
@@ -269,8 +279,8 @@
     container.innerHTML = '<div class="overview-loading">Loading...</div>';
 
     Promise.all([
-      fetch('/api/bookings').then(function (r) { return r.json(); }),
-      fetch('/api/leads').then(function (r) { return r.json(); })
+      fetch(ADMIN_API + '/bookings', { headers: adminHeaders() }).then(function (r) { return r.json(); }),
+      fetch(ADMIN_API + '/leads',    { headers: adminHeaders() }).then(function (r) { return r.json(); })
     ]).then(function (results) {
       var bookings = results[0];
       var leads    = results[1];
@@ -796,7 +806,7 @@
     tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:32px;color:#555">Loading…</td></tr>';
     empty.classList.add('hidden');
 
-    fetch('/api/leads')
+    fetch(ADMIN_API + '/leads', { headers: adminHeaders() })
       .then(function (r) { return r.json(); })
       .then(function (leads) {
         count.textContent = leads.length + ' lead' + (leads.length !== 1 ? 's' : '');
@@ -811,7 +821,7 @@
         expBtn.disabled = false;
         var html = '';
         leads.forEach(function (lead, idx) {
-          var d = new Date(lead.date);
+          var d = new Date(lead.created_at || lead.date);
           var dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
           var timeStr = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
           html += '<tr>'
@@ -819,7 +829,7 @@
             + '<td class="lead-email">' + esc(lead.email) + '</td>'
             + '<td class="lead-source"><span class="source-badge">' + esc(lead.source || 'Website') + '</span></td>'
             + '<td class="lead-date">' + dateStr + ' <span class="lead-time">' + timeStr + '</span></td>'
-            + '<td><button class="btn-icon-danger lead-delete-btn" data-idx="' + idx + '" title="Delete">✕</button></td>'
+            + '<td><button class="btn-icon-danger lead-delete-btn" data-id="' + esc(lead.id) + '" title="Delete">✕</button></td>'
             + '</tr>';
         });
         tbody.innerHTML = html;
@@ -827,9 +837,9 @@
         // Delete buttons
         tbody.querySelectorAll('.lead-delete-btn').forEach(function (btn) {
           btn.addEventListener('click', function () {
-            var idx = this.getAttribute('data-idx');
+            var id = this.getAttribute('data-id');
             if (!confirm('Remove this lead?')) return;
-            fetch('/api/leads/' + idx, { method: 'DELETE' })
+            fetch(ADMIN_API + '/leads/' + id, { method: 'DELETE', headers: adminHeaders() })
               .then(function (r) { return r.json(); })
               .then(function (data) { if (data.ok) renderLeadsPanel(); });
           });
@@ -975,9 +985,9 @@
       var typingEl = appendTyping();
       scrollToBottom();
 
-      fetch('/api/admin/chat', {
+      fetch(ADMIN_API + '/chat', {
         method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: adminHeaders(),
         body:    JSON.stringify({ message: text })
       })
       .then(function (r) {
