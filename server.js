@@ -5,6 +5,7 @@ const session = require('express-session');
 const path    = require('path');
 const fs      = require('fs').promises;
 const crypto  = require('crypto');
+const OpenAI  = require('openai');
 const { sendDiscountCode, sendBookingConfirmation, sendOwnerBookingAlert, sendPickupReminder } = require('./emails');
 
 // ── Stripe (only active when key is set) ──────────────────────────────────────
@@ -37,10 +38,20 @@ async function createStripePromoCode(email) {
   return promo.code;
 }
 
-const CONFIG_PATH = path.join(__dirname, 'data', 'siteConfig.json');
-const LEADS_PATH  = path.join(__dirname, 'data', 'leads.json');
-const ADMIN_DIR   = path.join(__dirname, 'admin');
-const PORT        = process.env.PORT || 3000;
+const CONFIG_PATH   = path.join(__dirname, 'data', 'siteConfig.json');
+const LEADS_PATH    = path.join(__dirname, 'data', 'leads.json');
+const BOOKINGS_PATH = path.join(__dirname, 'data', 'bookings.json');
+const ADMIN_DIR     = path.join(__dirname, 'admin');
+const PORT          = process.env.PORT || 3000;
+
+async function readBookings() {
+  try {
+    const raw = await fs.readFile(BOOKINGS_PATH, 'utf8');
+    return JSON.parse(raw);
+  } catch (e) {
+    return [];
+  }
+}
 
 const app = express();
 
@@ -179,12 +190,172 @@ app.post('/api/leads', async (req, res) => {
   res.json({ ok: true });
 });
 
+// ── Stripe Checkout ────────────────────────────────────────────────────────────
+const STRIPE_PRICE_IDS = {
+  slingshot_2022: 'price_1TJ1WhDlmCSCy5M3ZzTUKo6U',
+  slingshot_2020: 'price_1TJ1WhDlmCSCy5M3lht61h3l',
+  canam_spyder:   'price_1TJ1WiDlmCSCy5M30zruaRZ7'
+};
+
+app.post('/api/checkout', async (req, res) => {
+  const { vehicleKey, days, startDate, endDate, promoCode } = req.body;
+  if (!vehicleKey || !days || !startDate) return res.status(400).json({ error: 'Missing fields' });
+
+  const priceId = STRIPE_PRICE_IDS[vehicleKey];
+  if (!priceId) return res.status(400).json({ error: 'Unknown vehicle' });
+
+  const stripe = getStripe();
+  if (!stripe) return res.status(500).json({ error: 'Stripe not configured' });
+
+  try {
+    // Look up current rate from config so pricing is always up to date
+    let unitAmount;
+    try {
+      const cfg = await readConfig();
+      const vehicle = cfg.vehicles[vehicleKey];
+      unitAmount = vehicle ? Math.round(vehicle.ratePerDay * 100) : null;
+    } catch (_) {}
+
+    const STRIPE_PRODUCTS = {
+      slingshot_2022: 'prod_UHaiSY5zFpsDcV',
+      slingshot_2020: 'prod_UHaiT4pRmY2sos',
+      canam_spyder:   'prod_UHai9cIGKdkLoW'
+    };
+
+    // Fall back to static price ID if config unavailable
+    const lineItem = unitAmount
+      ? {
+          price_data: {
+            currency:    'usd',
+            unit_amount: unitAmount,
+            product:     STRIPE_PRODUCTS[vehicleKey]
+          },
+          quantity: Number(days)
+        }
+      : { price: priceId, quantity: Number(days) };
+
+    const sessionParams = {
+      mode:                 'payment',
+      line_items: [lineItem],
+      metadata: { vehicleKey, startDate, endDate: endDate || startDate, days },
+      success_url: 'https://cjfuntimerentals.com/booking-success?session_id={CHECKOUT_SESSION_ID}',
+      cancel_url:  'https://cjfuntimerentals.com',
+      phone_number_collection: { enabled: true },
+      custom_fields: [
+        {
+          key:   'pickup_date',
+          label: { type: 'custom', custom: 'Pickup Date' },
+          type:  'text',
+          text:  { default_value: startDate }
+        },
+        {
+          key:   'return_date',
+          label: { type: 'custom', custom: 'Return Date' },
+          type:  'text',
+          text:  { default_value: endDate || startDate }
+        }
+      ]
+    };
+
+    // Apply promo code if provided
+    if (promoCode) {
+      sessionParams.discounts = [{ promotion_code: promoCode }];
+    } else {
+      sessionParams.allow_promotion_codes = true;
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionParams);
+    res.json({ url: session.url });
+  } catch (err) {
+    console.error('Checkout error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Stripe Webhook (fires after successful payment) ────────────────────────────
+app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  const stripe = getStripe();
+  const sig    = req.headers['stripe-signature'];
+  const secret = process.env.STRIPE_WEBHOOK_SECRET;
+
+  let event;
+  try {
+    event = secret
+      ? stripe.webhooks.constructEvent(req.body, sig, secret)
+      : JSON.parse(req.body);
+  } catch (err) {
+    return res.status(400).send('Webhook error: ' + err.message);
+  }
+
+  if (event.type === 'checkout.session.completed') {
+    const session  = event.data.object;
+    const meta     = session.metadata || {};
+    const customer = session.customer_details || {};
+    const email    = customer.email || '';
+    const name     = customer.name  || '';
+    const phone    = customer.phone || '';
+    const total    = (session.amount_total / 100).toFixed(2);
+    const discount = session.total_details?.amount_discount
+      ? (session.total_details.amount_discount / 100).toFixed(2)
+      : null;
+
+    // Look up vehicle name from config
+    let vehicleName = meta.vehicleKey || 'Vehicle';
+    try {
+      const cfg = await readConfig();
+      vehicleName = cfg.vehicles[meta.vehicleKey]?.name || vehicleName;
+    } catch (_) {}
+
+    // Save booking
+    const bookings = await readBookings();
+    bookings.unshift({
+      id:        session.id,
+      email:     email.toLowerCase(),
+      name,
+      phone,
+      vehicle:   vehicleName,
+      startDate: meta.startDate,
+      endDate:   meta.endDate,
+      days:      Number(meta.days) || 1,
+      total:     Number(total),
+      savings:   discount ? Number(discount) : 0,
+      createdAt: new Date().toISOString()
+    });
+    await fs.writeFile(BOOKINGS_PATH, JSON.stringify(bookings, null, 2), 'utf8');
+
+    // Send emails
+    await Promise.all([
+      sendBookingConfirmation({ email, name, vehicle: vehicleName, startDate: meta.startDate, endDate: meta.endDate, days: meta.days, total, savings: discount }),
+      sendOwnerBookingAlert({ name, email, phone, vehicle: vehicleName, startDate: meta.startDate, endDate: meta.endDate, days: meta.days, total })
+    ]).catch(err => console.error('Post-payment email error:', err.message));
+  }
+
+  res.json({ received: true });
+});
+
 // Booking confirmation — called after successful Stripe payment
 app.post('/api/booking-confirmed', async (req, res) => {
   const { email, name, vehicle, startDate, endDate, days, total, savings } = req.body;
   if (!email || !vehicle || !startDate) return res.status(400).json({ error: 'Missing fields' });
 
   try {
+    // Persist booking to bookings.json
+    const bookings = await readBookings();
+    bookings.unshift({
+      id:        crypto.randomBytes(4).toString('hex'),
+      email:     email.trim().toLowerCase(),
+      name:      name || '',
+      phone:     req.body.phone || '',
+      vehicle,
+      startDate,
+      endDate:   endDate || startDate,
+      days:      Number(days) || 1,
+      total:     Number(total) || 0,
+      savings:   Number(savings) || 0,
+      createdAt: new Date().toISOString()
+    });
+    await fs.writeFile(BOOKINGS_PATH, JSON.stringify(bookings, null, 2), 'utf8');
+
     await Promise.all([
       sendBookingConfirmation({ email, name, vehicle, startDate, endDate, days, total, savings }),
       sendOwnerBookingAlert({ name, email, phone: req.body.phone, vehicle, startDate, endDate, days, total })
@@ -194,6 +365,10 @@ app.post('/api/booking-confirmed', async (req, res) => {
     console.error('Booking email failed:', err.message);
     res.status(500).json({ error: 'Email send failed' });
   }
+});
+
+app.get('/api/bookings', requireAuth, async (req, res) => {
+  res.json(await readBookings());
 });
 
 // Protected — admin only
@@ -208,6 +383,285 @@ app.delete('/api/leads/:index', requireAuth, async (req, res) => {
   leads.splice(idx, 1);
   await fs.writeFile(LEADS_PATH, JSON.stringify(leads, null, 2), 'utf8');
   res.json({ ok: true });
+});
+
+// ── AI Admin Chat ──────────────────────────────────────────────────────────────
+const ADMIN_TOOLS = [
+  {
+    type: 'function',
+    function: {
+      name: 'get_vehicles',
+      description: 'Read the current list of all vehicles with their names, daily rates, and availability status.',
+      parameters: { type: 'object', properties: {}, required: [] }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'update_vehicle',
+      description: 'Update one vehicle\'s ratePerDay or available status. Vehicle keys: slingshot_2022, slingshot_2020, canam_spyder.',
+      parameters: {
+        type: 'object',
+        properties: {
+          vehicleKey: { type: 'string', enum: ['slingshot_2022', 'slingshot_2020', 'canam_spyder'], description: 'The internal key for the vehicle.' },
+          ratePerDay: { type: 'number', description: 'New daily rate in dollars. Omit to leave unchanged.' },
+          available:  { type: 'boolean', description: 'Whether the vehicle is available for booking. Omit to leave unchanged.' }
+        },
+        required: ['vehicleKey']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'update_all_vehicle_rates',
+      description: 'Set the same ratePerDay for every vehicle at once.',
+      parameters: {
+        type: 'object',
+        properties: {
+          ratePerDay: { type: 'number', description: 'The new daily rate to apply to all vehicles.' }
+        },
+        required: ['ratePerDay']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_leads',
+      description: 'Read all leads. Returns the full list with email, source, date, and promo code.',
+      parameters: { type: 'object', properties: {}, required: [] }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'delete_lead',
+      description: 'Delete a lead by email address.',
+      parameters: {
+        type: 'object',
+        properties: {
+          email: { type: 'string', description: 'The email address of the lead to delete.' }
+        },
+        required: ['email']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'send_promo_to_lead',
+      description: 'Send a discount code email to a single lead by email address.',
+      parameters: {
+        type: 'object',
+        properties: {
+          email: { type: 'string', description: 'The recipient\'s email address.' },
+          code:  { type: 'string', description: 'The promo code to send. Defaults to FIRST10 if omitted.' }
+        },
+        required: ['email']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'send_promo_to_all_leads',
+      description: 'Send a discount code email to every lead in the system.',
+      parameters: {
+        type: 'object',
+        properties: {
+          code: { type: 'string', description: 'The promo code to send to all leads.' }
+        },
+        required: ['code']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_discounts',
+      description: 'Read the current discount tiers — days required, percentage off, label, and enabled status.',
+      parameters: { type: 'object', properties: {}, required: [] }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_blocked_dates',
+      description: 'Read the list of all blocked dates unavailable for booking.',
+      parameters: { type: 'object', properties: {}, required: [] }
+    }
+  }
+];
+
+async function executeToolCall(name, input) {
+  switch (name) {
+    case 'get_vehicles': {
+      const cfg = await readConfig();
+      return { vehicles: cfg.vehicles };
+    }
+    case 'update_vehicle': {
+      const cfg = await readConfig();
+      const v = cfg.vehicles[input.vehicleKey];
+      if (!v) return { error: 'Unknown vehicle key: ' + input.vehicleKey };
+      if (input.ratePerDay !== undefined) v.ratePerDay = input.ratePerDay;
+      if (input.available  !== undefined) v.available  = input.available;
+      await writeConfig(cfg);
+      return { ok: true, updated: v };
+    }
+    case 'update_all_vehicle_rates': {
+      const cfg = await readConfig();
+      for (const key of Object.keys(cfg.vehicles)) {
+        cfg.vehicles[key].ratePerDay = input.ratePerDay;
+      }
+      await writeConfig(cfg);
+      return { ok: true, ratePerDay: input.ratePerDay, vehiclesUpdated: Object.keys(cfg.vehicles) };
+    }
+    case 'get_leads': {
+      const leads = await readLeads();
+      return { count: leads.length, leads };
+    }
+    case 'delete_lead': {
+      const leads = await readLeads();
+      const idx = leads.findIndex(l => l.email === input.email.trim().toLowerCase());
+      if (idx === -1) return { error: 'Lead not found: ' + input.email };
+      leads.splice(idx, 1);
+      await fs.writeFile(LEADS_PATH, JSON.stringify(leads, null, 2), 'utf8');
+      return { ok: true, deleted: input.email };
+    }
+    case 'send_promo_to_lead': {
+      const code = input.code || 'FIRST10';
+      await sendDiscountCode(input.email, code);
+      return { ok: true, sentTo: input.email, code };
+    }
+    case 'send_promo_to_all_leads': {
+      const leads = await readLeads();
+      const results = [];
+      for (const lead of leads) {
+        try {
+          await sendDiscountCode(lead.email, input.code);
+          results.push({ email: lead.email, sent: true });
+        } catch (e) {
+          results.push({ email: lead.email, sent: false, error: e.message });
+        }
+      }
+      return { ok: true, totalLeads: leads.length, results };
+    }
+    case 'get_discounts': {
+      const cfg = await readConfig();
+      return { discounts: cfg.discounts };
+    }
+    case 'get_blocked_dates': {
+      const cfg = await readConfig();
+      return { blockedDates: cfg.blockedDates, count: cfg.blockedDates.length };
+    }
+    default:
+      return { error: 'Unknown tool: ' + name };
+  }
+}
+
+app.post('/api/admin/chat', requireAuth, async (req, res) => {
+  try {
+    const { message } = req.body;
+    if (!message || typeof message !== 'string' || message.trim().length === 0) {
+      return res.status(400).json({ reply: 'Please provide a message.' });
+    }
+    if (message.length > 2000) {
+      return res.status(400).json({ reply: 'Message too long.' });
+    }
+    if (!process.env.OPENAI_API_KEY) {
+      return res.json({ reply: 'AI assistant is not configured. Add OPENAI_API_KEY to your .env file.' });
+    }
+
+    const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+    const systemPrompt = `You are CJ Assistant, a helpful admin tool for CJ's Fun Time Rental — a 3-wheel vehicle rental business in Lancaster, PA. Use tools to execute commands. Today: ${new Date().toISOString().split('T')[0]}. Vehicle keys: slingshot_2022 (2022 Polaris Slingshot), slingshot_2020 (2020 Polaris Slingshot), canam_spyder (2021 Can-Am Spyder F3 Limited).`;
+
+    const messages = [
+      { role: 'system', content: systemPrompt },
+      { role: 'user',   content: message.trim() }
+    ];
+
+    // Phase 1: agentic tool-use loop (no response_format — incompatible with tools)
+    let loopCount = 0;
+    while (loopCount++ < 10) {
+      const response = await client.chat.completions.create({
+        model:    'gpt-4o',
+        tools:    ADMIN_TOOLS,
+        messages
+      });
+
+      const choice = response.choices[0];
+      messages.push(choice.message);
+
+      if (choice.finish_reason === 'stop') break;
+
+      if (choice.finish_reason === 'tool_calls') {
+        for (const toolCall of choice.message.tool_calls) {
+          const toolInput = JSON.parse(toolCall.function.arguments);
+          const result    = await executeToolCall(toolCall.function.name, toolInput);
+          messages.push({
+            role:         'tool',
+            tool_call_id: toolCall.id,
+            content:      JSON.stringify(result)
+          });
+        }
+      } else {
+        break;
+      }
+    }
+
+    // Phase 2: separate JSON-only call to get reply + suggestions reliably
+    const jsonSystemPrompt = `You are CJ Assistant for CJ's Fun Time Rental. The business has 3 vehicles:
+- 2022 Polaris Slingshot
+- 2020 Polaris Slingshot
+- 2021 Can-Am Spyder F3 Limited
+
+Your job is to guide the admin using clickable chips as much as possible. The admin should rarely need to type.
+
+REPLY rules:
+- 1 sentence max. Plain text only — no asterisks, dashes, or markdown.
+- If you need clarification, ask it in one short sentence and let the chips answer it.
+- If an action completed, confirm it in one sentence.
+- Never list options in the reply text — put them in chips instead.
+
+CHIPS rules:
+- Return 3 to 6 chips depending on context.
+- Chips ARE the options. If the user needs to pick something, each chip IS one of the choices.
+- Phrase chips as things the admin would naturally say or want, e.g. "Change 2022 Slingshot to $200/day"
+- When a choice needs a specific value (like a price), include a realistic example value in the chip text so the user can tap and immediately understand what will happen.
+- Chips must be specific and actionable — never generic like "See more" or "Go back".
+- Adapt to the conversation. After showing prices, chips should be about changing or acting on those prices. After leads, chips should be about contacting or managing those leads.
+- Never repeat the same chip set twice in a row.
+
+Respond ONLY with valid JSON, no other text:
+{"reply":"...","chips":["...","...","..."]}`;
+
+
+    const jsonResponse = await client.chat.completions.create({
+      model:           'gpt-4o',
+      response_format: { type: 'json_object' },
+      messages: [
+        { role: 'system', content: jsonSystemPrompt },
+        ...messages.slice(1) // pass full conversation minus original system prompt
+      ]
+    });
+
+    let reply = 'Done.';
+    let suggestions = [];
+    try {
+      const parsed = JSON.parse(jsonResponse.choices[0].message.content);
+      reply       = parsed.reply  || 'Done.';
+      suggestions = parsed.chips  || parsed.suggestions || [];
+    } catch (e) {
+      reply = jsonResponse.choices[0].message.content || 'Done.';
+    }
+
+    return res.json({ reply, suggestions });
+  } catch (e) {
+    console.error('Chat route error:', e);
+    res.status(500).json({ reply: 'Something went wrong. Please try again.' });
+  }
 });
 
 // ── Admin panel routes ─────────────────────────────────────────────────────────
