@@ -1,14 +1,17 @@
 (function () {
   'use strict';
 
-  var ADMIN_API = '/api';
+  var ADMIN_API = 'https://yzdtevrwystezhbmgcwn.supabase.co/functions/v1/admin';
+  var _token = localStorage.getItem('admin_token') || '';
 
   function adminHeaders(extra) {
-    return Object.assign({ 'Content-Type': 'application/json' }, extra || {});
+    var h = { 'Content-Type': 'application/json' };
+    if (_token) h['Authorization'] = 'Bearer ' + _token;
+    return Object.assign(h, extra || {});
   }
 
   function apiFetch(url, opts) {
-    return fetch(url, Object.assign({ credentials: 'same-origin' }, opts || {},
+    return fetch(url, Object.assign({}, opts || {},
       { headers: adminHeaders((opts || {}).headers) }));
   }
 
@@ -120,7 +123,8 @@
 
   // ── Auth ─────────────────────────────────────────────────────
   function checkAuth() {
-    fetch('/api/auth/me', { credentials: 'same-origin' })
+    if (!_token) return;
+    apiFetch(ADMIN_API + '/me')
       .then(function (r) { return r.json(); })
       .then(function (data) { if (data.loggedIn) showAdmin(); })
       .catch(function () {});
@@ -139,18 +143,19 @@
       btn.textContent = 'Signing in…';
       document.getElementById('login-error').classList.add('hidden');
 
-      fetch('/api/auth/login', {
+      fetch(ADMIN_API + '/login', {
         method: 'POST',
-        credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email, password: pw })
       })
         .then(function (r) { return r.json(); })
         .then(function (data) {
-          if (data.ok) {
+          if (data.ok && data.token) {
+            _token = data.token;
+            localStorage.setItem('admin_token', _token);
             showAdmin();
           } else {
-            showLoginError(data.error || 'Invalid password');
+            showLoginError(data.error || 'Invalid email or password');
             btn.disabled = false;
             btn.textContent = 'Sign In';
           }
@@ -206,14 +211,14 @@
 
   function bindLogoutBtn() {
     document.getElementById('logout-btn').addEventListener('click', function () {
-      fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).finally(function () {
-        document.body.className = 'not-logged-in';
-        document.getElementById('login-email').value = '';
-        document.getElementById('login-password').value = '';
-        document.getElementById('login-error').classList.add('hidden');
-        document.getElementById('login-btn').disabled = false;
-        document.getElementById('login-btn').textContent = 'Sign In';
-      });
+      _token = '';
+      localStorage.removeItem('admin_token');
+      document.body.className = 'not-logged-in';
+      document.getElementById('login-email').value = '';
+      document.getElementById('login-password').value = '';
+      document.getElementById('login-error').classList.add('hidden');
+      document.getElementById('login-btn').disabled = false;
+      document.getElementById('login-btn').textContent = 'Sign In';
     });
   }
 
@@ -264,7 +269,7 @@
       btn.disabled = true;
       btn.textContent = 'Updating…';
 
-      apiFetch('/api/auth/change-password', {
+      apiFetch(ADMIN_API + '/change-password', {
         method: 'POST',
         body: JSON.stringify({ currentPassword: current, newPassword: next })
       })
@@ -295,7 +300,7 @@
 
   function showAdmin() {
     // Fetch user info and show name in sidebar
-    fetch('/api/auth/me', { credentials: 'same-origin' })
+    apiFetch(ADMIN_API + '/me')
       .then(function (r) { return r.json(); })
       .then(function (data) {
         var el = document.getElementById('sidebar-user-name');
@@ -1174,7 +1179,7 @@
       var typingEl = appendTyping();
       scrollToBottom();
 
-      apiFetch('/api/admin/chat', {
+      apiFetch(ADMIN_API + '/chat', {
         method: 'POST',
         body:   JSON.stringify({ message: text })
       })

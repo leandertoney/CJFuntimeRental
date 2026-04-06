@@ -3,15 +3,31 @@ import { Resend } from 'https://esm.sh/resend@2';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const ANON_KEY     = Deno.env.get('SUPABASE_ANON_KEY')!;
+const TOKEN_SECRET = Deno.env.get('ADMIN_TOKEN_SECRET') || SERVICE_KEY;
 
 // Service client — bypasses RLS, used for all data operations
 const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
 
+// ── SHA-256 password hashing (Web Crypto) ───────────────────────────────────
+async function sha256(str: string): Promise<string> {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Admin users — passwords stored as SHA-256 hashes
+const ADMIN_USERS: { email: string; name: string; hash: string }[] = [];
+async function initUsers() {
+  if (ADMIN_USERS.length) return;
+  ADMIN_USERS.push(
+    { email: 'leandertoney@gmail.com',   name: 'Leander', hash: await sha256('Ballin!23') },
+    { email: 'chrisjohnson839@gmail.com', name: 'Chris',   hash: await sha256('Rental$!23') },
+  );
+}
+
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'content-type, authorization',
-  'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS'
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS'
 };
 
 function json(data: unknown, status = 200) {
@@ -21,22 +37,41 @@ function json(data: unknown, status = 200) {
   });
 }
 
-// Verify the Bearer JWT is a valid Supabase session for an allowed user
-async function verifyAuth(req: Request): Promise<boolean> {
+// ── HMAC token helpers ──────────────────────────────────────────────────────
+async function hmacSign(payload: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    'raw', new TextEncoder().encode(TOKEN_SECRET),
+    { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+  );
+  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(payload));
+  return btoa(String.fromCharCode(...new Uint8Array(sig))).replace(/=+$/, '');
+}
+
+async function createToken(email: string, name: string): Promise<string> {
+  const exp = Date.now() + 8 * 60 * 60 * 1000; // 8 hours
+  const payload = JSON.stringify({ email, name, exp });
+  const b64 = btoa(payload);
+  const sig = await hmacSign(b64);
+  return b64 + '.' + sig;
+}
+
+async function verifyToken(token: string): Promise<{ email: string; name: string } | null> {
+  const [b64, sig] = token.split('.');
+  if (!b64 || !sig) return null;
+  const expected = await hmacSign(b64);
+  if (sig !== expected) return null;
+  try {
+    const payload = JSON.parse(atob(b64));
+    if (!payload.exp || payload.exp < Date.now()) return null;
+    return { email: payload.email, name: payload.name };
+  } catch { return null; }
+}
+
+async function verifyAuth(req: Request): Promise<{ email: string; name: string } | null> {
   const authHeader = req.headers.get('authorization') || '';
   const token = authHeader.replace(/^Bearer\s+/i, '');
-  if (!token) return false;
-
-  // Use anon client to validate the JWT — getUser validates the token server-side
-  const userClient = createClient(SUPABASE_URL, ANON_KEY, {
-    global: { headers: { Authorization: 'Bearer ' + token } }
-  });
-  const { data: { user }, error } = await userClient.auth.getUser();
-  if (error || !user) return false;
-
-  // Allow only our two known admin emails
-  const allowed = ['leandertoney@gmail.com', 'chrisjohnson839@gmail.com'];
-  return allowed.includes(user.email ?? '');
+  if (!token) return null;
+  return await verifyToken(token);
 }
 
 // ── AI Chat helpers ──────────────────────────────────────────────────────────
@@ -143,11 +178,48 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
 
   const url = new URL(req.url);
-  const path = url.pathname.replace(/^\/functions\/v1\/admin/, '');
+  const path = url.pathname.replace(/^\/admin/, '');
 
-  // All endpoints require a valid Supabase session JWT
-  if (!await verifyAuth(req)) {
+  // ── Login (public) ─────────────────────────────────────────────────────────
+  if (path === '/login' && req.method === 'POST') {
+    await initUsers();
+    const { email, password } = await req.json();
+    if (!email || !password) return json({ error: 'Email and password required' }, 400);
+    const user = ADMIN_USERS.find(u => u.email.toLowerCase() === email.toLowerCase());
+    const pwHash = await sha256(password);
+    if (!user || user.hash !== pwHash) {
+      return json({ error: 'Invalid email or password' }, 401);
+    }
+    const token = await createToken(user.email, user.name);
+    return json({ ok: true, token, name: user.name, email: user.email });
+  }
+
+  // ── Me (public — returns logged-in status) ────────────────────────────────
+  if (path === '/me' && req.method === 'GET') {
+    const user = await verifyAuth(req);
+    if (user) return json({ loggedIn: true, name: user.name, email: user.email });
+    return json({ loggedIn: false });
+  }
+
+  // All other endpoints require a valid token
+  const authedUser = await verifyAuth(req);
+  if (!authedUser) {
     return json({ error: 'Unauthorized' }, 401);
+  }
+
+  // ── Change password ────────────────────────────────────────────────────────
+  if (path === '/change-password' && req.method === 'POST') {
+    await initUsers();
+    const { currentPassword, newPassword } = await req.json();
+    if (!currentPassword || !newPassword) return json({ error: 'Both passwords required' }, 400);
+    if (newPassword.length < 8) return json({ error: 'New password must be at least 8 characters' }, 400);
+    const user = ADMIN_USERS.find(u => u.email === authedUser.email);
+    const curHash = await sha256(currentPassword);
+    if (!user || user.hash !== curHash) {
+      return json({ error: 'Current password is incorrect' }, 401);
+    }
+    user.hash = await sha256(newPassword);
+    return json({ ok: true });
   }
 
   // ── Config ──────────────────────────────────────────────────────────────────
