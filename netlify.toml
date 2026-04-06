@@ -1,0 +1,43 @@
+[build]
+  publish = "."
+
+# Pretty URLs for SEO landing pages
+[[redirects]]
+  from = "/slingshot-rental-lancaster-pa"
+  to   = "/pages/slingshot-rental-lancaster-pa.html"
+  status = 200
+
+[[redirects]]
+  from = "/slingshot-rental-near-york-pa"
+  to   = "/pages/slingshot-rental-near-york-pa.html"
+  status = 200
+
+[[redirects]]
+  from = "/slingshot-rental-near-harrisburg-pa"
+  to   = "/pages/slingshot-rental-near-harrisburg-pa.html"
+  status = 200
+
+[[redirects]]
+  from = "/slingshot-rental-near-reading-pa"
+  to   = "/pages/slingshot-rental-near-reading-pa.html"
+  status = 200
+
+[[redirects]]
+  from = "/can-am-spyder-rental-pa"
+  to   = "/pages/can-am-spyder-rental-pa.html"
+  status = 200
+
+[[redirects]]
+  from = "/scenic-routes-lancaster-pa"
+  to   = "/pages/scenic-routes-lancaster-pa.html"
+  status = 200
+
+[[redirects]]
+  from = "/admin"
+  to   = "/admin/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/booking-success"
+  to   = "/booking-success.html"
+  status = 200
