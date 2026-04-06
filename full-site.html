@@ -2723,8 +2723,8 @@
   <!-- VEHICLE DETAIL PANEL -->
   <script src="vehicle-detail.js"></script>
 
-  <!-- ADMIN CONFIG — must load before stripe-checkout.js so discounts are available -->
-  <script src="/site-config.js"></script>
+  <!-- ADMIN CONFIG — loaded from Supabase so live changes reflect immediately -->
+  <script src="https://yzdtevrwystezhbmgcwn.supabase.co/functions/v1/config"></script>
 
   <!-- STRIPE PAYMENT INTEGRATION -->
   <!-- Stripe.js is loaded but only activates when STRIPE_ENABLED = true in stripe.config.js -->

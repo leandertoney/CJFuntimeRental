@@ -35,6 +35,27 @@ Deno.serve(async (req) => {
 
     const stripeKey = Deno.env.get('STRIPE_SECRET_KEY')!;
 
+    // Check for double-booking
+    const { data: existing } = await supabase
+      .from('bookings')
+      .select('id, start_date, end_date')
+      .eq('status', 'confirmed')
+      .eq('vehicle', vehicleKey);
+
+    if (existing && existing.length > 0) {
+      const reqStart = new Date(startDate);
+      const reqEnd   = new Date(endDate || startDate);
+      for (const b of existing) {
+        const bStart = new Date(b.start_date);
+        const bEnd   = new Date(b.end_date || b.start_date);
+        if (reqStart < bEnd && reqEnd > bStart) {
+          return new Response(JSON.stringify({ error: 'Those dates are already booked. Please choose different dates.' }), {
+            status: 409, headers: { ...CORS, 'Content-Type': 'application/json' }
+          });
+        }
+      }
+    }
+
     // Get current rate from Supabase config
     let unitAmount: number | null = null;
     try {

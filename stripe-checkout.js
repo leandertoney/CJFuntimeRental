@@ -208,11 +208,13 @@
       })
     })
     .then(function (r) { return r.json(); })
-    .then(function (data) {
-      if (data.url) {
-        window.location.href = data.url;
+    .then(function (r) { return r.json().then(function(d) { return { status: r.status, data: d }; }); })
+    .then(function (res) {
+      if (res.data.url) {
+        window.location.href = res.data.url;
       } else {
-        throw new Error(data.error || 'No checkout URL returned');
+        if (btn) { btn.disabled = false; btn.textContent = 'Book & Pay Securely →'; }
+        alert(res.data.error || 'Something went wrong. Please try again.');
       }
     })
     .catch(function (err) {
@@ -241,9 +243,33 @@
 
     var s2next = $('bm-step2-next');
     if (s2next) s2next.addEventListener('click', function () {
-      state.startDate = $('bm-start-date').value;
+      var startVal = $('bm-start-date').value;
+      var endVal   = $('bm-end-date').value;
+
+      if (!startVal || !endVal) {
+        alert('Please select both a start and end date.');
+        return;
+      }
+      if (new Date(endVal) <= new Date(startVal)) {
+        alert('Return date must be after pickup date.');
+        return;
+      }
+
+      // Check blocked dates from site config
+      var blocked = (window.SITE_CONFIG && window.SITE_CONFIG.blockedDates) || [];
+      var start = new Date(startVal);
+      var end   = new Date(endVal);
+      for (var d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
+        var iso = d.toISOString().split('T')[0];
+        if (blocked.indexOf(iso) !== -1) {
+          alert('Sorry, ' + iso + ' is unavailable. Please choose different dates.');
+          return;
+        }
+      }
+
+      state.startDate = startVal;
       state.startTime = $('bm-start-time').value;
-      state.endDate   = $('bm-end-date').value;
+      state.endDate   = endVal;
       state.endTime   = $('bm-end-time').value;
       buildSummary();
       goToStep(3);
