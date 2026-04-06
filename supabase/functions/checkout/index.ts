@@ -89,7 +89,21 @@ Deno.serve(async (req) => {
     }
 
     if (promoCode) {
-      sessionBody['discounts[0][promotion_code]'] = promoCode;
+      // Look up the Stripe promotion_code ID from the human-readable code string
+      const promoRes = await fetch(
+        'https://api.stripe.com/v1/promotion_codes?code=' + encodeURIComponent(promoCode) + '&limit=1&active=true',
+        { headers: { 'Authorization': 'Bearer ' + stripeKey } }
+      );
+      const promoData = await promoRes.json();
+      const promoId = promoData?.data?.[0]?.id;
+      if (promoId) {
+        sessionBody['discounts[0][promotion_code]'] = promoId;
+      } else {
+        return new Response(
+          JSON.stringify({ error: 'Promo code "' + promoCode + '" is invalid or expired.' }),
+          { status: 400, headers: { ...CORS, 'Content-Type': 'application/json' } }
+        );
+      }
     } else {
       sessionBody['allow_promotion_codes'] = 'true';
     }
