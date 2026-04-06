@@ -2,7 +2,7 @@
   'use strict';
 
   var cfg = null;
-  var activeSection = 'sections';
+  var activeSection = 'overview';
   var calYear, calMonth;
 
   var SECTION_LABELS = {
@@ -91,6 +91,19 @@
     bindNav();
     bindSaveBtn();
     bindLogoutBtn();
+    bindSidebarToggle();
+    initChat();
+  }
+
+  function bindSidebarToggle() {
+    var sidebar = document.getElementById('sidebar');
+    sidebar.classList.add('collapsed');
+    sidebar.addEventListener('mouseenter', function () {
+      sidebar.classList.remove('collapsed');
+    });
+    sidebar.addEventListener('mouseleave', function () {
+      sidebar.classList.add('collapsed');
+    });
   }
 
   // ── Auth ─────────────────────────────────────────────────────
@@ -221,6 +234,7 @@
 
   // ── Panel router ─────────────────────────────────────────────
   var PANEL_TITLES = {
+    overview:  'Overview',
     sections:  'Show / Hide Sections',
     pricing:   'Pricing & Availability',
     copy:      'Edit Copy',
@@ -237,6 +251,7 @@
     document.getElementById('panel-title').textContent = PANEL_TITLES[name] || '';
 
     var map = {
+      overview:  renderOverviewPanel,
       sections:  renderSectionsPanel,
       pricing:   renderPricingPanel,
       copy:      renderCopyPanel,
@@ -246,6 +261,154 @@
       leads:     renderLeadsPanel
     };
     if (map[name]) map[name]();
+  }
+
+  // ── Overview panel ───────────────────────────────────────────
+  function renderOverviewPanel() {
+    var container = document.getElementById('overview-content');
+    container.innerHTML = '<div class="overview-loading">Loading...</div>';
+
+    Promise.all([
+      fetch('/api/bookings').then(function (r) { return r.json(); }),
+      fetch('/api/leads').then(function (r) { return r.json(); })
+    ]).then(function (results) {
+      var bookings = results[0];
+      var leads    = results[1];
+      container.innerHTML = buildOverviewHTML(bookings, leads);
+    }).catch(function () {
+      container.innerHTML = '<div class="overview-loading">Could not load data.</div>';
+    });
+  }
+
+  function buildOverviewHTML(bookings, leads) {
+    var now       = new Date();
+    var todayStr  = now.toISOString().split('T')[0];
+
+    // ── Booking stats ────────────────────────────────────────────
+    var totalRevenue    = 0;
+    var thisMonthRev    = 0;
+    var activeNow       = [];
+    var upcoming        = [];
+    var recentBookings  = bookings.slice(0, 5);
+
+    var thisMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+
+    bookings.forEach(function (b) {
+      totalRevenue += b.total || 0;
+      if ((b.createdAt || '').startsWith(thisMonth)) thisMonthRev += b.total || 0;
+      if (b.startDate <= todayStr && b.endDate >= todayStr) activeNow.push(b);
+      if (b.startDate > todayStr) upcoming.push(b);
+    });
+
+    // sort upcoming by soonest first
+    upcoming.sort(function (a, b) { return a.startDate.localeCompare(b.startDate); });
+
+    // ── Vehicle availability ─────────────────────────────────────
+    var vehicles    = cfg.vehicles || {};
+    var vKeys       = Object.keys(vehicles);
+    var availCount  = vKeys.filter(function (k) { return vehicles[k].available; }).length;
+
+    // ── Leads stats ──────────────────────────────────────────────
+    var leadsThisMonth = leads.filter(function (l) {
+      return (l.date || '').startsWith(thisMonth);
+    }).length;
+
+    // ── Blocked dates ────────────────────────────────────────────
+    var blocked        = (cfg.blockedDates || []).filter(function (d) { return d >= todayStr; });
+
+    // ── HTML ─────────────────────────────────────────────────────
+    var html = '';
+
+    // Stat cards row
+    html += '<div class="ov-cards">';
+    html += ovCard('Total Revenue',  '$' + totalRevenue.toLocaleString(), 'All time', 'green');
+    html += ovCard('This Month',     '$' + thisMonthRev.toLocaleString(), now.toLocaleString('default', { month: 'long' }), 'orange');
+    html += ovCard('Total Bookings', bookings.length,                     'All time', 'blue');
+    html += ovCard('Leads',          leads.length,                        leadsThisMonth + ' this month', 'purple');
+    html += ovCard('Vehicles',       availCount + ' / ' + vKeys.length,  'Available now', availCount > 0 ? 'green' : 'red');
+    html += ovCard('Upcoming',       upcoming.length,                     'Future bookings', 'blue');
+    html += '</div>';
+
+    // Row 1: Active + Upcoming side by side
+    html += '<div class="ov-grid">';
+
+    html += '<div class="ov-section">';
+    html += '<h3 class="ov-section-title">Active Rentals Right Now</h3>';
+    if (activeNow.length === 0) {
+      html += '<div class="ov-empty">No rentals active today.</div>';
+    } else {
+      html += '<div class="ov-list">';
+      activeNow.forEach(function (b) { html += ovBookingRow(b); });
+      html += '</div>';
+    }
+    html += '</div>';
+
+    html += '<div class="ov-section">';
+    html += '<h3 class="ov-section-title">Upcoming Bookings</h3>';
+    if (upcoming.length === 0) {
+      html += '<div class="ov-empty">No upcoming bookings yet.</div>';
+    } else {
+      html += '<div class="ov-list">';
+      upcoming.slice(0, 5).forEach(function (b) { html += ovBookingRow(b); });
+      html += '</div>';
+    }
+    html += '</div>';
+
+    html += '</div>'; // ov-grid
+
+    // Row 2: Recent Bookings + Recent Leads side by side
+    html += '<div class="ov-grid">';
+
+    html += '<div class="ov-section">';
+    html += '<h3 class="ov-section-title">Recent Bookings</h3>';
+    if (recentBookings.length === 0) {
+      html += '<div class="ov-empty">No bookings yet — they\'ll appear here after customers check out.</div>';
+    } else {
+      html += '<div class="ov-list">';
+      recentBookings.forEach(function (b) { html += ovBookingRow(b); });
+      html += '</div>';
+    }
+    html += '</div>';
+
+    html += '<div class="ov-section">';
+    html += '<h3 class="ov-section-title">Recent Leads</h3>';
+    if (leads.length === 0) {
+      html += '<div class="ov-empty">No leads yet.</div>';
+    } else {
+      html += '<div class="ov-list">';
+      leads.slice(0, 5).forEach(function (l) {
+        var d = l.date ? new Date(l.date).toLocaleDateString() : '—';
+        html += '<div class="ov-row">'
+          + '<div class="ov-row-main">' + esc(l.email) + '</div>'
+          + '<div class="ov-row-meta">' + esc(l.source || 'Website') + ' &middot; ' + d + '</div>'
+          + (l.promoCode ? '<div class="ov-badge ov-badge-promo">' + esc(l.promoCode) + '</div>' : '')
+          + '</div>';
+      });
+      html += '</div>';
+    }
+    html += '</div>';
+
+    html += '</div>'; // ov-grid
+
+    return html;
+  }
+
+  function ovCard(label, value, sub, color) {
+    return '<div class="ov-card ov-card-' + color + '">'
+      + '<div class="ov-card-value">' + value + '</div>'
+      + '<div class="ov-card-label">' + label + '</div>'
+      + '<div class="ov-card-sub">' + sub + '</div>'
+      + '</div>';
+  }
+
+  function ovBookingRow(b, type) {
+    var dateRange = b.startDate + (b.endDate && b.endDate !== b.startDate ? ' → ' + b.endDate : '');
+    return '<div class="ov-row">'
+      + '<div class="ov-row-main">' + esc(b.name || b.email) + '</div>'
+      + '<div class="ov-row-vehicle">' + esc(b.vehicle) + '</div>'
+      + '<div class="ov-row-meta">' + dateRange + ' &middot; ' + b.days + 'd</div>'
+      + '<div class="ov-badge ov-badge-revenue">$' + (b.total || 0).toLocaleString() + '</div>'
+      + '</div>';
   }
 
   // ── Sections panel ───────────────────────────────────────────
@@ -727,6 +890,179 @@
       .replace(/</g,'&lt;')
       .replace(/>/g,'&gt;')
       .replace(/"/g,'&quot;');
+  }
+
+  // ── AI Chat Widget ───────────────────────────────────────────
+  var CHAT_DEFAULT_CHIPS = [
+    'Show me all leads',
+    'What are my current prices?',
+    'How many vehicles are available?',
+    'Show me my discount tiers'
+  ];
+
+  function initChat() {
+    var widget    = document.getElementById('chat-widget');
+    var trigger   = document.getElementById('chat-trigger');
+    var iconOpen  = document.getElementById('chat-icon-open');
+    var iconClose = document.getElementById('chat-icon-close');
+    var messages   = document.getElementById('chat-messages');
+    var input      = document.getElementById('chat-input');
+    var sendBtn    = document.getElementById('chat-send');
+    var fixedChips = document.getElementById('chat-fixed-chips');
+
+    var isOpen    = false;
+    var isWaiting = false;
+
+    appendAssistantMessage("Hey! I'm your CJ Assistant. I help you manage your rentals — prices, leads, promos, and more. Just tap a button or tell me what you need!", [
+      "What are my current prices?",
+      "Show me my leads",
+      "I want to change a price"
+    ]);
+    scrollToBottom();
+
+    // Wire up fixed bottom chips
+    fixedChips.querySelectorAll('.chat-fixed-chip').forEach(function (chip) {
+      chip.addEventListener('click', function () {
+        if (isWaiting) return;
+        input.value = this.getAttribute('data-prompt');
+        sendMessage();
+      });
+    });
+
+    trigger.addEventListener('click', function () {
+      isOpen = !isOpen;
+      widget.classList.toggle('open', isOpen);
+      iconOpen.classList.toggle('hidden', isOpen);
+      iconClose.classList.toggle('hidden', !isOpen);
+      if (isOpen) setTimeout(function () { input.focus(); }, 240);
+    });
+
+    sendBtn.addEventListener('click', sendMessage);
+
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    input.addEventListener('input', function () {
+      this.style.height = 'auto';
+      this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+    });
+
+    function setChipsDisabled(disabled) {
+      messages.querySelectorAll('.chat-inline-chip').forEach(function (c) {
+        c.disabled = disabled;
+      });
+      fixedChips.querySelectorAll('.chat-fixed-chip').forEach(function (c) {
+        c.disabled = disabled;
+      });
+    }
+
+    function sendMessage() {
+      var text = input.value.trim();
+      if (!text || isWaiting) return;
+
+      isWaiting = true;
+      sendBtn.disabled = true;
+      setChipsDisabled(true);
+
+      appendUserMessage(text);
+      input.value = '';
+      input.style.height = 'auto';
+
+      var typingEl = appendTyping();
+      scrollToBottom();
+
+      fetch('/api/admin/chat', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ message: text })
+      })
+      .then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
+      .then(function (data) {
+        removeTyping(typingEl);
+        appendAssistantMessage(data.reply || 'Done.', data.suggestions || []);
+        scrollToBottom();
+      })
+      .catch(function () {
+        removeTyping(typingEl);
+        appendAssistantMessage('Something went wrong. Please try again.', []);
+        scrollToBottom();
+      })
+      .finally(function () {
+        isWaiting = false;
+        sendBtn.disabled = false;
+        setChipsDisabled(false);
+        input.focus();
+      });
+    }
+
+    function appendUserMessage(text) {
+      var div = document.createElement('div');
+      div.className = 'chat-msg user';
+      var bubble = document.createElement('div');
+      bubble.className = 'chat-msg-bubble';
+      bubble.textContent = text;
+      div.appendChild(bubble);
+      messages.appendChild(div);
+      scrollToBottom();
+    }
+
+    function appendAssistantMessage(text, chips) {
+      var div = document.createElement('div');
+      div.className = 'chat-msg assistant';
+
+      var bubble = document.createElement('div');
+      bubble.className = 'chat-msg-bubble';
+      // Render line breaks; text is plain (no markdown) so safe to set innerHTML with only \n converted
+      bubble.innerHTML = esc(text).replace(/\n/g, '<br>');
+      div.appendChild(bubble);
+
+      if (chips && chips.length) {
+        var chipsRow = document.createElement('div');
+        chipsRow.className = 'chat-inline-chips';
+        chips.forEach(function (chipText) {
+          var btn = document.createElement('button');
+          btn.className = 'chat-inline-chip';
+          btn.textContent = chipText;
+          btn.addEventListener('click', function () {
+            if (isWaiting) return;
+            input.value = chipText;
+            sendMessage();
+          });
+          chipsRow.appendChild(btn);
+        });
+        div.appendChild(chipsRow);
+      }
+
+      messages.appendChild(div);
+      scrollToBottom();
+    }
+
+    function appendTyping() {
+      var div = document.createElement('div');
+      div.className = 'chat-msg assistant chat-typing';
+      div.innerHTML = '<div class="chat-msg-bubble">'
+        + '<span class="chat-typing-dot"></span>'
+        + '<span class="chat-typing-dot"></span>'
+        + '<span class="chat-typing-dot"></span>'
+        + '</div>';
+      messages.appendChild(div);
+      return div;
+    }
+
+    function removeTyping(el) {
+      if (el && el.parentNode) el.parentNode.removeChild(el);
+    }
+
+    function scrollToBottom() {
+      messages.scrollTop = messages.scrollHeight;
+    }
   }
 
   document.addEventListener('DOMContentLoaded', init);

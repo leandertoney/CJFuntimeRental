@@ -1,0 +1,67 @@
+[
+  {
+    "id": "94e30542",
+    "name": "Marcus Johnson",
+    "email": "marcus@example.com",
+    "phone": "7175550001",
+    "vehicle": "2022 Polaris Slingshot",
+    "startDate": "2026-04-05",
+    "endDate": "2026-04-07",
+    "days": 3,
+    "total": 540,
+    "savings": 54,
+    "createdAt": "2026-04-03T16:08:30.519Z"
+  },
+  {
+    "id": "63830cb2",
+    "name": "Diana Torres",
+    "email": "diana@example.com",
+    "phone": "7175550002",
+    "vehicle": "2021 Can-Am Spyder F3 Limited",
+    "startDate": "2026-04-08",
+    "endDate": "2026-04-10",
+    "days": 3,
+    "total": 609,
+    "savings": 60,
+    "createdAt": "2026-04-04T16:08:30.519Z"
+  },
+  {
+    "id": "f4200939",
+    "name": "Kevin Park",
+    "email": "kevin@example.com",
+    "phone": "7175550003",
+    "vehicle": "2020 Polaris Slingshot",
+    "startDate": "2026-04-12",
+    "endDate": "2026-04-18",
+    "days": 7,
+    "total": 1512,
+    "savings": 270,
+    "createdAt": "2026-04-05T16:08:30.519Z"
+  },
+  {
+    "id": "f0f201fb",
+    "name": "Amber Willis",
+    "email": "amber@example.com",
+    "phone": "7175550004",
+    "vehicle": "2022 Polaris Slingshot",
+    "startDate": "2026-03-31",
+    "endDate": "2026-04-02",
+    "days": 3,
+    "total": 540,
+    "savings": 54,
+    "createdAt": "2026-03-29T16:08:30.519Z"
+  },
+  {
+    "id": "f108b86a",
+    "name": "Brian Scott",
+    "email": "brian@example.com",
+    "phone": "7175550005",
+    "vehicle": "2021 Can-Am Spyder F3 Limited",
+    "startDate": "2026-03-26",
+    "endDate": "2026-03-28",
+    "days": 3,
+    "total": 609,
+    "savings": 0,
+    "createdAt": "2026-03-24T16:08:30.519Z"
+  }
+]
