@@ -1733,6 +1733,14 @@
     .bm-nav .btn-back:hover { color: var(--white); border-color: rgba(255,255,255,0.2); }
     .bm-nav .btn-next { flex: 1; }
     .bm-note { font-size: 11px; color: var(--muted); text-align: center; margin-top: 14px; line-height: 1.6; }
+    .bm-promo-wrap { margin-bottom: 16px; }
+    .bm-promo-toggle { font-size: 12px; color: var(--muted); cursor: pointer; text-align: center; transition: color 0.2s; }
+    .bm-promo-toggle:hover { color: var(--orange); }
+    .bm-promo-toggle span { color: var(--orange); text-decoration: underline; text-underline-offset: 3px; }
+    .bm-promo-field { margin-top: 10px; }
+    .bm-promo-field input { width: 100%; padding: 11px 14px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,107,0,0.3); border-radius: 8px; color: var(--white); font-family: var(--body); font-size: 13px; letter-spacing: 1px; outline: none; transition: border-color 0.2s; }
+    .bm-promo-field input:focus { border-color: var(--orange); }
+    .bm-promo-note { font-size: 11px; color: rgba(255,107,0,0.6); margin-top: 6px; text-align: center; }
 
     @media (max-width: 480px) {
       .booking-modal { padding: 0; align-items: flex-end; }
@@ -2682,6 +2690,14 @@
             <div class="bm-inclusion-item">600 miles included per trip</div>
             <div class="bm-inclusion-item">Pickup &amp; return in Lancaster, PA</div>
             <div class="bm-inclusion-item">No motorcycle license required</div>
+          </div>
+          <!-- Promo code -->
+          <div class="bm-promo-wrap">
+            <div class="bm-promo-toggle" id="bm-promo-toggle">Have a discount code? <span>Apply &rarr;</span></div>
+            <div class="bm-promo-field" id="bm-promo-field" style="display:none;">
+              <input type="text" id="bm-promo-code" placeholder="Enter code e.g. FIRST10-AB12CD34" autocomplete="off" spellcheck="false" style="text-transform:uppercase;">
+              <p class="bm-promo-note">Code will be applied automatically at checkout.</p>
+            </div>
           </div>
           <p class="bm-note">&#128274; Secure checkout powered by Stripe. You won't be charged until the next step.</p>
         </div>

@@ -20,6 +20,8 @@
     { days: 3, pct: 10, label: '3-day discount' },
   ];
 
+  var SUPABASE_FUNCTIONS = 'https://yzdtevrwystezhbmgcwn.supabase.co/functions/v1';
+
   // State
   var state = {
     vehicle: null,   // { key, label, rate }
@@ -27,6 +29,7 @@
     startTime: null,
     endDate: null,
     endTime: null,
+    promoCode: null
   };
 
   // ── Helpers ────────────────────────────────────────────────────────────────
@@ -183,14 +186,40 @@
       return;
     }
 
-    var link = window.STRIPE_PAYMENT_LINKS && window.STRIPE_PAYMENT_LINKS[state.vehicle.key];
-    if (!link || link.indexOf('REPLACE') !== -1) {
-      console.warn('[Stripe] Payment link not configured for: ' + state.vehicle.key);
-      window.open(FACEBOOK_URL, '_blank', 'noopener,noreferrer');
-      return;
-    }
+    var btn = $('bm-checkout-btn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Redirecting to checkout...'; }
 
-    window.location.href = link;
+    var promoInput = $('bm-promo-code');
+    var promoCode = promoInput ? promoInput.value.trim().toUpperCase() : null;
+
+    var days = calcDays();
+    var startFormatted = formatDate(state.startDate, state.startTime);
+    var endFormatted   = formatDate(state.endDate,   state.endTime);
+
+    fetch(SUPABASE_FUNCTIONS + '/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        vehicleKey: state.vehicle.key,
+        days:       days || 1,
+        startDate:  startFormatted,
+        endDate:    endFormatted,
+        promoCode:  promoCode || undefined
+      })
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error(data.error || 'No checkout URL returned');
+      }
+    })
+    .catch(function (err) {
+      console.error('[Checkout]', err);
+      if (btn) { btn.disabled = false; btn.textContent = 'Book & Pay Securely →'; }
+      alert('Something went wrong starting checkout. Please try again.');
+    });
   }
 
   // ── Init ───────────────────────────────────────────────────────────────────
@@ -226,6 +255,17 @@
 
     var checkoutBtn = $('bm-checkout-btn');
     if (checkoutBtn) checkoutBtn.addEventListener('click', checkout);
+
+    // Promo code toggle
+    var promoToggle = $('bm-promo-toggle');
+    var promoField  = $('bm-promo-field');
+    if (promoToggle && promoField) {
+      promoToggle.addEventListener('click', function () {
+        var open = promoField.style.display !== 'none';
+        promoField.style.display = open ? 'none' : 'block';
+        if (!open) { var inp = $('bm-promo-code'); if (inp) inp.focus(); }
+      });
+    }
 
     // Close button
     var closeBtn = $('bm-close');
