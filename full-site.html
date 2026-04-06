@@ -573,6 +573,18 @@
     /* ─────────────────────────────────────────
        HOW IT WORKS — interactive stepper
     ───────────────────────────────────────── */
+    /* HOW IT WORKS — 3 standalone sections */
+    .how-step { padding: 80px 0; border-bottom: 1px solid var(--border); }
+    .how-step-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; opacity: 1 !important; transform: none !important; }
+    .how-step-inner.flip { direction: rtl; }
+    .how-step-inner.flip > * { direction: ltr; }
+    .how-step-img { width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: 12px; display: block; }
+    .how-step-content { display: flex; flex-direction: column; gap: 16px; }
+    .how-step-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--orange); }
+    .how-step-content h2 { font-family: var(--heading); font-size: clamp(2rem, 4vw, 3rem); letter-spacing: 3px; line-height: 1.05; }
+    .how-step-content p { font-size: 15px; color: var(--muted); line-height: 1.8; max-width: 480px; }
+    @media (max-width: 768px) { .how-step-inner, .how-step-inner.flip { grid-template-columns: 1fr; direction: ltr; gap: 32px; } .how-step-img { aspect-ratio: 16/9; } }
+
     .how { padding: 96px 0; }
     .how > .container { position: relative; z-index: 1; }
     .how-header { margin-bottom: 56px; }
@@ -845,17 +857,29 @@
     }
     .review-card {
       flex: 0 0 300px;
-      background: rgba(255,255,255,0.04);
-      border-radius: 4px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--orange);
+      border-radius: 8px;
       padding: 28px 24px;
       display: flex;
       flex-direction: column;
+      position: relative;
     }
-    .review-stars { font-size: 12px; letter-spacing: 2px; color: var(--amber); margin-bottom: 16px; }
+    .review-card::before {
+      content: '\201C';
+      position: absolute;
+      top: 12px; right: 20px;
+      font-size: 48px;
+      line-height: 1;
+      color: rgba(255,107,0,0.15);
+      font-family: Georgia, serif;
+    }
+    .review-stars { font-size: 12px; letter-spacing: 2px; color: var(--amber); margin-bottom: 14px; }
     .review-quote {
       font-size: 13px;
       line-height: 1.75;
-      color: rgba(255,255,255,0.8);
+      color: rgba(255,255,255,0.85);
       margin-bottom: 20px;
       flex: 1;
     }
@@ -1786,7 +1810,7 @@
       </a>
       <nav class="nav-links" id="nav-links">
         <a href="#fleet">Our Fleet</a>
-        <a href="#how">How It Works</a>
+        <a href="#how-book">How It Works</a>
         <a href="#reviews">Reviews</a>
         <a href="#faq">FAQ</a>
         <a href="#win" class="btn btn-outline-orange" style="font-size:13px;padding:8px 18px">Get 10% Off</a>
@@ -1831,6 +1855,47 @@
   </section>
   </div><!-- /.hero-wrap -->
 
+  <!-- HOW IT WORKS — 3 standalone sections -->
+  <section class="how-step" id="how-book">
+    <div class="container">
+      <div class="how-step-inner">
+        <img src="cj_orange_sling.jpg" class="how-step-img" alt="2022 Polaris Slingshot rental Lancaster PA" loading="lazy">
+        <div class="how-step-content">
+          <span class="how-step-eyebrow">Step 01</span>
+          <h2>Book in Minutes</h2>
+          <p>Choose your vehicle, pick your date, and pay securely online in minutes. Weekends fill fast — lock in your spot before someone else does.</p>
+          <div><button class="btn btn-primary" data-stripe-book>Reserve Your Ride &rarr;</button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="how-step">
+    <div class="container">
+      <div class="how-step-inner flip">
+        <img src="cj_couple_rental.png" class="how-step-img" alt="Polaris Slingshot rental pickup Lancaster PA" loading="lazy">
+        <div class="how-step-content">
+          <span class="how-step-eyebrow">Step 02</span>
+          <h2>Meet Your Host at Pickup</h2>
+          <p>Your host meets you in Lancaster, walks you through the vehicle, and answers any questions. Quick briefing — then you're ready to roll.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="how-step">
+    <div class="container">
+      <div class="how-step-inner">
+        <img src="cj_baby_driver.png" class="how-step-img" alt="No motorcycle license needed — Polaris Slingshot Lancaster PA" loading="lazy">
+        <div class="how-step-content">
+          <span class="how-step-eyebrow">Step 03</span>
+          <h2>No Motorcycle License Required</h2>
+          <p>Explore Central PA on three wheels. No motorcycle experience needed — just a valid driver's license and a sense of adventure.</p>
+          <div><button class="btn btn-primary" data-stripe-book>Book Your Ride &rarr;</button></div>
+        </div>
+      </div>
+    </div>
+  </section>
 
   <!-- FLEET -->
   <section class="fleet" id="fleet">
@@ -1957,137 +2022,12 @@
   </section>
 
 
-  <!-- HOW IT WORKS -->
-  <section class="how" id="how">
-    <div class="container">
-      <div class="how-header reveal">
-        <h2>Ready in 3 Steps</h2>
-        <p>From booking to riding — simple as that.</p>
-      </div>
-      <div class="how-stepper reveal">
-
-        <!-- Step list (left) -->
-        <div class="how-step-list">
-          <div class="how-step-item active" data-step="0">
-            <div class="how-step-num">Step 01</div>
-            <div class="how-step-title">Book &amp; Pay</div>
-            <div class="how-step-progress"><div class="how-step-progress-fill"></div></div>
-          </div>
-          <div class="how-step-item" data-step="1">
-            <div class="how-step-num">Step 02</div>
-            <div class="how-step-title">Meet in Lancaster</div>
-            <div class="how-step-progress"><div class="how-step-progress-fill"></div></div>
-          </div>
-          <div class="how-step-item" data-step="2">
-            <div class="how-step-num">Step 03</div>
-            <div class="how-step-title">Hit the Road</div>
-            <div class="how-step-progress"><div class="how-step-progress-fill"></div></div>
-          </div>
-        </div>
-
-        <!-- Detail panel (right) -->
-        <div class="how-detail">
-
-          <!-- Panel 1: vehicle + date selector mockup -->
-          <div class="how-detail-panel active" data-panel="0">
-            <div class="how-ui-mock">
-              <div class="how-mock-header">Choose Your Vehicle</div>
-              <div class="how-mock-vehicle-row">
-                <span class="vname">2022 Polaris Slingshot</span>
-                <span class="vprice">$180</span>
-              </div>
-              <div class="how-mock-vehicle-unsel">
-                <span class="vname">2020 Polaris Slingshot</span>
-                <span class="vprice">$180</span>
-              </div>
-              <div class="how-mock-vehicle-unsel">
-                <span class="vname">2021 Can-Am Spyder F3</span>
-                <span class="vprice">$203</span>
-              </div>
-              <div class="how-mock-date-row">
-                <div class="how-mock-date-field">
-                  <div class="dlabel">Pickup Date</div>
-                  <div class="dval">Sat, Jun 14</div>
-                </div>
-                <div class="how-mock-date-field">
-                  <div class="dlabel">Return Date</div>
-                  <div class="dval">Sun, Jun 15</div>
-                </div>
-              </div>
-            </div>
-            <div class="how-detail-label">Step 01</div>
-            <h3 class="how-detail-title">Book &amp; Pay</h3>
-            <p class="how-detail-body">Choose your vehicle, pick your date, and pay securely online in minutes. Weekends fill fast — lock in your spot before someone else does.</p>
-          </div>
-
-          <!-- Panel 2: booking confirmation mockup -->
-          <div class="how-detail-panel" data-panel="1">
-            <div class="how-ui-mock">
-              <div class="how-mock-header">Booking Confirmed</div>
-              <div class="how-mock-confirm">
-                <div class="how-mock-confirm-row">
-                  <span class="cl">Vehicle</span>
-                  <span class="cr">2022 Polaris Slingshot</span>
-                </div>
-                <div class="how-mock-confirm-row">
-                  <span class="cl">Date</span>
-                  <span class="cr">Sat, Jun 14</span>
-                </div>
-                <div class="how-mock-confirm-row">
-                  <span class="cl">Pickup</span>
-                  <span class="cr">Lancaster, PA</span>
-                </div>
-                <hr class="how-mock-divider">
-                <div class="how-mock-confirm-row">
-                  <span class="cl">Host</span>
-                  <span class="cr">Chris — CJ's Fun Time</span>
-                </div>
-                <div class="how-mock-confirm-row">
-                  <span class="cl">Total Paid</span>
-                  <span class="cr">$180.00</span>
-                </div>
-              </div>
-              <div class="how-mock-status">Confirmed &amp; Ready</div>
-            </div>
-            <div class="how-detail-label">Step 02</div>
-            <h3 class="how-detail-title">Meet in Lancaster</h3>
-            <p class="how-detail-body">Chris meets you at pickup, walks you through the vehicle, and answers any questions. Quick briefing — then you're ready to roll.</p>
-          </div>
-
-          <!-- Panel 3: ride card mockup -->
-          <div class="how-detail-panel" data-panel="2">
-            <div class="how-ui-mock">
-              <img src="cj_orange_sling.jpg" class="how-mock-ride-img" alt="Polaris Slingshot">
-              <div class="how-mock-ride-meta">
-                <span class="rname">Polaris Slingshot</span>
-                <span class="rprice">$180 / day</span>
-              </div>
-              <div class="how-mock-tags">
-                <span class="how-mock-tag">No Moto License</span>
-                <span class="how-mock-tag">Automatic</span>
-                <span class="how-mock-tag">Open Air</span>
-              </div>
-            </div>
-            <div class="how-detail-label">Step 03</div>
-            <h3 class="how-detail-title">Hit the Road</h3>
-            <p class="how-detail-body">Explore Central PA on three wheels. No motorcycle experience needed — just a valid driver's license and a sense of adventure.</p>
-          </div>
-
-        </div>
-
-      </div>
-      <div class="how-cta reveal">
-        <button class="btn btn-primary" data-stripe-book>Reserve Your Ride &rarr;</button>
-      </div>
-    </div>
-  </section>
-
   <!-- REVIEWS -->
   <section class="reviews" id="reviews">
     <div class="container">
       <div class="reviews-header reveal">
         <h2>What Guests Say</h2>
-        <p style="font-size:12px;color:var(--muted)">&#10003; 14 verified renters &nbsp;·&nbsp; 5.0 ★★★★★</p>
+        <p style="font-size:12px;color:var(--muted)">5.0 ★★★★★ &nbsp;·&nbsp; Rated on Turo</p>
       </div>
       <div class="reviews-track-wrap">
       <div class="reviews-grid" id="reviews-grid">
@@ -2294,6 +2234,7 @@
             <a href="/#reviews">Reviews</a>
             <a href="/#faq">FAQ</a>
             <a href="/#book">Book Now</a>
+            <a href="/admin" style="opacity:0.35;font-size:11px;">Admin</a>
           </nav>
         </div>
         <div class="footer-col">
@@ -2339,6 +2280,7 @@
         var STEP_DURATION = 4000;
         var items    = Array.from(document.querySelectorAll('.how-step-item'));
         var panels   = Array.from(document.querySelectorAll('.how-detail-panel'));
+        if (!items.length) return;
         var current  = 0;
         var timer    = null;
         var fillTimer = null;
@@ -2435,7 +2377,10 @@
           if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); }
         });
       }, { threshold: 0.1, rootMargin: '0px 0px -30px 0px' });
-      document.querySelectorAll('.reveal').forEach(function(el) { obs.observe(el); });
+      document.querySelectorAll('.reveal').forEach(function(el) {
+        if (el.closest('.how-step')) { el.classList.add('visible'); return; }
+        obs.observe(el);
+      });
 
       // FAQ accordion
       document.querySelectorAll('.faq-question').forEach(function(btn) {
