@@ -33,6 +33,41 @@
   status = 200
 
 [[redirects]]
+  from = "/slingshot-rental-near-philadelphia"
+  to   = "/pages/slingshot-rental-near-philadelphia.html"
+  status = 200
+
+[[redirects]]
+  from = "/3-wheel-car-rental-lancaster-pa"
+  to   = "/pages/3-wheel-car-rental-lancaster-pa.html"
+  status = 200
+
+[[redirects]]
+  from = "/3-wheel-car-rental-philadelphia"
+  to   = "/pages/3-wheel-car-rental-philadelphia.html"
+  status = 200
+
+[[redirects]]
+  from = "/trike-rental-lancaster-pa"
+  to   = "/pages/trike-rental-lancaster-pa.html"
+  status = 200
+
+[[redirects]]
+  from = "/slingshot-rental-near-allentown-pa"
+  to   = "/pages/slingshot-rental-near-allentown-pa.html"
+  status = 200
+
+[[redirects]]
+  from = "/slingshot-rental-near-hershey-pa"
+  to   = "/pages/slingshot-rental-near-hershey-pa.html"
+  status = 200
+
+[[redirects]]
+  from = "/slingshot-rental-near-wilmington-de"
+  to   = "/pages/slingshot-rental-near-wilmington-de.html"
+  status = 200
+
+[[redirects]]
   from = "/admin"
   to   = "/admin/index.html"
   status = 200
