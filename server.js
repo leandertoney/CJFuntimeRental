@@ -3,10 +3,10 @@ require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
 const path    = require('path');
-const fs      = require('fs').promises;
 const crypto  = require('crypto');
 const OpenAI  = require('openai');
 const { sendDiscountCode, sendBookingConfirmation, sendOwnerBookingAlert, sendPickupReminder } = require('./emails');
+const { readConfig, writeConfig, readLeads, insertLead, deleteLead, readBookings, insertBooking } = require('./db');
 
 // ── Stripe (only active when key is set) ──────────────────────────────────────
 function getStripe() {
@@ -18,16 +18,14 @@ function getStripe() {
 async function createStripePromoCode(email) {
   const stripe = getStripe();
   if (!stripe) {
-    // Stripe not connected yet — return a unique random code stored locally
     return 'FIRST10-' + crypto.randomBytes(4).toString('hex').toUpperCase();
   }
-  // Create a unique single-use coupon + promo code tied to this customer
   const coupon = await stripe.coupons.create({
-    percent_off:  10,
-    duration:     'once',
-    name:         '10% Off First Rental',
+    percent_off:     10,
+    duration:        'once',
+    name:            '10% Off First Rental',
     max_redemptions: 1,
-    metadata:     { email }
+    metadata:        { email }
   });
   const promo = await stripe.promotionCodes.create({
     coupon:          coupon.id,
@@ -38,20 +36,8 @@ async function createStripePromoCode(email) {
   return promo.code;
 }
 
-const CONFIG_PATH   = path.join(__dirname, 'data', 'siteConfig.json');
-const LEADS_PATH    = path.join(__dirname, 'data', 'leads.json');
-const BOOKINGS_PATH = path.join(__dirname, 'data', 'bookings.json');
-const ADMIN_DIR     = path.join(__dirname, 'admin');
-const PORT          = process.env.PORT || 3000;
-
-async function readBookings() {
-  try {
-    const raw = await fs.readFile(BOOKINGS_PATH, 'utf8');
-    return JSON.parse(raw);
-  } catch (e) {
-    return [];
-  }
-}
+const ADMIN_DIR = path.join(__dirname, 'admin');
+const PORT      = process.env.PORT || 3000;
 
 const app = express();
 
@@ -74,17 +60,6 @@ app.use(session({
 function requireAuth(req, res, next) {
   if (req.session && req.session.adminLoggedIn) return next();
   res.status(401).json({ error: 'Unauthorized' });
-}
-
-// ── Config helpers ─────────────────────────────────────────────────────────────
-async function readConfig() {
-  const raw = await fs.readFile(CONFIG_PATH, 'utf8');
-  return JSON.parse(raw);
-}
-
-async function writeConfig(cfg) {
-  cfg._lastSaved = new Date().toISOString();
-  await fs.writeFile(CONFIG_PATH, JSON.stringify(cfg, null, 2), 'utf8');
 }
 
 // ── Dynamic config script (public) ────────────────────────────────────────────
@@ -154,40 +129,21 @@ app.post('/api/config', requireAuth, async (req, res) => {
 });
 
 // ── Leads API ──────────────────────────────────────────────────────────────────
-async function readLeads() {
-  try {
-    const raw = await fs.readFile(LEADS_PATH, 'utf8');
-    return JSON.parse(raw);
-  } catch (e) {
-    return [];
-  }
-}
-
 // Public — anyone submitting the form hits this
 app.post('/api/leads', async (req, res) => {
   const { email, source } = req.body;
   if (!email || !email.includes('@')) return res.status(400).json({ error: 'Invalid email' });
-  const leads = await readLeads();
-  leads.unshift({
-    email:     email.trim().toLowerCase(),
-    source:    source || 'Website',
-    date:      new Date().toISOString()
-  });
-  await fs.writeFile(LEADS_PATH, JSON.stringify(leads, null, 2), 'utf8');
-
-  // Generate unique promo code and send discount email — don't block the response
-  createStripePromoCode(email.trim().toLowerCase())
-    .then(code => {
-      // Store code against the lead
-      leads[0].promoCode = code;
-      return fs.writeFile(LEADS_PATH, JSON.stringify(leads, null, 2), 'utf8')
-        .then(() => sendDiscountCode(email.trim().toLowerCase(), code));
-    })
-    .catch((err) => {
-      console.error('Discount email failed:', err.message);
-    });
+  const cleanEmail = email.trim().toLowerCase();
 
   res.json({ ok: true });
+
+  // Generate promo code, save lead, send email — all async after response
+  createStripePromoCode(cleanEmail)
+    .then(async code => {
+      await insertLead({ email: cleanEmail, source: source || 'website', promoCode: code });
+      await sendDiscountCode(cleanEmail, code);
+    })
+    .catch(err => console.error('Lead flow error:', err.message));
 });
 
 // ── Stripe Checkout ────────────────────────────────────────────────────────────
@@ -306,9 +262,8 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
       vehicleName = cfg.vehicles[meta.vehicleKey]?.name || vehicleName;
     } catch (_) {}
 
-    // Save booking
-    const bookings = await readBookings();
-    bookings.unshift({
+    // Save booking to Supabase
+    await insertBooking({
       id:        session.id,
       email:     email.toLowerCase(),
       name,
@@ -318,10 +273,8 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
       endDate:   meta.endDate,
       days:      Number(meta.days) || 1,
       total:     Number(total),
-      savings:   discount ? Number(discount) : 0,
-      createdAt: new Date().toISOString()
+      savings:   discount ? Number(discount) : 0
     });
-    await fs.writeFile(BOOKINGS_PATH, JSON.stringify(bookings, null, 2), 'utf8');
 
     // Send emails
     await Promise.all([
@@ -333,37 +286,30 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
   res.json({ received: true });
 });
 
-// Booking confirmation — called after successful Stripe payment
+// Manual booking confirmation fallback
 app.post('/api/booking-confirmed', async (req, res) => {
   const { email, name, vehicle, startDate, endDate, days, total, savings } = req.body;
   if (!email || !vehicle || !startDate) return res.status(400).json({ error: 'Missing fields' });
-
   try {
-    // Persist booking to bookings.json
-    const bookings = await readBookings();
-    bookings.unshift({
-      id:        crypto.randomBytes(4).toString('hex'),
+    await insertBooking({
+      id:        crypto.randomBytes(8).toString('hex'),
       email:     email.trim().toLowerCase(),
       name:      name || '',
       phone:     req.body.phone || '',
-      vehicle,
-      startDate,
+      vehicle, startDate,
       endDate:   endDate || startDate,
       days:      Number(days) || 1,
       total:     Number(total) || 0,
-      savings:   Number(savings) || 0,
-      createdAt: new Date().toISOString()
+      savings:   Number(savings) || 0
     });
-    await fs.writeFile(BOOKINGS_PATH, JSON.stringify(bookings, null, 2), 'utf8');
-
     await Promise.all([
       sendBookingConfirmation({ email, name, vehicle, startDate, endDate, days, total, savings }),
       sendOwnerBookingAlert({ name, email, phone: req.body.phone, vehicle, startDate, endDate, days, total })
     ]);
     res.json({ ok: true });
   } catch (err) {
-    console.error('Booking email failed:', err.message);
-    res.status(500).json({ error: 'Email send failed' });
+    console.error('Booking error:', err.message);
+    res.status(500).json({ error: 'Failed' });
   }
 });
 
@@ -376,13 +322,13 @@ app.get('/api/leads', requireAuth, async (req, res) => {
   res.json(await readLeads());
 });
 
-app.delete('/api/leads/:index', requireAuth, async (req, res) => {
-  const idx = parseInt(req.params.index);
-  const leads = await readLeads();
-  if (idx < 0 || idx >= leads.length) return res.status(400).json({ error: 'Invalid index' });
-  leads.splice(idx, 1);
-  await fs.writeFile(LEADS_PATH, JSON.stringify(leads, null, 2), 'utf8');
-  res.json({ ok: true });
+app.delete('/api/leads/:id', requireAuth, async (req, res) => {
+  try {
+    await deleteLead(req.params.id);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ── AI Admin Chat ──────────────────────────────────────────────────────────────
@@ -523,10 +469,9 @@ async function executeToolCall(name, input) {
     }
     case 'delete_lead': {
       const leads = await readLeads();
-      const idx = leads.findIndex(l => l.email === input.email.trim().toLowerCase());
-      if (idx === -1) return { error: 'Lead not found: ' + input.email };
-      leads.splice(idx, 1);
-      await fs.writeFile(LEADS_PATH, JSON.stringify(leads, null, 2), 'utf8');
+      const lead = leads.find(l => l.email === input.email.trim().toLowerCase());
+      if (!lead) return { error: 'Lead not found: ' + input.email };
+      await deleteLead(lead.id);
       return { ok: true, deleted: input.email };
     }
     case 'send_promo_to_lead': {
