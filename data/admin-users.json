@@ -1,0 +1,14 @@
+[
+  {
+    "id": "1",
+    "email": "leandertoney@gmail.com",
+    "name": "Leander",
+    "password_hash": "$2b$12$5iGSYG1TT0zEXZuJruYvtOmApLBWgrJOSH761FCX6o8/AqDkNmlEK"
+  },
+  {
+    "id": "2",
+    "email": "chrisjohnson839@gmail.com",
+    "name": "Chris",
+    "password_hash": "$2b$12$ze9KbOkkTZDCNuCriOJmzu5rdvl1Z7TCkY4ALApFF9iJg2gpVT8QC"
+  }
+]

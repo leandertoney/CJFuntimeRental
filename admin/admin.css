@@ -94,6 +94,25 @@ body.logged-in #admin-shell { display: flex; }
   color: #f87171;
 }
 
+.password-wrap { position: relative; }
+.password-wrap input { padding-right: 44px; }
+.pw-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: 0;
+  color: #555;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s;
+  width: auto;
+}
+.pw-toggle:hover { color: #FF6B00; }
+.pw-toggle svg { width: 18px; height: 18px; }
+
 .login-forgot {
   margin-top: 14px;
   text-align: center;
@@ -1268,3 +1287,72 @@ body.logged-in #admin-shell { display: flex; }
 .chat-send-btn:active { transform: scale(0.94); }
 .chat-send-btn:disabled { opacity: 0.4; cursor: default; }
 .chat-send-btn svg { width: 18px; height: 18px; fill: #000; }
+
+/* ── Sidebar user ───────────────────────────────────────────── */
+.sidebar-user {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 12px;
+  overflow: hidden;
+}
+.sidebar-user-name {
+  font-size: 12px;
+  color: #aaa;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.change-pw-link {
+  font-size: 11px;
+  color: #FF6B00;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.change-pw-link:hover { text-decoration: underline; }
+#sidebar.collapsed .sidebar-user { display: none; }
+
+/* ── Modal ──────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.hidden { display: none; }
+.modal-box {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+  padding: 28px 32px;
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.modal-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+  margin: 0;
+}
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+.btn-secondary-admin {
+  padding: 8px 18px;
+  border-radius: 8px;
+  border: 1px solid #444;
+  background: transparent;
+  color: #aaa;
+  cursor: pointer;
+  font-size: 14px;
+}
+.btn-secondary-admin:hover { background: #2a2a2a; color: #fff; }

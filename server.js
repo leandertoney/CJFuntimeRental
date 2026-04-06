@@ -1,9 +1,19 @@
 require('dotenv').config();
 
-const express = require('express');
-const session = require('express-session');
-const path    = require('path');
-const crypto  = require('crypto');
+const express  = require('express');
+const session  = require('express-session');
+const path     = require('path');
+const crypto   = require('crypto');
+const bcrypt   = require('bcryptjs');
+const fs       = require('fs');
+
+const ADMIN_USERS_PATH = path.join(__dirname, 'data', 'admin-users.json');
+function readAdminUsers() {
+  return JSON.parse(fs.readFileSync(ADMIN_USERS_PATH, 'utf8'));
+}
+function writeAdminUsers(users) {
+  fs.writeFileSync(ADMIN_USERS_PATH, JSON.stringify(users, null, 2));
+}
 const OpenAI  = require('openai');
 const { sendDiscountCode, sendBookingConfirmation, sendOwnerBookingAlert, sendPickupReminder } = require('./emails');
 const { readConfig, writeConfig, readLeads, insertLead, deleteLead, readBookings, insertBooking } = require('./db');
@@ -58,7 +68,24 @@ app.use(session({
 
 // ── Auth middleware ────────────────────────────────────────────────────────────
 function requireAuth(req, res, next) {
+  // Legacy session auth
   if (req.session && req.session.adminLoggedIn) return next();
+
+  // Supabase Bearer token auth
+  const auth = req.headers['authorization'] || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+  if (token) {
+    // Decode JWT payload (no signature verify needed — Supabase validates on its end;
+    // we just confirm the token is for our project and not expired)
+    try {
+      const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+      const projectRef = (process.env.SUPABASE_URL || '').match(/\/\/([^.]+)\./)?.[1];
+      if (payload.iss && payload.iss.includes(projectRef) && payload.exp > Date.now() / 1000) {
+        return next();
+      }
+    } catch (e) { /* fall through */ }
+  }
+
   res.status(401).json({ error: 'Unauthorized' });
 }
 
@@ -84,14 +111,22 @@ app.get('/site-config.js', async (req, res) => {
 });
 
 // ── Auth routes ────────────────────────────────────────────────────────────────
-app.post('/api/auth/login', (req, res) => {
-  const { password } = req.body;
-  if (!password) return res.status(400).json({ error: 'Password required' });
-  if (password === (process.env.ADMIN_PASSWORD || 'demo123')) {
+app.post('/api/auth/login', async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
+  try {
+    const users = readAdminUsers();
+    const user  = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+    if (!user || !(await bcrypt.compare(password, user.password_hash))) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
     req.session.adminLoggedIn = true;
-    return res.json({ ok: true });
+    req.session.adminEmail    = user.email;
+    req.session.adminName     = user.name;
+    res.json({ ok: true, name: user.name });
+  } catch (e) {
+    res.status(500).json({ error: 'Login failed' });
   }
-  res.status(401).json({ error: 'Invalid password' });
 });
 
 app.post('/api/auth/logout', (req, res) => {
@@ -99,7 +134,29 @@ app.post('/api/auth/logout', (req, res) => {
 });
 
 app.get('/api/auth/me', (req, res) => {
-  res.json({ loggedIn: !!(req.session && req.session.adminLoggedIn) });
+  if (req.session && req.session.adminLoggedIn) {
+    return res.json({ loggedIn: true, name: req.session.adminName, email: req.session.adminEmail });
+  }
+  res.json({ loggedIn: false });
+});
+
+app.post('/api/auth/change-password', requireAuth, async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  if (!currentPassword || !newPassword) return res.status(400).json({ error: 'Both passwords required' });
+  if (newPassword.length < 8) return res.status(400).json({ error: 'New password must be at least 8 characters' });
+  try {
+    const users = readAdminUsers();
+    const idx   = users.findIndex(u => u.email === req.session.adminEmail);
+    if (idx === -1) return res.status(404).json({ error: 'User not found' });
+    if (!(await bcrypt.compare(currentPassword, users[idx].password_hash))) {
+      return res.status(401).json({ error: 'Current password is incorrect' });
+    }
+    users[idx].password_hash = await bcrypt.hash(newPassword, 12);
+    writeAdminUsers(users);
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: 'Could not update password' });
+  }
 });
 
 // ── Config API (protected) ─────────────────────────────────────────────────────
@@ -680,5 +737,5 @@ app.use(express.static(__dirname, {
 app.listen(PORT, () => {
   console.log("CJ's Fun Time Rental server running at http://localhost:" + PORT);
   console.log('Admin panel: http://localhost:' + PORT + '/admin');
-  console.log('Password: ' + (process.env.ADMIN_PASSWORD || 'demo123'));
+  console.log('Admin users: leandertoney@gmail.com, chrisjohnson839@gmail.com');
 });

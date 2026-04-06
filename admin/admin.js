@@ -1,22 +1,16 @@
 (function () {
   'use strict';
 
-  var ADMIN_API     = 'https://yzdtevrwystezhbmgcwn.supabase.co/functions/v1/admin';
-  var SUPABASE_URL  = 'https://yzdtevrwystezhbmgcwn.supabase.co';
-  var SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl6ZHRldnJ3eXN0ZXpoYm1nY3duIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM5MDQxNjksImV4cCI6MjA1OTQ4MDE2OX0.KzX9rl6JLxkEiCLHIzHCmSHPVnJFlbQkWfHJi1p1JJU';
-
-  var _supabase = null;
-  function getSupabase() {
-    if (!_supabase) _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
-    return _supabase;
-  }
+  var ADMIN_API = '/api';
 
   function adminHeaders(extra) {
-    var token = _currentToken || '';
-    return Object.assign({ 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, extra || {});
+    return Object.assign({ 'Content-Type': 'application/json' }, extra || {});
   }
 
-  var _currentToken = null;
+  function apiFetch(url, opts) {
+    return fetch(url, Object.assign({ credentials: 'same-origin' }, opts || {},
+      { headers: adminHeaders((opts || {}).headers) }));
+  }
 
   var cfg = null;
   var activeSection = 'overview';
@@ -108,6 +102,7 @@
     bindNav();
     bindSaveBtn();
     bindLogoutBtn();
+    bindChangePassword();
     bindSidebarToggle();
     initChat();
   }
@@ -125,13 +120,10 @@
 
   // ── Auth ─────────────────────────────────────────────────────
   function checkAuth() {
-    getSupabase().auth.getSession().then(function (res) {
-      var session = res.data && res.data.session;
-      if (session && session.access_token) {
-        _currentToken = session.access_token;
-        showAdmin();
-      }
-    });
+    fetch('/api/auth/me', { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) { if (data.loggedIn) showAdmin(); })
+      .catch(function () {});
   }
 
   function bindLoginForm() {
@@ -147,16 +139,21 @@
       btn.textContent = 'Signing in…';
       document.getElementById('login-error').classList.add('hidden');
 
-      getSupabase().auth.signInWithPassword({ email: email, password: pw })
-        .then(function (res) {
-          if (res.error) {
-            showLoginError(res.error.message || 'Invalid email or password');
+      fetch('/api/auth/login', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email, password: pw })
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data.ok) {
+            showAdmin();
+          } else {
+            showLoginError(data.error || 'Invalid password');
             btn.disabled = false;
             btn.textContent = 'Sign In';
-            return;
           }
-          _currentToken = res.data.session.access_token;
-          showAdmin();
         })
         .catch(function () {
           showLoginError('Network error — check your connection.');
@@ -166,17 +163,25 @@
     }
 
     btn.addEventListener('click', doLogin);
-    pwInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') doLogin(); });
     emailIn.addEventListener('keydown', function (e) { if (e.key === 'Enter') pwInput.focus(); });
+    pwInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') doLogin(); });
+
+    // Password visibility toggle
+    var pwToggle = document.getElementById('pw-toggle');
+    var eyeShow  = document.getElementById('pw-eye-show');
+    var eyeHide  = document.getElementById('pw-eye-hide');
+    pwToggle.addEventListener('click', function () {
+      var showing = pwInput.type === 'text';
+      pwInput.type = showing ? 'password' : 'text';
+      eyeShow.classList.toggle('hidden', !showing);
+      eyeHide.classList.toggle('hidden', showing);
+    });
 
     // Forgot password
     document.getElementById('forgot-link').addEventListener('click', function (e) {
       e.preventDefault();
       document.getElementById('login-form').classList.add('hidden');
       document.getElementById('reset-form').classList.remove('hidden');
-      var resetEmail = document.getElementById('reset-email');
-      resetEmail.value = emailIn.value;
-      resetEmail.focus();
     });
 
     document.getElementById('back-to-login').addEventListener('click', function (e) {
@@ -186,26 +191,10 @@
     });
 
     document.getElementById('reset-btn').addEventListener('click', function () {
-      var email = document.getElementById('reset-email').value.trim();
       var statusEl = document.getElementById('reset-status');
-      if (!email) return;
-      this.disabled = true;
-      this.textContent = 'Sending…';
-      var self = this;
-      getSupabase().auth.resetPasswordForEmail(email, {
-        redirectTo: 'https://cjfuntimerentals.com/admin'
-      }).then(function (res) {
-        if (res.error) {
-          statusEl.textContent = res.error.message;
-          statusEl.style.color = '#f87171';
-        } else {
-          statusEl.textContent = 'Reset link sent! Check your email.';
-          statusEl.style.color = '#4ade80';
-        }
-        statusEl.classList.remove('hidden');
-        self.disabled = false;
-        self.textContent = 'Send Reset Link';
-      });
+      statusEl.textContent = 'Contact your administrator to reset your password.';
+      statusEl.style.color = '#4ade80';
+      statusEl.classList.remove('hidden');
     });
   }
 
@@ -217,8 +206,7 @@
 
   function bindLogoutBtn() {
     document.getElementById('logout-btn').addEventListener('click', function () {
-      getSupabase().auth.signOut().then(function () {
-        _currentToken = null;
+      fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).finally(function () {
         document.body.className = 'not-logged-in';
         document.getElementById('login-email').value = '';
         document.getElementById('login-password').value = '';
@@ -229,7 +217,90 @@
     });
   }
 
+  function bindChangePassword() {
+    var modal    = document.getElementById('change-pw-modal');
+    var errEl    = document.getElementById('cp-error');
+    var okEl     = document.getElementById('cp-success');
+
+    document.getElementById('change-pw-link').addEventListener('click', function (e) {
+      e.preventDefault();
+      errEl.classList.add('hidden');
+      okEl.classList.add('hidden');
+      document.getElementById('cp-current').value = '';
+      document.getElementById('cp-new').value = '';
+      document.getElementById('cp-confirm').value = '';
+      modal.classList.remove('hidden');
+    });
+
+    document.getElementById('cp-cancel').addEventListener('click', function () {
+      modal.classList.add('hidden');
+    });
+
+    modal.addEventListener('click', function (e) {
+      if (e.target === modal) modal.classList.add('hidden');
+    });
+
+    document.getElementById('cp-save').addEventListener('click', function () {
+      var current = document.getElementById('cp-current').value;
+      var next    = document.getElementById('cp-new').value;
+      var confirm = document.getElementById('cp-confirm').value;
+      errEl.classList.add('hidden');
+      okEl.classList.add('hidden');
+
+      if (!current || !next || !confirm) {
+        errEl.textContent = 'All fields are required.';
+        return errEl.classList.remove('hidden');
+      }
+      if (next !== confirm) {
+        errEl.textContent = 'New passwords do not match.';
+        return errEl.classList.remove('hidden');
+      }
+      if (next.length < 8) {
+        errEl.textContent = 'Password must be at least 8 characters.';
+        return errEl.classList.remove('hidden');
+      }
+
+      var btn = this;
+      btn.disabled = true;
+      btn.textContent = 'Updating…';
+
+      apiFetch('/api/auth/change-password', {
+        method: 'POST',
+        body: JSON.stringify({ currentPassword: current, newPassword: next })
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data.ok) {
+            okEl.textContent = 'Password updated successfully.';
+            okEl.classList.remove('hidden');
+            document.getElementById('cp-current').value = '';
+            document.getElementById('cp-new').value = '';
+            document.getElementById('cp-confirm').value = '';
+            setTimeout(function () { modal.classList.add('hidden'); }, 1500);
+          } else {
+            errEl.textContent = data.error || 'Could not update password.';
+            errEl.classList.remove('hidden');
+          }
+        })
+        .catch(function () {
+          errEl.textContent = 'Network error.';
+          errEl.classList.remove('hidden');
+        })
+        .finally(function () {
+          btn.disabled = false;
+          btn.textContent = 'Update Password';
+        });
+    });
+  }
+
   function showAdmin() {
+    // Fetch user info and show name in sidebar
+    fetch('/api/auth/me', { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        var el = document.getElementById('sidebar-user-name');
+        if (el && data.name) el.textContent = data.name;
+      });
     loadConfig().then(function () {
       document.body.className = 'logged-in';
       renderPanel(activeSection);
@@ -238,7 +309,7 @@
 
   // ── Config ───────────────────────────────────────────────────
   function loadConfig() {
-    return fetch(ADMIN_API + '/config', { headers: adminHeaders() })
+    return apiFetch(ADMIN_API + '/config')
       .then(function (r) { return r.json(); })
       .then(function (data) { cfg = data; });
   }
@@ -252,10 +323,9 @@
 
   function saveConfig() {
     setSaveStatus('Saving…');
-    fetch(ADMIN_API + '/config', {
-      method:  'POST',
-      headers: adminHeaders(),
-      body:    JSON.stringify(cfg)
+    apiFetch(ADMIN_API + '/config', {
+      method: 'POST',
+      body:   JSON.stringify(cfg)
     })
     .then(function (r) { return r.json(); })
     .then(function (data) {
@@ -331,8 +401,8 @@
     container.innerHTML = '<div class="overview-loading">Loading...</div>';
 
     Promise.all([
-      fetch(ADMIN_API + '/bookings', { headers: adminHeaders() }).then(function (r) { return r.json(); }),
-      fetch(ADMIN_API + '/leads',    { headers: adminHeaders() }).then(function (r) { return r.json(); })
+      apiFetch(ADMIN_API + '/bookings').then(function (r) { return r.json(); }),
+      apiFetch(ADMIN_API + '/leads').then(function (r) { return r.json(); })
     ]).then(function (results) {
       var bookings = results[0];
       var leads    = results[1];
@@ -858,7 +928,7 @@
     tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:32px;color:#555">Loading…</td></tr>';
     empty.classList.add('hidden');
 
-    fetch(ADMIN_API + '/bookings', { headers: adminHeaders() })
+    apiFetch(ADMIN_API + '/bookings')
       .then(function (r) { return r.json(); })
       .then(function (bookings) {
         count.textContent = bookings.length + ' booking' + (bookings.length !== 1 ? 's' : '');
@@ -925,7 +995,7 @@
     tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:32px;color:#555">Loading…</td></tr>';
     empty.classList.add('hidden');
 
-    fetch(ADMIN_API + '/leads', { headers: adminHeaders() })
+    apiFetch(ADMIN_API + '/leads')
       .then(function (r) { return r.json(); })
       .then(function (leads) {
         count.textContent = leads.length + ' lead' + (leads.length !== 1 ? 's' : '');
@@ -958,7 +1028,7 @@
           btn.addEventListener('click', function () {
             var id = this.getAttribute('data-id');
             if (!confirm('Remove this lead?')) return;
-            fetch(ADMIN_API + '/leads/' + id, { method: 'DELETE', headers: adminHeaders() })
+            apiFetch(ADMIN_API + '/leads/' + id, { method: 'DELETE' })
               .then(function (r) { return r.json(); })
               .then(function (data) { if (data.ok) renderLeadsPanel(); });
           });
@@ -1104,10 +1174,9 @@
       var typingEl = appendTyping();
       scrollToBottom();
 
-      fetch(ADMIN_API + '/chat', {
-        method:  'POST',
-        headers: adminHeaders(),
-        body:    JSON.stringify({ message: text })
+      apiFetch('/api/admin/chat', {
+        method: 'POST',
+        body:   JSON.stringify({ message: text })
       })
       .then(function (r) {
         if (!r.ok) throw new Error('HTTP ' + r.status);
