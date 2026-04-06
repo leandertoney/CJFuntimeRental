@@ -37,16 +37,21 @@ Deno.serve(async (req) => {
   const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
   const stripeKey = Deno.env.get('STRIPE_SECRET_KEY')!;
 
-  // Verify webhook signature if secret is set
+  // Verify Stripe webhook signature
   if (webhookSecret) {
-    const verifyRes = await fetch('https://api.stripe.com/v1/webhook_endpoints', {
-      headers: { 'Authorization': 'Bearer ' + stripeKey }
-    });
-    // Simple timestamp check — full HMAC verification requires crypto
-    const timestamp = sig.split(',').find(p => p.startsWith('t='))?.split('=')[1];
-    if (!timestamp || Math.abs(Date.now() / 1000 - Number(timestamp)) > 300) {
-      return new Response('Webhook timestamp invalid', { status: 400 });
-    }
+    const timestamp = sig.split(',').find((p: string) => p.startsWith('t='))?.split('=')[1];
+    const v1 = sig.split(',').find((p: string) => p.startsWith('v1='))?.split('=')[1];
+    if (!timestamp || !v1) return new Response('Missing signature', { status: 400 });
+    if (Math.abs(Date.now() / 1000 - Number(timestamp)) > 300) return new Response('Timestamp too old', { status: 400 });
+
+    const signedPayload = `${timestamp}.${body}`;
+    const key = await crypto.subtle.importKey(
+      'raw', new TextEncoder().encode(webhookSecret),
+      { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+    );
+    const mac = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(signedPayload));
+    const expected = Array.from(new Uint8Array(mac)).map(b => b.toString(16).padStart(2, '0')).join('');
+    if (expected !== v1) return new Response('Invalid signature', { status: 400 });
   }
 
   let event: Record<string, unknown>;
