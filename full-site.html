@@ -1197,7 +1197,7 @@
         animation-delay: -14s;
       }
 
-      /* Content sits above fixed orbs */
+      /* Content sits above fixed body orbs */
       .hero-wrap, .fleet, .how, .reviews, .faq,
       .cta-section, .lead-section, .site-footer,
       .mobile-sticky, .back-to-top {
@@ -1205,8 +1205,14 @@
         z-index: 1;
       }
 
+      /* Inside isolated sections, content must be above the -1 streak */
+      .fleet > *, .how > *, .faq > * {
+        position: relative;
+        z-index: 0;
+      }
+
       /* ── FLEET — diagonal sweep L→R ── */
-      .fleet { overflow: hidden; }
+      .fleet { overflow: hidden; isolation: isolate; }
       .fleet::before {
         content: '';
         position: absolute;
@@ -1220,13 +1226,13 @@
           transparent 100%
         );
         pointer-events: none;
-        z-index: 0;
+        z-index: -1;
         animation: ledSweep 12s linear infinite;
         animation-delay: -2s;
       }
 
       /* ── HOW IT WORKS — flat sweep ── */
-      .how { overflow: hidden; }
+      .how { overflow: hidden; isolation: isolate; }
       .how::before {
         content: '';
         position: absolute;
@@ -1240,13 +1246,13 @@
           transparent 100%
         );
         pointer-events: none;
-        z-index: 0;
+        z-index: -1;
         animation: ledSweepFlat 16s linear infinite;
         animation-delay: -5s;
       }
 
       /* ── FAQ — diagonal sweep R→L ── */
-      .faq { overflow: hidden; }
+      .faq { overflow: hidden; isolation: isolate; }
       .faq::before {
         content: '';
         position: absolute;
@@ -1260,7 +1266,7 @@
           transparent 100%
         );
         pointer-events: none;
-        z-index: 0;
+        z-index: -1;
         animation: ledSweepReverse 14s linear infinite;
         animation-delay: -6s;
       }
@@ -1823,18 +1829,17 @@
       <div class="hero-scroll-line"></div>
     </div>
   </section>
-
   </div><!-- /.hero-wrap -->
 
 
   <!-- FLEET -->
   <section class="fleet" id="fleet">
     <div class="container">
-      <div class="fleet-header reveal">
+      <div class="fleet-header">
         <h2>Choose<br>Your Ride</h2>
         <p>Three vehicles. All 3-wheel. All automatic. All open-air. Starting at $180/day.</p>
       </div>
-      <div class="fleet-grid reveal">
+      <div class="fleet-grid">
 
         <!-- 2022 Slingshot — featured -->
         <div class="fleet-card">
@@ -1885,36 +1890,8 @@
         </div>
 
       </div>
-      <div class="fleet-ctas reveal">
+      <div class="fleet-ctas">
         <button class="btn btn-primary" data-stripe-book>Book Now &rarr;</button>
-      </div>
-    </div>
-  </section>
-
-  <!-- WHY CJ'S -->
-  <section id="why-cjs" style="padding:80px 0;background:var(--surface);">
-    <div class="container">
-      <div class="reveal">
-        <h2 style="font-family:var(--heading);font-size:clamp(2rem,4vw,2.8rem);letter-spacing:3px;line-height:1.1;margin-bottom:16px;">Why Rent From CJ's?</h2>
-        <p style="font-size:14px;color:var(--muted);max-width:560px;line-height:1.75;margin-bottom:48px;">We're a locally-owned Polaris Slingshot and Can-Am Spyder rental in Lancaster, PA — not a faceless fleet company. Chris meets you at every pickup, walks you through the vehicle personally, and is available throughout your rental.</p>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:32px;">
-        <div class="reveal" style="border:1px solid var(--border);border-radius:12px;padding:28px 24px;">
-          <h3 style="font-family:var(--heading);font-size:1.2rem;letter-spacing:2px;margin-bottom:10px;color:var(--orange);">No Motorcycle License Required</h3>
-          <p style="font-size:13px;color:var(--muted);line-height:1.75;">Pennsylvania classifies Polaris Slingshots and Can-Am Spyders as autocycles — not motorcycles. A standard driver's license is all you need. If you can drive a car, you're already qualified to rent.</p>
-        </div>
-        <div class="reveal" style="border:1px solid var(--border);border-radius:12px;padding:28px 24px;">
-          <h3 style="font-family:var(--heading);font-size:1.2rem;letter-spacing:2px;margin-bottom:10px;color:var(--orange);">Direct Booking — No Platform Fees</h3>
-          <p style="font-size:13px;color:var(--muted);line-height:1.75;">Book directly on this site and pay the posted rate. No Turo service fees, no hidden surcharges. The price you see is the price you pay.</p>
-        </div>
-        <div class="reveal" style="border:1px solid var(--border);border-radius:12px;padding:28px 24px;">
-          <h3 style="font-family:var(--heading);font-size:1.2rem;letter-spacing:2px;margin-bottom:10px;color:var(--orange);">600 Miles Per Trip Included</h3>
-          <p style="font-size:13px;color:var(--muted);line-height:1.75;">Most Slingshot rentals in the Mid-Atlantic cap mileage at 150–200 miles per day. We include 600 miles per trip — enough for a full-day ride from Lancaster to Gettysburg, the Delaware Water Gap, or the Pocono Mountains and back.</p>
-        </div>
-        <div class="reveal" style="border:1px solid var(--border);border-radius:12px;padding:28px 24px;">
-          <h3 style="font-family:var(--heading);font-size:1.2rem;letter-spacing:2px;margin-bottom:10px;color:var(--orange);">Insurance Included on Every Rental</h3>
-          <p style="font-size:13px;color:var(--muted);line-height:1.75;">Protection coverage is built into every rental rate. You don't need separate coverage or worry about gaps in your personal auto policy — it's handled.</p>
-        </div>
       </div>
     </div>
   </section>
@@ -2189,6 +2166,34 @@
     </div>
   </section>
 
+
+  <!-- WHY CJ'S -->
+  <section id="why-cjs" style="padding:80px 0;background:var(--surface);">
+    <div class="container">
+      <div class="reveal">
+        <h2 style="font-family:var(--heading);font-size:clamp(2rem,4vw,2.8rem);letter-spacing:3px;line-height:1.1;margin-bottom:16px;">Why Rent From CJ's?</h2>
+        <p style="font-size:14px;color:var(--muted);max-width:560px;line-height:1.75;margin-bottom:48px;">We're a locally-owned Polaris Slingshot and Can-Am Spyder rental in Lancaster, PA — not a faceless fleet company. Chris meets you at every pickup, walks you through the vehicle personally, and is available throughout your rental.</p>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:32px;">
+        <div class="reveal" style="border:1px solid var(--border);border-radius:12px;padding:28px 24px;">
+          <h3 style="font-family:var(--heading);font-size:1.2rem;letter-spacing:2px;margin-bottom:10px;color:var(--orange);">No Motorcycle License Required</h3>
+          <p style="font-size:13px;color:var(--muted);line-height:1.75;">Pennsylvania classifies Polaris Slingshots and Can-Am Spyders as autocycles — not motorcycles. A standard driver's license is all you need. If you can drive a car, you're already qualified to rent.</p>
+        </div>
+        <div class="reveal" style="border:1px solid var(--border);border-radius:12px;padding:28px 24px;">
+          <h3 style="font-family:var(--heading);font-size:1.2rem;letter-spacing:2px;margin-bottom:10px;color:var(--orange);">Direct Booking — No Platform Fees</h3>
+          <p style="font-size:13px;color:var(--muted);line-height:1.75;">Book directly on this site and pay the posted rate. No Turo service fees, no hidden surcharges. The price you see is the price you pay.</p>
+        </div>
+        <div class="reveal" style="border:1px solid var(--border);border-radius:12px;padding:28px 24px;">
+          <h3 style="font-family:var(--heading);font-size:1.2rem;letter-spacing:2px;margin-bottom:10px;color:var(--orange);">600 Miles Per Trip Included</h3>
+          <p style="font-size:13px;color:var(--muted);line-height:1.75;">Most Slingshot rentals in the Mid-Atlantic cap mileage at 150–200 miles per day. We include 600 miles per trip — enough for a full-day ride from Lancaster to Gettysburg, the Delaware Water Gap, or the Pocono Mountains and back.</p>
+        </div>
+        <div class="reveal" style="border:1px solid var(--border);border-radius:12px;padding:28px 24px;">
+          <h3 style="font-family:var(--heading);font-size:1.2rem;letter-spacing:2px;margin-bottom:10px;color:var(--orange);">Insurance Included on Every Rental</h3>
+          <p style="font-size:13px;color:var(--muted);line-height:1.75;">Protection coverage is built into every rental rate. You don't need separate coverage or worry about gaps in your personal auto policy — it's handled.</p>
+        </div>
+      </div>
+    </div>
+  </section>
 
   <!-- FAQ -->
   <!-- FINAL CTA -->
