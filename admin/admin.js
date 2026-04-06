@@ -301,6 +301,7 @@
     faq:       'FAQ',
     discounts: 'Discounts',
     calendar:  'Blocked Dates',
+    bookings:  'Bookings',
     leads:     'Leads'
   };
 
@@ -318,6 +319,7 @@
       faq:       renderFaqPanel,
       discounts: renderDiscountsPanel,
       calendar:  renderCalendarPanel,
+      bookings:  renderBookingsPanel,
       leads:     renderLeadsPanel
     };
     if (map[name]) map[name]();
@@ -844,6 +846,73 @@
         renderBlockedList();
       });
     });
+  }
+
+  // ── Bookings panel ──────────────────────────────────────────
+  function renderBookingsPanel() {
+    var tbody  = document.getElementById('bookings-tbody');
+    var empty  = document.getElementById('bookings-empty');
+    var count  = document.getElementById('bookings-count');
+    var expBtn = document.getElementById('bookings-export-btn');
+
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:32px;color:#555">Loading…</td></tr>';
+    empty.classList.add('hidden');
+
+    fetch(ADMIN_API + '/bookings', { headers: adminHeaders() })
+      .then(function (r) { return r.json(); })
+      .then(function (bookings) {
+        count.textContent = bookings.length + ' booking' + (bookings.length !== 1 ? 's' : '');
+
+        if (!bookings.length) {
+          tbody.innerHTML = '';
+          empty.classList.remove('hidden');
+          expBtn.disabled = true;
+          return;
+        }
+
+        expBtn.disabled = false;
+        var html = '';
+        bookings.forEach(function (b, idx) {
+          var d = new Date(b.created_at);
+          var statusClass = b.status === 'confirmed' ? 'status-confirmed' : 'status-pending';
+          html += '<tr>'
+            + '<td class="lead-num">' + (idx + 1) + '</td>'
+            + '<td class="lead-email"><strong>' + esc(b.name || '—') + '</strong><br><span style="color:#555;font-size:11px;">' + esc(b.email) + '</span></td>'
+            + '<td>' + esc(b.vehicle || '—') + '</td>'
+            + '<td>' + esc(b.start_date || '—') + '</td>'
+            + '<td>' + esc(b.end_date || '—') + '</td>'
+            + '<td style="text-align:center;">' + (b.days || '—') + '</td>'
+            + '<td style="color:#4ade80;font-weight:600;">$' + (b.total || 0).toLocaleString() + '</td>'
+            + '<td><span class="source-badge ' + statusClass + '">' + esc(b.status || 'confirmed') + '</span></td>'
+            + '</tr>';
+        });
+        tbody.innerHTML = html;
+
+        expBtn.onclick = function () {
+          var rows = [['#', 'Name', 'Email', 'Phone', 'Vehicle', 'Pick-up', 'Return', 'Days', 'Total', 'Status', 'Booked On']];
+          bookings.forEach(function (b, i) {
+            rows.push([
+              i + 1, b.name || '', b.email, b.phone || '',
+              b.vehicle, b.start_date, b.end_date, b.days,
+              '$' + (b.total || 0), b.status,
+              new Date(b.created_at).toLocaleString()
+            ]);
+          });
+          var csv = rows.map(function (r) {
+            return r.map(function (v) { return '"' + String(v).replace(/"/g, '""') + '"'; }).join(',');
+          }).join('\n');
+          var blob = new Blob([csv], { type: 'text/csv' });
+          var url  = URL.createObjectURL(blob);
+          var a    = document.createElement('a');
+          a.href = url;
+          a.download = 'cjfr-bookings-' + new Date().toISOString().slice(0, 10) + '.csv';
+          a.click();
+          URL.revokeObjectURL(url);
+        };
+      })
+      .catch(function () {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:32px;color:#f87171">Failed to load bookings.</td></tr>';
+      });
   }
 
   // ── Leads panel ─────────────────────────────────────────────

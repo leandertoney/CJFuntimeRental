@@ -86,6 +86,10 @@
           <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/></svg>
           <span>Blocked Dates</span>
         </a>
+        <a href="#" class="nav-link" data-section="bookings">
+          <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm2 10a1 1 0 10-2 0v3a1 1 0 102 0v-3zm2-3a1 1 0 011 1v5a1 1 0 11-2 0v-5a1 1 0 011-1zm4-1a1 1 0 10-2 0v6a1 1 0 102 0V8z" clip-rule="evenodd"/></svg>
+          <span>Bookings</span>
+        </a>
         <a href="#" class="nav-link" data-section="leads">
           <svg viewBox="0 0 20 20" fill="currentColor"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/></svg>
           <span>Leads</span>
@@ -170,6 +174,35 @@
             </table>
           </div>
           <button id="add-discount-btn" class="btn-add" style="margin-top:16px">+ Add Tier</button>
+        </section>
+
+        <!-- PANEL: Bookings -->
+        <section id="panel-bookings" class="admin-panel">
+          <div class="panel-intro">
+            <p>All confirmed bookings from Stripe Checkout. Sorted newest first.</p>
+          </div>
+          <div id="bookings-toolbar" class="leads-toolbar">
+            <span id="bookings-count" class="leads-count"></span>
+            <button id="bookings-export-btn" class="btn-export">Export CSV</button>
+          </div>
+          <div id="bookings-table-wrap" class="leads-table-wrap">
+            <table class="leads-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Customer</th>
+                  <th>Vehicle</th>
+                  <th>Pick-up</th>
+                  <th>Return</th>
+                  <th>Days</th>
+                  <th>Total</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="bookings-tbody"></tbody>
+            </table>
+            <div id="bookings-empty" class="leads-empty hidden">No bookings yet — they'll appear here after customers complete checkout.</div>
+          </div>
         </section>
 
         <!-- PANEL: Leads -->

@@ -836,6 +836,16 @@ body.logged-in #admin-shell { display: flex; }
   padding: 4px 12px;
   white-space: nowrap;
 }
+.source-badge.status-confirmed {
+  background: rgba(74,222,128,0.12);
+  border-color: rgba(74,222,128,0.25);
+  color: #4ade80;
+}
+.source-badge.status-pending {
+  background: rgba(250,204,21,0.12);
+  border-color: rgba(250,204,21,0.25);
+  color: #facc15;
+}
 
 .lead-date {
   font-size: 13px;
