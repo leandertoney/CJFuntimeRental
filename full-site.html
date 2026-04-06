@@ -2400,10 +2400,10 @@
           }
           document.getElementById('lead-form').style.display    = 'none';
           document.getElementById('lead-success').style.display = 'flex';
-          fetch('/api/leads', {
+          fetch('https://yzdtevrwystezhbmgcwn.supabase.co/functions/v1/leads', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: email, source: '10% Off Discount Form' })
+            body: JSON.stringify({ email: email, source: '10%-off-form' })
           }).catch(function() {});
         });
       }

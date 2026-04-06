@@ -376,7 +376,7 @@
       }
       submitBtn.disabled = true;
       submitBtn.textContent = 'Sending...';
-      fetch('/api/leads', {
+      fetch('https://yzdtevrwystezhbmgcwn.supabase.co/functions/v1/leads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email, source: 'coming-soon' })
