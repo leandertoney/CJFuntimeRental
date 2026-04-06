@@ -208,13 +208,12 @@
       })
     })
     .then(function (r) { return r.json(); })
-    .then(function (r) { return r.json().then(function(d) { return { status: r.status, data: d }; }); })
-    .then(function (res) {
-      if (res.data.url) {
-        window.location.href = res.data.url;
+    .then(function (data) {
+      if (data.url) {
+        window.location.href = data.url;
       } else {
         if (btn) { btn.disabled = false; btn.textContent = 'Book & Pay Securely →'; }
-        alert(res.data.error || 'Something went wrong. Please try again.');
+        alert(data.error || 'Something went wrong. Please try again.');
       }
     })
     .catch(function (err) {
