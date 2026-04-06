@@ -12,7 +12,7 @@ entrypoint = "./functions/api/index.ts"
 
 [functions.leads]
 enabled = true
-verify_jwt = true
+verify_jwt = false
 import_map = "./functions/leads/deno.json"
 # Uncomment to specify a custom file path to the entrypoint.
 # Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
@@ -23,7 +23,7 @@ entrypoint = "./functions/leads/index.ts"
 
 [functions.checkout]
 enabled = true
-verify_jwt = true
+verify_jwt = false
 import_map = "./functions/checkout/deno.json"
 # Uncomment to specify a custom file path to the entrypoint.
 # Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
@@ -34,7 +34,7 @@ entrypoint = "./functions/checkout/index.ts"
 
 [functions.webhook]
 enabled = true
-verify_jwt = true
+verify_jwt = false
 import_map = "./functions/webhook/deno.json"
 # Uncomment to specify a custom file path to the entrypoint.
 # Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
@@ -45,7 +45,7 @@ entrypoint = "./functions/webhook/index.ts"
 
 [functions.config]
 enabled = true
-verify_jwt = true
+verify_jwt = false
 import_map = "./functions/config/deno.json"
 # Uncomment to specify a custom file path to the entrypoint.
 # Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
@@ -56,7 +56,7 @@ entrypoint = "./functions/config/index.ts"
 
 [functions.reminders]
 enabled = true
-verify_jwt = true
+verify_jwt = false
 import_map = "./functions/reminders/deno.json"
 # Uncomment to specify a custom file path to the entrypoint.
 # Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
@@ -64,3 +64,14 @@ entrypoint = "./functions/reminders/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/reminders/*.html" ]
+
+[functions.admin]
+enabled = true
+verify_jwt = true
+import_map = "./functions/admin/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/admin/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/admin/*.html" ]
