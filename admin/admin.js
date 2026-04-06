@@ -1,15 +1,22 @@
 (function () {
   'use strict';
 
-  var ADMIN_API = 'https://yzdtevrwystezhbmgcwn.supabase.co/functions/v1/admin';
+  var ADMIN_API     = 'https://yzdtevrwystezhbmgcwn.supabase.co/functions/v1/admin';
+  var SUPABASE_URL  = 'https://yzdtevrwystezhbmgcwn.supabase.co';
+  var SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl6ZHRldnJ3eXN0ZXpoYm1nY3duIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM5MDQxNjksImV4cCI6MjA1OTQ4MDE2OX0.KzX9rl6JLxkEiCLHIzHCmSHPVnJFlbQkWfHJi1p1JJU';
 
-  function adminPassword() {
-    return localStorage.getItem('cjfr_admin_pw') || '';
+  var _supabase = null;
+  function getSupabase() {
+    if (!_supabase) _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+    return _supabase;
   }
 
   function adminHeaders(extra) {
-    return Object.assign({ 'Content-Type': 'application/json', 'x-admin-password': adminPassword() }, extra || {});
+    var token = _currentToken || '';
+    return Object.assign({ 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, extra || {});
   }
+
+  var _currentToken = null;
 
   var cfg = null;
   var activeSection = 'overview';
@@ -118,48 +125,88 @@
 
   // ── Auth ─────────────────────────────────────────────────────
   function checkAuth() {
-    var pw = adminPassword();
-    if (!pw) return;
-    fetch(ADMIN_API + '/config', { headers: adminHeaders() })
-      .then(function (r) { if (r.ok) showAdmin(); })
-      .catch(function () {});
+    getSupabase().auth.getSession().then(function (res) {
+      var session = res.data && res.data.session;
+      if (session && session.access_token) {
+        _currentToken = session.access_token;
+        showAdmin();
+      }
+    });
   }
 
   function bindLoginForm() {
-    var btn = document.getElementById('login-btn');
-    var pwInput = document.getElementById('login-password');
+    var btn      = document.getElementById('login-btn');
+    var emailIn  = document.getElementById('login-email');
+    var pwInput  = document.getElementById('login-password');
 
     function doLogin() {
-      var pw = pwInput.value.trim();
-      if (!pw) return;
+      var email = emailIn.value.trim();
+      var pw    = pwInput.value.trim();
+      if (!email || !pw) return;
       btn.disabled = true;
       btn.textContent = 'Signing in…';
+      document.getElementById('login-error').classList.add('hidden');
 
-      fetch(ADMIN_API + '/auth/login', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ password: pw })
-      })
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
-        if (data.ok) {
-          localStorage.setItem('cjfr_admin_pw', pw);
+      getSupabase().auth.signInWithPassword({ email: email, password: pw })
+        .then(function (res) {
+          if (res.error) {
+            showLoginError(res.error.message || 'Invalid email or password');
+            btn.disabled = false;
+            btn.textContent = 'Sign In';
+            return;
+          }
+          _currentToken = res.data.session.access_token;
           showAdmin();
-        } else {
-          showLoginError(data.error || 'Invalid password');
+        })
+        .catch(function () {
+          showLoginError('Network error — check your connection.');
           btn.disabled = false;
           btn.textContent = 'Sign In';
-        }
-      })
-      .catch(function () {
-        showLoginError('Network error — check your connection.');
-        btn.disabled = false;
-        btn.textContent = 'Sign In';
-      });
+        });
     }
 
     btn.addEventListener('click', doLogin);
     pwInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') doLogin(); });
+    emailIn.addEventListener('keydown', function (e) { if (e.key === 'Enter') pwInput.focus(); });
+
+    // Forgot password
+    document.getElementById('forgot-link').addEventListener('click', function (e) {
+      e.preventDefault();
+      document.getElementById('login-form').classList.add('hidden');
+      document.getElementById('reset-form').classList.remove('hidden');
+      var resetEmail = document.getElementById('reset-email');
+      resetEmail.value = emailIn.value;
+      resetEmail.focus();
+    });
+
+    document.getElementById('back-to-login').addEventListener('click', function (e) {
+      e.preventDefault();
+      document.getElementById('reset-form').classList.add('hidden');
+      document.getElementById('login-form').classList.remove('hidden');
+    });
+
+    document.getElementById('reset-btn').addEventListener('click', function () {
+      var email = document.getElementById('reset-email').value.trim();
+      var statusEl = document.getElementById('reset-status');
+      if (!email) return;
+      this.disabled = true;
+      this.textContent = 'Sending…';
+      var self = this;
+      getSupabase().auth.resetPasswordForEmail(email, {
+        redirectTo: 'https://cjfuntimerentals.com/admin'
+      }).then(function (res) {
+        if (res.error) {
+          statusEl.textContent = res.error.message;
+          statusEl.style.color = '#f87171';
+        } else {
+          statusEl.textContent = 'Reset link sent! Check your email.';
+          statusEl.style.color = '#4ade80';
+        }
+        statusEl.classList.remove('hidden');
+        self.disabled = false;
+        self.textContent = 'Send Reset Link';
+      });
+    });
   }
 
   function showLoginError(msg) {
@@ -170,12 +217,15 @@
 
   function bindLogoutBtn() {
     document.getElementById('logout-btn').addEventListener('click', function () {
-      localStorage.removeItem('cjfr_admin_pw');
-      document.body.className = 'not-logged-in';
-      document.getElementById('login-password').value = '';
-      document.getElementById('login-error').classList.add('hidden');
-      document.getElementById('login-btn').disabled = false;
-      document.getElementById('login-btn').textContent = 'Sign In';
+      getSupabase().auth.signOut().then(function () {
+        _currentToken = null;
+        document.body.className = 'not-logged-in';
+        document.getElementById('login-email').value = '';
+        document.getElementById('login-password').value = '';
+        document.getElementById('login-error').classList.add('hidden');
+        document.getElementById('login-btn').disabled = false;
+        document.getElementById('login-btn').textContent = 'Sign In';
+      });
     });
   }
 

@@ -94,6 +94,17 @@ body.logged-in #admin-shell { display: flex; }
   color: #f87171;
 }
 
+.login-forgot {
+  margin-top: 14px;
+  text-align: center;
+  font-size: 13px;
+}
+.login-forgot a {
+  color: #FF6B00;
+  text-decoration: none;
+}
+.login-forgot a:hover { text-decoration: underline; }
+
 /* ── ADMIN SHELL ────────────────────────────────────────────── */
 #admin-shell {
   height: 100vh;

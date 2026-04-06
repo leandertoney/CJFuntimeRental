@@ -1,16 +1,16 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { Resend } from 'https://esm.sh/resend@2';
 
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL')!,
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-);
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+const SERVICE_KEY  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const ANON_KEY     = Deno.env.get('SUPABASE_ANON_KEY')!;
 
-const ADMIN_PASSWORD = Deno.env.get('ADMIN_PASSWORD') || 'demo123';
+// Service client — bypasses RLS, used for all data operations
+const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'content-type, x-admin-password',
+  'Access-Control-Allow-Headers': 'content-type, authorization',
   'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS'
 };
 
@@ -21,8 +21,22 @@ function json(data: unknown, status = 200) {
   });
 }
 
-function unauthorized() {
-  return json({ error: 'Unauthorized' }, 401);
+// Verify the Bearer JWT is a valid Supabase session for an allowed user
+async function verifyAuth(req: Request): Promise<boolean> {
+  const authHeader = req.headers.get('authorization') || '';
+  const token = authHeader.replace(/^Bearer\s+/i, '');
+  if (!token) return false;
+
+  // Use anon client to validate the JWT — getUser validates the token server-side
+  const userClient = createClient(SUPABASE_URL, ANON_KEY, {
+    global: { headers: { Authorization: 'Bearer ' + token } }
+  });
+  const { data: { user }, error } = await userClient.auth.getUser();
+  if (error || !user) return false;
+
+  // Allow only our two known admin emails
+  const allowed = ['leandertoney@gmail.com', 'chrisjohnson839@gmail.com'];
+  return allowed.includes(user.email ?? '');
 }
 
 // ── AI Chat helpers ──────────────────────────────────────────────────────────
@@ -131,17 +145,10 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   const path = url.pathname.replace(/^\/functions\/v1\/admin/, '');
 
-  // ── Auth check ──────────────────────────────────────────────────────────────
-  // Login endpoint — no auth required
-  if (path === '/auth/login' && req.method === 'POST') {
-    const { password } = await req.json();
-    if (password === ADMIN_PASSWORD) return json({ ok: true });
-    return json({ error: 'Invalid password' }, 401);
+  // All endpoints require a valid Supabase session JWT
+  if (!await verifyAuth(req)) {
+    return json({ error: 'Unauthorized' }, 401);
   }
-
-  // All other endpoints require password header
-  const adminPass = req.headers.get('x-admin-password');
-  if (adminPass !== ADMIN_PASSWORD) return unauthorized();
 
   // ── Config ──────────────────────────────────────────────────────────────────
   if (path === '/config' && req.method === 'GET') {
@@ -201,7 +208,6 @@ Deno.serve(async (req) => {
       { role: 'user',   content: message.trim() }
     ];
 
-    // Agentic tool-use loop
     let loopCount = 0;
     while (loopCount++ < 10) {
       const res = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -223,7 +229,6 @@ Deno.serve(async (req) => {
       } else break;
     }
 
-    // JSON-mode call for final reply + chips
     const jsonSystemPrompt = `You are CJ Assistant for CJ's Fun Time Rental. Vehicles: 2022 Polaris Slingshot (slingshot_2022), 2020 Polaris Slingshot (slingshot_2020), 2021 Can-Am Spyder F3 Limited (canam_spyder). Guide the admin with clickable chips. REPLY: 1 sentence max, plain text, no markdown. CHIPS: 3-6 specific, actionable options. Respond ONLY with valid JSON: {"reply":"...","chips":["...","...","..."]}`;
 
     const jsonRes = await fetch('https://api.openai.com/v1/chat/completions', {

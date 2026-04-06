@@ -18,12 +18,33 @@
       <img src="/cj_funtime_logo.png" alt="CJ's Fun Time Rental" class="login-logo">
       <h1>Admin Panel</h1>
       <p class="login-sub">CJ's Fun Time Rental</p>
-      <div class="login-field">
-        <label for="login-password">Password</label>
-        <input type="password" id="login-password" placeholder="Enter password" autocomplete="current-password">
+
+      <!-- Sign-in form -->
+      <div id="login-form">
+        <div class="login-field">
+          <label for="login-email">Email</label>
+          <input type="email" id="login-email" placeholder="your@email.com" autocomplete="email">
+        </div>
+        <div class="login-field">
+          <label for="login-password">Password</label>
+          <input type="password" id="login-password" placeholder="Password" autocomplete="current-password">
+        </div>
+        <button id="login-btn" class="btn-primary-admin">Sign In</button>
+        <p id="login-error" class="login-error hidden"></p>
+        <p class="login-forgot"><a href="#" id="forgot-link">Forgot password?</a></p>
       </div>
-      <button id="login-btn" class="btn-primary-admin">Sign In</button>
-      <p id="login-error" class="login-error hidden"></p>
+
+      <!-- Reset password form -->
+      <div id="reset-form" class="hidden">
+        <p class="login-sub" style="margin-bottom:16px;">Enter your email and we'll send a reset link.</p>
+        <div class="login-field">
+          <label for="reset-email">Email</label>
+          <input type="email" id="reset-email" placeholder="your@email.com" autocomplete="email">
+        </div>
+        <button id="reset-btn" class="btn-primary-admin">Send Reset Link</button>
+        <p id="reset-status" class="login-error hidden"></p>
+        <p class="login-forgot"><a href="#" id="back-to-login">← Back to sign in</a></p>
+      </div>
     </div>
   </div>
 
@@ -201,8 +222,6 @@
 
   </div><!-- /#admin-shell -->
 
-  <script src="/admin/admin.js"></script>
-
   <!-- ── AI CHAT WIDGET ──────────────────────────────────────── -->
   <div id="chat-widget" class="chat-widget">
 
@@ -256,5 +275,7 @@
   </div>
   <!-- ── END AI CHAT WIDGET ──────────────────────────────────── -->
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="/admin/admin.js"></script>
 </body>
 </html>
