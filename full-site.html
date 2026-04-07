@@ -129,7 +129,7 @@
         "name": "How much does it cost to rent a Polaris Slingshot near me?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Our Slingshots start at $180/day and the Can-Am Spyder F3 is $203/day. Multi-day rentals qualify for discounts — 10% off for 3+ days, 15% off for a full week. No hidden fees, book directly on this page."
+          "text": "The Can-Am Spyder F3 starts at $160/day and our Slingshots are $180/day. Multi-day rentals qualify for discounts — 10% off for 3+ days, 15% off for a full week. No hidden fees, book directly on this page."
         }
       },
       {
@@ -137,7 +137,7 @@
         "name": "What's the difference between a Polaris Slingshot and a Can-Am Spyder?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Both are 3-wheel autocycles that don't require a motorcycle license. The Slingshot is side-by-side seating — driver and passenger sit next to each other like a car. The Can-Am Spyder is tandem — passenger sits behind the driver like a motorcycle. The Spyder is more of a touring ride; the Slingshot is pure open-air sport."
+          "text": "Both are 3-wheel vehicles but they differ in licensing. The Polaris Slingshot is classified as an autocycle — no motorcycle license needed, just a standard driver's license. The Can-Am Spyder requires a motorcycle license in PA. The Slingshot is side-by-side seating; the Spyder is tandem (passenger behind driver). The Spyder is more of a touring ride; the Slingshot is pure open-air sport."
         }
       },
       {
@@ -161,7 +161,7 @@
         "name": "What's included in the rental — are there mileage limits?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Each rental includes 600 miles per trip. That's more than enough for a full day of exploring Central PA's scenic routes. Insurance coverage is included and full details are provided at booking confirmation."
+          "text": "Each rental includes 300 miles per trip. That's more than enough for a full day of exploring Central PA's scenic routes. Insurance coverage is included and full details are provided at booking confirmation."
         }
       },
       {
@@ -552,7 +552,7 @@
       flex-shrink: 0;
     }
     .fleet-card-price span { display: block; font-family: var(--body); font-size: 10px; letter-spacing: 1px; color: rgba(255,255,255,0.3); text-transform: uppercase; margin-top: 2px; }
-    .fleet-card-desc { font-size: 12px; color: var(--muted); line-height: 1.65; margin-top: 6px; }
+    .fleet-card-desc { display: none; }
     .fleet-ctas { margin-top: 32px; display: flex; gap: 12px; justify-content: center; }
     .fleet-card-coming {
       font-size: 11px;
@@ -1121,6 +1121,7 @@
       .cta-section { padding: 80px 0; }
       .lead-section { padding: 72px 0; }
       .reviews { padding: 64px 0; }
+      .reviews-grid { animation-duration: 90s; }
     }
 
     /* ─────────────────────────────────────────
@@ -1940,7 +1941,7 @@
     <div class="container">
       <div class="fleet-header">
         <h2>Choose<br>Your Ride</h2>
-        <p>Three vehicles. All 3-wheel. All automatic. All open-air. Starting at $180/day.</p>
+        <p>Three vehicles. All 3-wheel. All open-air. Starting at $160/day.</p>
       </div>
       <div class="fleet-grid">
 
@@ -1982,12 +1983,12 @@
           <div class="fleet-card-overlay"></div>
           <div class="fleet-card-info">
             <div class="fleet-card-text">
-              <p class="fleet-card-tag">Premium Touring</p>
+              <p class="fleet-card-tag">Premium Touring &nbsp;·&nbsp; M License Required</p>
               <h3 class="fleet-card-name">2021 Can-Am Spyder F3</h3>
               <p class="fleet-card-specs">3-Wheel Stability &nbsp;·&nbsp; 2 Seats &nbsp;·&nbsp; F3 Limited &nbsp;·&nbsp; Heated Grips</p>
-              <p class="fleet-card-desc">The touring flagship. Heated grips, Garmin GPS, and tandem seating make it ideal for day trips from Lancaster to the Poconos or Gettysburg. Can-Am Spyder rental in PA — no motorcycle license required.</p>
+              <p class="fleet-card-desc">The touring flagship. Heated grips, Garmin GPS, and tandem seating make it ideal for day trips from Lancaster to the Poconos or Gettysburg. Motorcycle license required in PA.</p>
             </div>
-            <div class="fleet-card-price">$203<span>/ day</span></div>
+            <div class="fleet-card-price">$160<span>/ day</span></div>
             <button class="fleet-card-book" data-vehicle-detail="canam_spyder">View Details &rarr;</button>
           </div>
         </div>
@@ -2154,16 +2155,16 @@
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:32px;">
         <div class="reveal" style="border:1px solid var(--border);border-radius:12px;padding:28px 24px;">
-          <h3 style="font-family:var(--heading);font-size:1.2rem;letter-spacing:2px;margin-bottom:10px;color:var(--orange);">No Motorcycle License Required</h3>
-          <p style="font-size:13px;color:var(--muted);line-height:1.75;">Pennsylvania classifies Polaris Slingshots and Can-Am Spyders as autocycles — not motorcycles. A standard driver's license is all you need. If you can drive a car, you're already qualified to rent.</p>
+          <h3 style="font-family:var(--heading);font-size:1.2rem;letter-spacing:2px;margin-bottom:10px;color:var(--orange);">No Motorcycle License for Slingshots</h3>
+          <p style="font-size:13px;color:var(--muted);line-height:1.75;">Pennsylvania classifies the Polaris Slingshot as an autocycle — not a motorcycle. A standard driver's license is all you need. The Can-Am Spyder does require a motorcycle license in PA.</p>
         </div>
         <div class="reveal" style="border:1px solid var(--border);border-radius:12px;padding:28px 24px;">
           <h3 style="font-family:var(--heading);font-size:1.2rem;letter-spacing:2px;margin-bottom:10px;color:var(--orange);">Direct Booking — No Platform Fees</h3>
           <p style="font-size:13px;color:var(--muted);line-height:1.75;">Book directly on this site and pay the posted rate. No Turo service fees, no hidden surcharges. The price you see is the price you pay.</p>
         </div>
         <div class="reveal" style="border:1px solid var(--border);border-radius:12px;padding:28px 24px;">
-          <h3 style="font-family:var(--heading);font-size:1.2rem;letter-spacing:2px;margin-bottom:10px;color:var(--orange);">600 Miles Per Trip Included</h3>
-          <p style="font-size:13px;color:var(--muted);line-height:1.75;">Most Slingshot rentals in the Mid-Atlantic cap mileage at 150–200 miles per day. We include 600 miles per trip — enough for a full-day ride from Lancaster to Gettysburg, the Delaware Water Gap, or the Pocono Mountains and back.</p>
+          <h3 style="font-family:var(--heading);font-size:1.2rem;letter-spacing:2px;margin-bottom:10px;color:var(--orange);">300 Miles Per Trip Included</h3>
+          <p style="font-size:13px;color:var(--muted);line-height:1.75;">Most Slingshot rentals in the Mid-Atlantic cap mileage at 150–200 miles per day. We include 300 miles per trip — enough for a full-day ride from Lancaster to Gettysburg, the Delaware Water Gap, or the Pocono Mountains and back.</p>
         </div>
         <div class="reveal" style="border:1px solid var(--border);border-radius:12px;padding:28px 24px;">
           <h3 style="font-family:var(--heading);font-size:1.2rem;letter-spacing:2px;margin-bottom:10px;color:var(--orange);">Insurance Included on Every Rental</h3>
@@ -2221,11 +2222,11 @@
           </div>
           <div class="faq-item">
             <button class="faq-question"><span>How much does it cost to rent a Polaris Slingshot near me?</span><span class="faq-icon">+</span></button>
-            <div class="faq-answer"><p>Our Slingshots start at $180/day and the Can-Am Spyder F3 is $203/day. Multi-day rentals qualify for discounts — 10% off for 3+ days, 15% off for a full week. No hidden fees, book directly on this page.</p></div>
+            <div class="faq-answer"><p>The Can-Am Spyder F3 starts at $160/day and our Slingshots are $180/day. Multi-day rentals qualify for discounts — 10% off for 3+ days, 15% off for a full week. No hidden fees, book directly on this page.</p></div>
           </div>
           <div class="faq-item">
             <button class="faq-question"><span>What's the difference between a Polaris Slingshot and a Can-Am Spyder?</span><span class="faq-icon">+</span></button>
-            <div class="faq-answer"><p>Both are 3-wheel autocycles that don't require a motorcycle license. The Slingshot is side-by-side seating — driver and passenger sit next to each other like a car. The Can-Am Spyder is tandem — passenger sits behind the driver like a motorcycle. The Spyder is more of a touring ride; the Slingshot is pure open-air sport.</p></div>
+            <div class="faq-answer"><p>Both are 3-wheel vehicles but they differ in licensing. The Polaris Slingshot is classified as an autocycle — no motorcycle license needed, just a standard driver's license. The Can-Am Spyder requires a motorcycle license in PA. The Slingshot is side-by-side seating; the Spyder is tandem (passenger behind driver). The Spyder is more of a touring ride; the Slingshot is pure open-air sport.</p></div>
           </div>
           <div class="faq-item">
             <button class="faq-question"><span>Is a Polaris Slingshot hard to drive?</span><span class="faq-icon">+</span></button>
@@ -2237,7 +2238,7 @@
           </div>
           <div class="faq-item">
             <button class="faq-question"><span>What's included in the rental — are there mileage limits?</span><span class="faq-icon">+</span></button>
-            <div class="faq-answer"><p>Each rental includes 600 miles per trip. That's more than enough for a full day of exploring Central PA's scenic routes. Insurance coverage is included and full details are provided at booking confirmation.</p></div>
+            <div class="faq-answer"><p>Each rental includes 300 miles per trip. That's more than enough for a full day of exploring Central PA's scenic routes. Insurance coverage is included and full details are provided at booking confirmation.</p></div>
           </div>
           <div class="faq-item">
             <button class="faq-question"><span>Can I take a rented Slingshot or Spyder on the highway in Pennsylvania?</span><span class="faq-icon">+</span></button>
@@ -2549,8 +2550,7 @@
 
         <div class="vd-inclusions-mini">
           <div class="vd-inclusion">Insurance &amp; protection included</div>
-          <div class="vd-inclusion">600 miles included</div>
-          <div class="vd-inclusion">No motorcycle license required</div>
+          <div class="vd-inclusion">300 miles included</div>
         </div>
 
         <button class="btn btn-primary vd-book-btn" id="vd-book-btn">Book This Ride &rarr;</button>
@@ -2594,12 +2594,12 @@
               </div>
               <span class="bv-price">$180 / day</span>
             </button>
-            <button class="bm-vehicle-btn" data-vehicle="canam_spyder" data-rate="203" data-label="2021 Can-Am Spyder F3 Limited">
+            <button class="bm-vehicle-btn" data-vehicle="canam_spyder" data-rate="160" data-label="2021 Can-Am Spyder F3 Limited">
               <div class="bv-info">
                 <span class="bv-name">2021 Can-Am Spyder F3 Limited</span>
-                <span class="bv-tag">Touring &nbsp;·&nbsp; No Moto License</span>
+                <span class="bv-tag">Touring &nbsp;·&nbsp; M License Required</span>
               </div>
-              <span class="bv-price">$203 / day</span>
+              <span class="bv-price">$160 / day</span>
             </button>
           </div>
         </div>
@@ -2703,9 +2703,8 @@
           <hr class="bm-divider">
           <div class="bm-inclusions">
             <div class="bm-inclusion-item">Insurance &amp; protection included</div>
-            <div class="bm-inclusion-item">600 miles included per trip</div>
+            <div class="bm-inclusion-item">300 miles included per trip</div>
             <div class="bm-inclusion-item">Pickup &amp; return in Lancaster, PA</div>
-            <div class="bm-inclusion-item">No motorcycle license required</div>
           </div>
           <!-- Promo code -->
           <div class="bm-promo-wrap">

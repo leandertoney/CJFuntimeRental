@@ -26,7 +26,7 @@
         '2.0L 4-Cyl \u00b7 203 hp',
         '3-wheel autocycle',
         '2 seats (driver + passenger)',
-        '600 miles included per trip',
+        '300 miles included per trip',
       ],
       features: [
         'Open-air cockpit with 180\u00b0 panoramic views',
@@ -54,7 +54,7 @@
         'Integrated GPS navigation',
       ],
       included: [
-        '600 miles per trip included',
+        '300 miles per trip included',
         'Insurance & protection coverage',
         'Pickup & return in Lancaster, PA',
         'Full tank of gas at pickup',
@@ -84,7 +84,7 @@
         '2.0L 4-Cyl \u00b7 173 hp',
         '3-wheel autocycle',
         '2 seats (driver + passenger)',
-        '600 miles included per trip',
+        '300 miles included per trip',
       ],
       features: [
         'Open-air cockpit with 180\u00b0 panoramic views',
@@ -111,7 +111,7 @@
         'AM/FM/SiriusXM ready',
       ],
       included: [
-        '600 miles per trip included',
+        '300 miles per trip included',
         'Insurance & protection coverage',
         'Pickup & return in Lancaster, PA',
         'Full tank of gas at pickup',
@@ -130,7 +130,7 @@
     canam_spyder: {
       key: 'canam_spyder',
       label: '2021 Can-Am Spyder F3 Limited',
-      rate: 203,
+      rate: 160,
       img: 'Can_Am_Spyder_F3_Limited.png',
       badges: ['Premium Pick', '3-Wheeler', 'Touring Comfort'],
       tagline: 'Long-haul luxury meets open-road freedom \u2014 the Can-Am built for adventure.',
@@ -138,9 +138,10 @@
         '2021 model year',
         'SE6 semi-automatic transmission',
         'Rotax 1330 ACE \u00b7 115 hp',
-        '3-wheel autocycle',
+        '3-wheel motorcycle',
         '2 seats (driver + passenger)',
-        '600 miles included per trip',
+        '300 miles included per trip',
+        'Motorcycle license required in PA',
       ],
       features: [
         'SE6 semi-auto transmission \u2014 smooth paddle-shift',
@@ -157,7 +158,7 @@
         'ABS with cornering ABS (C-ABS)',
         'Traction Control System (TCS)',
         'Vehicle Hold Assist (VHA) on hills',
-        'No motorcycle license required in PA',
+        'Motorcycle license required in PA',
         'Insurance & protection included in every rental',
       ],
       connectivity: [
@@ -168,12 +169,12 @@
         'LinQ accessory mounting system',
       ],
       included: [
-        '600 miles per trip included',
+        '300 miles per trip included',
         'Insurance & protection coverage',
         'Pickup & return in Lancaster, PA',
         'Full tank of gas at pickup',
         'Pre-trip vehicle walkthrough',
-        'No motorcycle license required',
+        'Motorcycle license required in PA',
         '3-day discount: 10% off',
         'Weekly discount: 15% off',
       ],
@@ -416,7 +417,7 @@
 
           '<div class="vd-inclusions-mini">' +
             '<div class="vd-inclusion">Insurance &amp; protection included</div>' +
-            '<div class="vd-inclusion">600 miles included</div>' +
+            '<div class="vd-inclusion">300 miles included</div>' +
             '<div class="vd-inclusion">No motorcycle license required</div>' +
           '</div>' +
 
