@@ -453,7 +453,7 @@
        FLEET
     ───────────────────────────────────────── */
     .fleet { padding: 96px 0; }
-    .fleet > .container { position: relative; z-index: 1; }
+    .fleet > .container { position: relative; z-index: 1; max-width: 1400px; }
     .fleet-header {
       display: flex;
       align-items: flex-end;
@@ -471,29 +471,33 @@
     .fleet-header p { color: var(--muted); font-size: 14px; max-width: 300px; text-align: right; line-height: 1.6; }
 
     .fleet-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
+      display: flex;
+      gap: 24px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
     }
+    .fleet-grid::-webkit-scrollbar { display: none; }
     .fleet-card {
       position: relative;
       overflow: hidden;
-      background: transparent;
+      background: #141414;
       cursor: pointer;
-      border-radius: 4px;
-    }
-    .fleet-card:first-child {
-      grid-column: 1 / -1;
+      border-radius: 8px;
+      flex: 1 1 0;
+      min-width: 320px;
+      scroll-snap-align: start;
+      display: flex;
+      flex-direction: column;
     }
     .fleet-card-photo {
       width: 100%;
-      aspect-ratio: 16/9;
+      aspect-ratio: 3/2;
       object-fit: cover;
+      object-position: center center;
       display: block;
       transition: transform 0.5s ease;
-    }
-    .fleet-card:first-child .fleet-card-photo {
-      aspect-ratio: 21/9;
     }
     .fleet-card-placeholder {
       width: 100%;
@@ -504,56 +508,45 @@
       justify-content: center;
     }
     .fleet-card:hover .fleet-card-photo { transform: scale(1.03); }
-    .fleet-card-overlay {
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.1) 50%, transparent 100%);
-      transition: background 0.3s ease;
-    }
-    .fleet-card:hover .fleet-card-overlay {
-      background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.2) 55%, transparent 100%);
-    }
+    .fleet-card-overlay { display: none; }
     .fleet-card-info {
-      position: absolute;
-      bottom: 0; left: 0; right: 0;
-      padding: 28px 32px;
-      display: flex;
-      align-items: flex-end;
-      gap: 16px;
+      padding: 20px 24px 22px;
     }
-    .fleet-card-text { flex: 1; }
+    .fleet-card-text { margin-bottom: 16px; }
+    .fleet-card-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
     .fleet-card-tag {
-      font-size: 10px;
+      font-size: 11px;
       font-weight: 700;
       letter-spacing: 2px;
       text-transform: uppercase;
       color: var(--orange);
-      margin-bottom: 6px;
-      text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 0 12px rgba(0,0,0,0.7);
+      margin-bottom: 8px;
     }
     .fleet-card-name {
       font-family: var(--heading);
-      font-size: clamp(1.4rem, 3vw, 2rem);
+      font-size: clamp(1.6rem, 2.5vw, 2.2rem);
       letter-spacing: 2px;
-      line-height: 1;
-      margin-bottom: 6px;
-      text-shadow: 0 1px 6px rgba(0,0,0,0.8);
+      line-height: 1.05;
+      margin-bottom: 8px;
     }
     .fleet-card-specs {
-      font-size: 12px;
+      font-size: 13px;
       color: rgba(255,255,255,0.5);
       letter-spacing: 0.3px;
-      text-shadow: 0 1px 4px rgba(0,0,0,0.8);
     }
     .fleet-card-price {
       font-family: var(--heading);
-      font-size: 1.4rem;
+      font-size: 1.6rem;
       letter-spacing: 1px;
       color: var(--amber);
-      text-align: right;
       flex-shrink: 0;
     }
-    .fleet-card-price span { display: block; font-family: var(--body); font-size: 10px; letter-spacing: 1px; color: rgba(255,255,255,0.3); text-transform: uppercase; margin-top: 2px; }
+    .fleet-card-price span { font-family: var(--body); font-size: 11px; letter-spacing: 1px; color: rgba(255,255,255,0.4); text-transform: uppercase; margin-left: 4px; }
     .fleet-card-desc { display: none; }
     .fleet-ctas { margin-top: 32px; display: flex; gap: 12px; justify-content: center; }
     .fleet-card-coming {
@@ -565,11 +558,10 @@
 
     @media (max-width: 768px) {
       .fleet { padding: 64px 0; }
-      .fleet-grid { grid-template-columns: 1fr; }
-      .fleet-card:first-child { grid-column: 1; }
-      .fleet-card:first-child .fleet-card-photo { aspect-ratio: 4/3; }
+      .fleet-card { flex: 0 0 85vw; min-width: 0; }
+      .fleet-card-photo { aspect-ratio: 3/2; }
       .fleet-header p { text-align: left; }
-      .fleet-card-info { padding: 20px; flex-direction: column; align-items: flex-start; gap: 8px; }
+      .fleet-card-info { padding: 20px; }
     }
 
     /* ─────────────────────────────────────────
@@ -1836,7 +1828,6 @@
       padding: 9px 18px;
       cursor: pointer;
       transition: all 0.2s ease;
-      margin-top: 10px;
     }
     .fleet-card-book:hover { filter: brightness(1.1); transform: translateY(-1px); }
   </style>
@@ -1947,7 +1938,7 @@
       </div>
       <div class="fleet-grid">
 
-        <!-- 2022 Slingshot — featured -->
+        <!-- 2022 Slingshot -->
         <div class="fleet-card">
           <img src="cj_orange_sling.jpg" class="fleet-card-photo" alt="2022 Polaris Slingshot rental Lancaster PA">
           <div class="fleet-card-overlay"></div>
@@ -1956,10 +1947,11 @@
               <p class="fleet-card-tag">Most Popular &nbsp;·&nbsp; No Moto License</p>
               <h3 class="fleet-card-name">2022 Polaris Slingshot</h3>
               <p class="fleet-card-specs">3-Wheel Autocycle &nbsp;·&nbsp; 2 Seats &nbsp;·&nbsp; AutoDrive &nbsp;·&nbsp; Open-Air</p>
-              <p class="fleet-card-desc">CJ's most-booked vehicle. AutoDrive means no clutch — if you can drive a car, you can drive this. Rockford Fosgate audio, Alpine CarPlay screen, and open-air cockpit. Side-by-side seating for driver and passenger.</p>
             </div>
-            <div class="fleet-card-price">$180<span>/ day</span></div>
-            <button class="fleet-card-book" data-vehicle-detail="slingshot_2022">View Details &rarr;</button>
+            <div class="fleet-card-bottom">
+              <div class="fleet-card-price">$180<span>/ day</span></div>
+              <button class="fleet-card-book" data-vehicle-detail="slingshot_2022">View Details &rarr;</button>
+            </div>
           </div>
         </div>
 
@@ -1972,10 +1964,11 @@
               <p class="fleet-card-tag">Great Value &nbsp;·&nbsp; Manual</p>
               <h3 class="fleet-card-name">2020 Polaris Slingshot</h3>
               <p class="fleet-card-specs">3-Wheel Autocycle &nbsp;·&nbsp; 2 Seats &nbsp;·&nbsp; 5-Speed Manual</p>
-              <p class="fleet-card-desc">The pure driver's choice. 5-speed manual transmission, 173hp, zero electronic assistance between you and the road. The best three-wheel manual rental in Central PA — if you want to feel every shift, this is it.</p>
             </div>
-            <div class="fleet-card-price">$180<span>/ day</span></div>
-            <button class="fleet-card-book" data-vehicle-detail="slingshot_2020">View Details &rarr;</button>
+            <div class="fleet-card-bottom">
+              <div class="fleet-card-price">$180<span>/ day</span></div>
+              <button class="fleet-card-book" data-vehicle-detail="slingshot_2020">View Details &rarr;</button>
+            </div>
           </div>
         </div>
 
@@ -1988,16 +1981,18 @@
               <p class="fleet-card-tag">Premium Touring &nbsp;·&nbsp; M License Required</p>
               <h3 class="fleet-card-name">2021 Can-Am Spyder F3</h3>
               <p class="fleet-card-specs">3-Wheel Stability &nbsp;·&nbsp; 2 Seats &nbsp;·&nbsp; F3 Limited &nbsp;·&nbsp; Heated Grips</p>
-              <p class="fleet-card-desc">The touring flagship. Heated grips, Garmin GPS, and tandem seating make it ideal for day trips from Lancaster to the Poconos or Gettysburg. Motorcycle license required in PA.</p>
             </div>
-            <div class="fleet-card-price">$160<span>/ day</span></div>
-            <button class="fleet-card-book" data-vehicle-detail="canam_spyder">View Details &rarr;</button>
+            <div class="fleet-card-bottom">
+              <div class="fleet-card-price">$160<span>/ day</span></div>
+              <button class="fleet-card-book" data-vehicle-detail="canam_spyder">View Details &rarr;</button>
+            </div>
           </div>
         </div>
 
       </div>
       <div class="fleet-ctas">
         <button class="btn btn-primary" data-stripe-book>Book Now &rarr;</button>
+        <button class="btn btn-outline fleet-view-all-btn" style="display:none;">View All Vehicles</button>
       </div>
     </div>
   </section>
