@@ -138,6 +138,7 @@
     if (btn) selectVehicleBtn(btn);
   }
 
+  window.selectVehicleBtn = selectVehicleBtn;
   function selectVehicleBtn(btn) {
     document.querySelectorAll('.bm-vehicle-btn').forEach(function (b) { b.classList.remove('selected'); });
     btn.classList.add('selected');

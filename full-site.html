@@ -1936,59 +1936,8 @@
         <h2>Choose<br>Your Ride</h2>
         <p>Three vehicles. All 3-wheel. All open-air. Starting at $160/day.</p>
       </div>
-      <div class="fleet-grid">
-
-        <!-- 2022 Slingshot -->
-        <div class="fleet-card">
-          <img src="cj_orange_sling.jpg" class="fleet-card-photo" alt="2022 Polaris Slingshot rental Lancaster PA">
-          <div class="fleet-card-overlay"></div>
-          <div class="fleet-card-info">
-            <div class="fleet-card-text">
-              <p class="fleet-card-tag">Most Popular &nbsp;·&nbsp; No Moto License</p>
-              <h3 class="fleet-card-name">2022 Polaris Slingshot</h3>
-              <p class="fleet-card-specs">3-Wheel Autocycle &nbsp;·&nbsp; 2 Seats &nbsp;·&nbsp; AutoDrive &nbsp;·&nbsp; Open-Air</p>
-            </div>
-            <div class="fleet-card-bottom">
-              <div class="fleet-card-price">$180<span>/ day</span></div>
-              <button class="fleet-card-book" data-vehicle-detail="slingshot_2022">View Details &rarr;</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- 2020 Slingshot -->
-        <div class="fleet-card">
-          <img src="gray_polaris_front.png" class="fleet-card-photo" alt="2020 Polaris Slingshot rental Lancaster PA">
-          <div class="fleet-card-overlay"></div>
-          <div class="fleet-card-info">
-            <div class="fleet-card-text">
-              <p class="fleet-card-tag">Great Value &nbsp;·&nbsp; Manual</p>
-              <h3 class="fleet-card-name">2020 Polaris Slingshot</h3>
-              <p class="fleet-card-specs">3-Wheel Autocycle &nbsp;·&nbsp; 2 Seats &nbsp;·&nbsp; 5-Speed Manual</p>
-            </div>
-            <div class="fleet-card-bottom">
-              <div class="fleet-card-price">$180<span>/ day</span></div>
-              <button class="fleet-card-book" data-vehicle-detail="slingshot_2020">View Details &rarr;</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Can-Am Spyder -->
-        <div class="fleet-card">
-          <img src="Can_Am_Spyder_F3_Limited.png" class="fleet-card-photo" alt="2021 Can-Am Spyder F3 Limited rental Lancaster PA">
-          <div class="fleet-card-overlay"></div>
-          <div class="fleet-card-info">
-            <div class="fleet-card-text">
-              <p class="fleet-card-tag">Premium Touring &nbsp;·&nbsp; M License Required</p>
-              <h3 class="fleet-card-name">2021 Can-Am Spyder F3</h3>
-              <p class="fleet-card-specs">3-Wheel Stability &nbsp;·&nbsp; 2 Seats &nbsp;·&nbsp; F3 Limited &nbsp;·&nbsp; Heated Grips</p>
-            </div>
-            <div class="fleet-card-bottom">
-              <div class="fleet-card-price">$160<span>/ day</span></div>
-              <button class="fleet-card-book" data-vehicle-detail="canam_spyder">View Details &rarr;</button>
-            </div>
-          </div>
-        </div>
-
+      <div class="fleet-grid" id="fleet-grid">
+        <!-- Rendered dynamically from SITE_CONFIG -->
       </div>
       <div class="fleet-ctas">
         <button class="btn btn-primary" data-stripe-book>Book Now &rarr;</button>
@@ -2576,28 +2525,8 @@
         <div class="bm-panel active" id="bm-panel-1">
           <h3>Choose Your Ride</h3>
           <p>Select the vehicle you'd like to book.</p>
-          <div class="bm-vehicles">
-            <button class="bm-vehicle-btn" data-vehicle="slingshot_2022" data-rate="180" data-label="2022 Polaris Slingshot">
-              <div class="bv-info">
-                <span class="bv-name">2022 Polaris Slingshot</span>
-                <span class="bv-tag">Most Popular &nbsp;·&nbsp; No Moto License &nbsp;·&nbsp; Manual</span>
-              </div>
-              <span class="bv-price">$180 / day</span>
-            </button>
-            <button class="bm-vehicle-btn" data-vehicle="slingshot_2020" data-rate="180" data-label="2020 Polaris Slingshot">
-              <div class="bv-info">
-                <span class="bv-name">2020 Polaris Slingshot</span>
-                <span class="bv-tag">Great Value &nbsp;·&nbsp; No Moto License &nbsp;·&nbsp; Manual</span>
-              </div>
-              <span class="bv-price">$180 / day</span>
-            </button>
-            <button class="bm-vehicle-btn" data-vehicle="canam_spyder" data-rate="160" data-label="2021 Can-Am Spyder F3 Limited">
-              <div class="bv-info">
-                <span class="bv-name">2021 Can-Am Spyder F3 Limited</span>
-                <span class="bv-tag">Touring &nbsp;·&nbsp; M License Required</span>
-              </div>
-              <span class="bv-price">$160 / day</span>
-            </button>
+          <div class="bm-vehicles" id="bm-vehicles">
+            <!-- Rendered dynamically from SITE_CONFIG -->
           </div>
         </div>
 

@@ -45,31 +45,66 @@
       }
     }
 
-    // ── 2. Pricing & availability ───────────────────────────────
+    // ── 2. Dynamic vehicle rendering ───────────────────────────
     if (cfg.vehicles) {
-      Object.keys(cfg.vehicles).forEach(function (key) {
-        var v = cfg.vehicles[key];
+      // Build fleet cards
+      var fleetGrid = document.getElementById('fleet-grid');
+      if (fleetGrid) {
+        var fleetHtml = '';
+        Object.keys(cfg.vehicles).forEach(function (key) {
+          var v = cfg.vehicles[key];
+          if (v.available === false) return;
+          fleetHtml += '<div class="fleet-card">'
+            + '<img src="' + escHtml(v.img || '') + '" class="fleet-card-photo" alt="' + escHtml(v.name || '') + ' rental Lancaster PA" loading="lazy">'
+            + '<div class="fleet-card-info">'
+            + '<div class="fleet-card-text">'
+            + '<p class="fleet-card-tag">' + escHtml(v.tag || '') + '</p>'
+            + '<h3 class="fleet-card-name">' + escHtml(v.name || '') + '</h3>'
+            + '<p class="fleet-card-specs">' + escHtml(v.specs || '') + '</p>'
+            + '</div>'
+            + '<div class="fleet-card-bottom">'
+            + '<div class="fleet-card-price">$' + v.ratePerDay + '<span>/ day</span></div>'
+            + '<button class="fleet-card-book" data-vehicle-detail="' + escHtml(key) + '">View Details &rarr;</button>'
+            + '</div>'
+            + '</div>'
+            + '</div>';
+        });
+        fleetGrid.innerHTML = fleetHtml;
 
-        // Fleet card price
-        var detailBtn = document.querySelector('.fleet-card-book[data-vehicle-detail="' + key + '"]');
-        if (detailBtn) {
-          var card = detailBtn.closest('.fleet-card');
-          if (card) {
-            var priceEl = card.querySelector('.fleet-card-price');
-            if (priceEl) priceEl.innerHTML = '$' + v.ratePerDay + '<span>/ day</span>';
-            if (v.available === false) card.style.display = 'none';
-          }
-        }
+        // Bind fleet card detail buttons
+        fleetGrid.querySelectorAll('.fleet-card-book[data-vehicle-detail]').forEach(function (btn) {
+          btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            var vkey = this.getAttribute('data-vehicle-detail');
+            if (window.openVehicleDetail) window.openVehicleDetail(vkey);
+          });
+        });
+      }
 
-        // Booking modal vehicle button
-        var modalBtn = document.querySelector('.bm-vehicle-btn[data-vehicle="' + key + '"]');
-        if (modalBtn) {
-          modalBtn.setAttribute('data-rate', v.ratePerDay);
-          var bvPrice = modalBtn.querySelector('.bv-price');
-          if (bvPrice) bvPrice.textContent = '$' + v.ratePerDay + ' / day';
-          if (v.available === false) modalBtn.style.display = 'none';
-        }
-      });
+      // Build booking modal vehicle buttons
+      var bmVehicles = document.getElementById('bm-vehicles');
+      if (bmVehicles) {
+        var bmHtml = '';
+        Object.keys(cfg.vehicles).forEach(function (key) {
+          var v = cfg.vehicles[key];
+          if (v.available === false) return;
+          bmHtml += '<button class="bm-vehicle-btn" data-vehicle="' + escHtml(key) + '" data-rate="' + v.ratePerDay + '" data-label="' + escHtml(v.label || v.name || '') + '">'
+            + '<div class="bv-info">'
+            + '<span class="bv-name">' + escHtml(v.label || v.name || '') + '</span>'
+            + '<span class="bv-tag">' + escHtml(v.tag || '') + '</span>'
+            + '</div>'
+            + '<span class="bv-price">$' + v.ratePerDay + ' / day</span>'
+            + '</button>';
+        });
+        bmVehicles.innerHTML = bmHtml;
+
+        // Re-bind booking modal vehicle selection
+        bmVehicles.querySelectorAll('.bm-vehicle-btn').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            if (window.selectVehicleBtn) window.selectVehicleBtn(this);
+          });
+        });
+      }
     }
 
     // ── 3. Copy injection ───────────────────────────────────────

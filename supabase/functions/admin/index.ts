@@ -77,15 +77,17 @@ async function verifyAuth(req: Request): Promise<{ email: string; name: string }
 // ── AI Chat helpers ──────────────────────────────────────────────────────────
 
 const ADMIN_TOOLS = [
-  { type: 'function', function: { name: 'get_vehicles',          description: 'Read all vehicles with names, daily rates, and availability.', parameters: { type: 'object', properties: {}, required: [] } } },
-  { type: 'function', function: { name: 'update_vehicle',        description: "Update a vehicle's ratePerDay or available status. vehicleKey: slingshot_2022 | slingshot_2020 | canam_spyder.", parameters: { type: 'object', properties: { vehicleKey: { type: 'string', enum: ['slingshot_2022','slingshot_2020','canam_spyder'] }, ratePerDay: { type: 'number' }, available: { type: 'boolean' } }, required: ['vehicleKey'] } } },
+  { type: 'function', function: { name: 'get_vehicles', description: 'Read all vehicles with names, daily rates, availability, and all detail fields.', parameters: { type: 'object', properties: {}, required: [] } } },
+  { type: 'function', function: { name: 'update_vehicle', description: "Update any fields on an existing vehicle. Can change ratePerDay, available, name, label, tag, specs, img, badges, tagline, specsList, features, safety, connectivity, included, reviews.", parameters: { type: 'object', properties: { vehicleKey: { type: 'string', description: 'The vehicle key (e.g. slingshot_2022)' }, ratePerDay: { type: 'number' }, available: { type: 'boolean' }, name: { type: 'string' }, label: { type: 'string' }, tag: { type: 'string' }, specs: { type: 'string' }, img: { type: 'string' }, tagline: { type: 'string' }, badges: { type: 'array', items: { type: 'string' } }, specsList: { type: 'array', items: { type: 'string' } }, features: { type: 'array', items: { type: 'string' } }, safety: { type: 'array', items: { type: 'string' } }, connectivity: { type: 'array', items: { type: 'string' } }, included: { type: 'array', items: { type: 'string' } }, reviews: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, rating: { type: 'number' }, text: { type: 'string' } } } } }, required: ['vehicleKey'] } } },
+  { type: 'function', function: { name: 'add_vehicle', description: 'Add a new vehicle to the fleet. Provide a unique vehicleKey (lowercase_with_underscores), name, label, ratePerDay, img (filename), tag, specs (short string), and optionally all detail arrays.', parameters: { type: 'object', properties: { vehicleKey: { type: 'string', description: 'Unique key like slingshot_2024 or vanderhall_venice' }, name: { type: 'string' }, label: { type: 'string' }, ratePerDay: { type: 'number' }, img: { type: 'string' }, tag: { type: 'string' }, specs: { type: 'string' }, tagline: { type: 'string' }, badges: { type: 'array', items: { type: 'string' } }, specsList: { type: 'array', items: { type: 'string' } }, features: { type: 'array', items: { type: 'string' } }, safety: { type: 'array', items: { type: 'string' } }, connectivity: { type: 'array', items: { type: 'string' } }, included: { type: 'array', items: { type: 'string' } }, reviews: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, rating: { type: 'number' }, text: { type: 'string' } } } } }, required: ['vehicleKey', 'name', 'ratePerDay'] } } },
+  { type: 'function', function: { name: 'delete_vehicle', description: 'Remove a vehicle from the fleet by its key.', parameters: { type: 'object', properties: { vehicleKey: { type: 'string' } }, required: ['vehicleKey'] } } },
   { type: 'function', function: { name: 'update_all_vehicle_rates', description: 'Set the same ratePerDay for every vehicle.', parameters: { type: 'object', properties: { ratePerDay: { type: 'number' } }, required: ['ratePerDay'] } } },
-  { type: 'function', function: { name: 'get_leads',             description: 'Read all leads with email, source, date, promo code.', parameters: { type: 'object', properties: {}, required: [] } } },
-  { type: 'function', function: { name: 'delete_lead',           description: 'Delete a lead by email.', parameters: { type: 'object', properties: { email: { type: 'string' } }, required: ['email'] } } },
-  { type: 'function', function: { name: 'send_promo_to_lead',    description: 'Send a discount code email to a single lead.', parameters: { type: 'object', properties: { email: { type: 'string' }, code: { type: 'string' } }, required: ['email'] } } },
+  { type: 'function', function: { name: 'get_leads', description: 'Read all leads with email, source, date, promo code.', parameters: { type: 'object', properties: {}, required: [] } } },
+  { type: 'function', function: { name: 'delete_lead', description: 'Delete a lead by email.', parameters: { type: 'object', properties: { email: { type: 'string' } }, required: ['email'] } } },
+  { type: 'function', function: { name: 'send_promo_to_lead', description: 'Send a discount code email to a single lead.', parameters: { type: 'object', properties: { email: { type: 'string' }, code: { type: 'string' } }, required: ['email'] } } },
   { type: 'function', function: { name: 'send_promo_to_all_leads', description: 'Send a discount code email to every lead.', parameters: { type: 'object', properties: { code: { type: 'string' } }, required: ['code'] } } },
-  { type: 'function', function: { name: 'get_discounts',         description: 'Read discount tiers — days, percentage, label, enabled.', parameters: { type: 'object', properties: {}, required: [] } } },
-  { type: 'function', function: { name: 'get_blocked_dates',     description: 'Read all blocked dates unavailable for booking.', parameters: { type: 'object', properties: {}, required: [] } } },
+  { type: 'function', function: { name: 'get_discounts', description: 'Read discount tiers — days, percentage, label, enabled.', parameters: { type: 'object', properties: {}, required: [] } } },
+  { type: 'function', function: { name: 'get_blocked_dates', description: 'Read all blocked dates unavailable for booking.', parameters: { type: 'object', properties: {}, required: [] } } },
 ];
 
 async function readConfig() {
@@ -108,10 +110,46 @@ async function executeToolCall(name: string, input: Record<string, unknown>) {
       const key = input.vehicleKey as string;
       const v = cfg?.vehicles?.[key];
       if (!v) return { error: 'Unknown vehicle key: ' + key };
-      if (input.ratePerDay !== undefined) v.ratePerDay = input.ratePerDay;
-      if (input.available  !== undefined) v.available  = input.available;
+      const editableFields = ['ratePerDay','available','name','label','tag','specs','img','tagline','badges','specsList','features','safety','connectivity','included','reviews'];
+      for (const f of editableFields) {
+        if (input[f] !== undefined) (v as Record<string, unknown>)[f] = input[f];
+      }
       await writeConfig(cfg);
       return { ok: true, updated: v };
+    }
+    case 'add_vehicle': {
+      const cfg = await readConfig();
+      const key = input.vehicleKey as string;
+      if (cfg.vehicles[key]) return { error: 'Vehicle key already exists: ' + key };
+      cfg.vehicles[key] = {
+        available: true,
+        name: input.name || key,
+        label: input.label || input.name || key,
+        tag: input.tag || '',
+        specs: input.specs || '',
+        ratePerDay: input.ratePerDay || 0,
+        img: input.img || '',
+        badges: input.badges || [],
+        tagline: input.tagline || '',
+        specsList: input.specsList || [],
+        features: input.features || [],
+        safety: input.safety || [],
+        connectivity: input.connectivity || [],
+        included: input.included || [],
+        reviews: input.reviews || [],
+        stripeProductId: '',
+      };
+      await writeConfig(cfg);
+      return { ok: true, added: key, vehicle: cfg.vehicles[key] };
+    }
+    case 'delete_vehicle': {
+      const cfg = await readConfig();
+      const key = input.vehicleKey as string;
+      if (!cfg.vehicles[key]) return { error: 'Vehicle not found: ' + key };
+      const deleted = cfg.vehicles[key];
+      delete cfg.vehicles[key];
+      await writeConfig(cfg);
+      return { ok: true, deleted: key, vehicle: deleted };
     }
     case 'update_all_vehicle_rates': {
       const cfg = await readConfig();
@@ -273,7 +311,7 @@ Deno.serve(async (req) => {
     }
 
     const today = new Date().toISOString().split('T')[0];
-    const systemPrompt = `You are CJ Assistant, a helpful admin tool for CJ's Fun Time Rental — a 3-wheel vehicle rental business in Lancaster, PA. Use tools to execute commands. Today: ${today}. Vehicle keys: slingshot_2022 (2022 Polaris Slingshot), slingshot_2020 (2020 Polaris Slingshot), canam_spyder (2021 Can-Am Spyder F3 Limited).`;
+    const systemPrompt = `You are CJ Assistant, a helpful admin tool for CJ's Fun Time Rental — a 3-wheel vehicle rental business in Lancaster, PA. Use tools to execute commands. Today: ${today}. Use get_vehicles to see current fleet. You can add_vehicle, update_vehicle (any field), and delete_vehicle. Vehicle keys are lowercase_with_underscores (e.g. slingshot_2024).`;
 
     const messages: unknown[] = [
       { role: 'system', content: systemPrompt },
@@ -301,7 +339,7 @@ Deno.serve(async (req) => {
       } else break;
     }
 
-    const jsonSystemPrompt = `You are CJ Assistant for CJ's Fun Time Rental. Vehicles: 2022 Polaris Slingshot (slingshot_2022), 2020 Polaris Slingshot (slingshot_2020), 2021 Can-Am Spyder F3 Limited (canam_spyder). Guide the admin with clickable chips. REPLY: 1 sentence max, plain text, no markdown. CHIPS: 3-6 specific, actionable options. Respond ONLY with valid JSON: {"reply":"...","chips":["...","...","..."]}`;
+    const jsonSystemPrompt = `You are CJ Assistant for CJ's Fun Time Rental. Guide the admin with clickable chips. You can manage vehicles (add, update, delete), leads, promos, discounts, and blocked dates. REPLY: 1 sentence max, plain text, no markdown. CHIPS: 3-6 specific, actionable options. Respond ONLY with valid JSON: {"reply":"...","chips":["...","...","..."]}`;
 
     const jsonRes = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',

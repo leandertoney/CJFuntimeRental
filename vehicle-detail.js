@@ -301,9 +301,18 @@
 
   // ── Panel open / close ─────────────────────────────────────────────────────
 
+  window.openVehicleDetail = openPanel;
   function openPanel(vehicleKey) {
-    var v = VEHICLES[vehicleKey];
+    // Load from SITE_CONFIG (dynamic) with fallback to hardcoded VEHICLES
+    var src = (window.SITE_CONFIG && window.SITE_CONFIG.vehicles) || VEHICLES;
+    var v = src[vehicleKey];
     if (!v) return;
+    // Normalize field names (config uses ratePerDay/specsList, detail uses rate/specs)
+    if (!v.rate && v.ratePerDay) v.rate = v.ratePerDay;
+    if (!v.key) v.key = vehicleKey;
+    if (!v.label && v.name) v.label = v.name;
+    // Config stores detailed specs as 'specsList'; the panel renderer expects 'specs' as array
+    if (v.specsList && !Array.isArray(v.specs)) v.specs = v.specsList;
 
     var panel = document.getElementById('vd-panel');
     if (!panel) return;

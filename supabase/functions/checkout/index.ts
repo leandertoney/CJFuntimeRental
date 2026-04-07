@@ -11,6 +11,7 @@ const CORS = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS'
 };
 
+// Legacy Stripe product/price IDs for existing vehicles
 const STRIPE_PRODUCTS: Record<string, string> = {
   slingshot_2022: 'prod_UHaiSY5zFpsDcV',
   slingshot_2020: 'prod_UHaiT4pRmY2sos',
@@ -56,17 +57,20 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Get current rate from Supabase config
+    // Get current rate and vehicle name from Supabase config
     let unitAmount: number | null = null;
+    let vehicleName = vehicleKey;
+    let stripeProductId: string | null = null;
     try {
       const { data } = await supabase.from('site_config').select('config').eq('id', 1).single();
       const vehicle = data?.config?.vehicles?.[vehicleKey];
       if (vehicle?.ratePerDay) unitAmount = Math.round(vehicle.ratePerDay * 100);
+      if (vehicle?.label || vehicle?.name) vehicleName = vehicle.label || vehicle.name;
+      if (vehicle?.stripeProductId) stripeProductId = vehicle.stripeProductId;
     } catch { /* fall through to static price */ }
 
-    const lineItem = unitAmount
-      ? { price_data: { currency: 'usd', unit_amount: unitAmount, product: STRIPE_PRODUCTS[vehicleKey] }, quantity: Number(days) }
-      : { price: STRIPE_PRICE_IDS[vehicleKey], quantity: Number(days) };
+    // Use config stripeProductId, then legacy lookup, then create inline product
+    if (!stripeProductId) stripeProductId = STRIPE_PRODUCTS[vehicleKey] || null;
 
     const sessionBody: Record<string, string> = {
       mode: 'payment',
@@ -80,12 +84,23 @@ Deno.serve(async (req) => {
       'phone_number_collection[enabled]': 'true',
     };
 
-    if (unitAmount) {
+    if (unitAmount && stripeProductId) {
+      // Known product with dynamic pricing from config
       sessionBody['line_items[0][price_data][currency]'] = 'usd';
       sessionBody['line_items[0][price_data][unit_amount]'] = String(unitAmount);
-      sessionBody['line_items[0][price_data][product]'] = STRIPE_PRODUCTS[vehicleKey];
-    } else {
+      sessionBody['line_items[0][price_data][product]'] = stripeProductId;
+    } else if (unitAmount) {
+      // New vehicle without Stripe product — create inline product
+      sessionBody['line_items[0][price_data][currency]'] = 'usd';
+      sessionBody['line_items[0][price_data][unit_amount]'] = String(unitAmount);
+      sessionBody['line_items[0][price_data][product_data][name]'] = vehicleName + ' — Daily Rental';
+    } else if (STRIPE_PRICE_IDS[vehicleKey]) {
+      // Fallback to legacy static price ID
       sessionBody['line_items[0][price]'] = STRIPE_PRICE_IDS[vehicleKey];
+    } else {
+      return new Response(JSON.stringify({ error: 'Vehicle not configured for checkout: ' + vehicleKey }), {
+        status: 400, headers: { ...CORS, 'Content-Type': 'application/json' }
+      });
     }
 
     if (promoCode) {
