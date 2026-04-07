@@ -519,10 +519,9 @@
       padding: 28px 32px;
       display: flex;
       align-items: flex-end;
-      justify-content: space-between;
       gap: 16px;
     }
-    .fleet-card-text {}
+    .fleet-card-text { flex: 1; }
     .fleet-card-tag {
       font-size: 10px;
       font-weight: 700;
@@ -530,6 +529,7 @@
       text-transform: uppercase;
       color: var(--orange);
       margin-bottom: 6px;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 0 12px rgba(0,0,0,0.7);
     }
     .fleet-card-name {
       font-family: var(--heading);
@@ -537,11 +537,13 @@
       letter-spacing: 2px;
       line-height: 1;
       margin-bottom: 6px;
+      text-shadow: 0 1px 6px rgba(0,0,0,0.8);
     }
     .fleet-card-specs {
       font-size: 12px;
       color: rgba(255,255,255,0.5);
       letter-spacing: 0.3px;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.8);
     }
     .fleet-card-price {
       font-family: var(--heading);
@@ -1121,7 +1123,7 @@
       .cta-section { padding: 80px 0; }
       .lead-section { padding: 72px 0; }
       .reviews { padding: 64px 0; }
-      .reviews-grid { animation-duration: 90s; }
+      .reviews-grid { animation-duration: 120s; }
     }
 
     /* ─────────────────────────────────────────
@@ -2736,7 +2738,7 @@
   </div>
 
   <!-- VEHICLE DETAIL PANEL -->
-  <script src="vehicle-detail.js"></script>
+  <script src="vehicle-detail.js?v=20260407"></script>
 
   <!-- ADMIN CONFIG — loaded from Supabase so live changes reflect immediately -->
   <script src="https://yzdtevrwystezhbmgcwn.supabase.co/functions/v1/config"></script>
