@@ -3,21 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Booking Confirmed | CJ's Fun Time Rental</title>
+  <title>You're Booked! | CJ's Fun Time Rental</title>
+  <meta name="robots" content="noindex">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --dark:   #111111;
-      --orange: #FF6B00;
-      --white:  #FFFFFF;
-      --muted:  #888888;
-      --border: rgba(255,255,255,0.07);
+      --dark:    #111111;
+      --surface: #171717;
+      --border:  rgba(255,255,255,0.08);
+      --orange:  #FF6B00;
+      --white:   #FFFFFF;
+      --muted:   #888888;
       --heading: 'Bebas Neue', sans-serif;
       --body:    'Inter', sans-serif;
     }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: var(--body);
       background: var(--dark);
@@ -26,9 +28,6 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      padding: 40px 28px;
-      text-align: center;
       -webkit-font-smoothing: antialiased;
       overflow-x: hidden;
     }
@@ -41,7 +40,6 @@
       0%, 100% { transform: translate(0,0) scale(1); }
       50%       { transform: translate(60px,-40px) scale(1.06); }
     }
-
     body::before {
       content: '';
       position: fixed;
@@ -55,152 +53,481 @@
       animation: orbDrift 25s ease-in-out infinite;
     }
 
-    .page {
+    .success-page {
       position: relative;
       z-index: 1;
-      max-width: 520px;
       width: 100%;
+      max-width: 580px;
+      padding: 40px 24px 60px;
+      margin: 0 auto;
     }
 
-    .logo {
-      height: 52px;
-      width: auto;
-      margin: 0 auto 48px;
-      display: block;
+    /* Logo */
+    .success-logo {
+      text-align: center;
+      margin-bottom: 44px;
       animation: fadeUp 0.6s ease both;
     }
+    .success-logo img {
+      height: 52px;
+      width: auto;
+    }
 
-    .check {
-      width: 72px; height: 72px;
+    /* Animated checkmark */
+    .check-wrap {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 24px;
+      animation: fadeUp 0.6s ease 0.1s both;
+    }
+    .check-circle {
+      width: 76px;
+      height: 76px;
       border-radius: 50%;
-      background: rgba(255,107,0,0.1);
-      border: 2px solid rgba(255,107,0,0.3);
+      background: rgba(74,222,128,0.1);
+      border: 2px solid #4ade80;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin: 0 auto 28px;
-      font-size: 32px;
-      animation: fadeUp 0.6s ease 0.1s both;
+      animation: popIn 0.5s 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+    }
+    .check-circle svg {
+      width: 36px;
+      height: 36px;
+      stroke: #4ade80;
+      stroke-width: 3;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .check-circle svg path {
+      stroke-dasharray: 50;
+      stroke-dashoffset: 50;
+      animation: drawCheck 0.4s 0.6s ease-out forwards;
+    }
+    @keyframes popIn {
+      0% { transform: scale(0); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes drawCheck {
+      to { stroke-dashoffset: 0; }
     }
 
-    h1 {
-      font-family: var(--heading);
-      font-size: clamp(2.8rem, 8vw, 5rem);
-      letter-spacing: 4px;
-      line-height: 1;
-      margin-bottom: 16px;
+    /* Hero text */
+    .success-hero {
+      text-align: center;
+      margin-bottom: 36px;
       animation: fadeUp 0.6s ease 0.2s both;
     }
-    h1 span { color: var(--orange); }
-
-    .sub {
+    .success-hero h1 {
+      font-family: var(--heading);
+      font-size: clamp(2.8rem, 8vw, 4.5rem);
+      letter-spacing: 4px;
+      line-height: 1;
+      margin-bottom: 14px;
+    }
+    .success-hero h1 span { color: var(--orange); }
+    .success-hero p {
       font-size: 15px;
       color: rgba(255,255,255,0.6);
       line-height: 1.7;
-      margin-bottom: 40px;
+    }
+
+    /* Vehicle card */
+    .success-vehicle {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      margin-bottom: 28px;
       animation: fadeUp 0.6s ease 0.3s both;
     }
+    .success-vehicle img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+    }
+    .success-vehicle-info {
+      padding: 18px 22px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .success-vehicle-name {
+      font-weight: 600;
+      font-size: 15px;
+    }
+    .success-vehicle-date {
+      font-size: 13px;
+      color: var(--orange);
+      font-weight: 600;
+    }
 
-    .card {
+    /* What happens next */
+    .next-steps {
       background: rgba(255,255,255,0.03);
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: 14px;
       padding: 28px;
-      margin-bottom: 32px;
-      text-align: left;
-      animation: fadeUp 0.6s ease 0.4s both;
+      margin-bottom: 28px;
+      animation: fadeUp 0.6s ease 0.35s both;
     }
-    .card-title {
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 3px;
-      text-transform: uppercase;
-      color: var(--orange);
-      margin-bottom: 16px;
+    .next-steps h2 {
+      font-family: var(--heading);
+      font-size: 1.5rem;
+      letter-spacing: 2px;
+      margin-bottom: 20px;
     }
-    .card-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-      font-size: 13px;
-      color: rgba(255,255,255,0.7);
-      margin-bottom: 12px;
-      line-height: 1.5;
-    }
-    .card-item:last-child { margin-bottom: 0; }
-    .card-item::before {
-      content: '✓';
-      color: var(--orange);
-      font-weight: 700;
-      flex-shrink: 0;
-      margin-top: 1px;
-    }
-
-    .actions {
+    .step-list {
       display: flex;
       flex-direction: column;
-      gap: 12px;
-      animation: fadeUp 0.6s ease 0.5s both;
+      gap: 18px;
     }
-    .btn {
-      display: inline-flex;
+    .step-item {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+    .step-num {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: rgba(255,107,0,0.1);
+      color: var(--orange);
+      font-weight: 700;
+      font-size: 13px;
+      display: flex;
       align-items: center;
       justify-content: center;
-      padding: 14px 28px;
-      border-radius: 6px;
-      font-family: var(--body);
-      font-size: 14px;
+      flex-shrink: 0;
+    }
+    .step-item.done .step-num {
+      background: rgba(74,222,128,0.1);
+      color: #4ade80;
+    }
+    .step-text h3 {
+      font-size: 13px;
       font-weight: 600;
-      letter-spacing: 0.5px;
+      margin-bottom: 2px;
+    }
+    .step-text p {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    /* Feedback section */
+    .feedback-section {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px 28px;
+      margin-bottom: 28px;
+      text-align: center;
+      animation: fadeUp 0.6s ease 0.45s both;
+    }
+    .feedback-label {
+      font-size: 14px;
+      color: rgba(255,255,255,0.7);
+      margin-bottom: 16px;
+    }
+    .feedback-btns {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+    .feedback-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--dark);
+      color: var(--white);
+      font-family: var(--body);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .feedback-btn:hover {
+      border-color: rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.04);
+    }
+    .feedback-btn.selected {
+      border-color: var(--orange);
+      background: rgba(255,107,0,0.08);
+    }
+    .feedback-btn .emoji { font-size: 18px; }
+    .feedback-thanks {
+      display: none;
+      font-size: 14px;
+      color: #4ade80;
+      padding: 12px 0 0;
+    }
+    .feedback-section.submitted .feedback-btns { display: none; }
+    .feedback-section.submitted .feedback-label { display: none; }
+    .feedback-section.submitted .feedback-thanks { display: block; }
+
+    /* Share section */
+    .share-section {
+      text-align: center;
+      margin-bottom: 32px;
+      animation: fadeUp 0.6s ease 0.5s both;
+    }
+    .share-section p {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+    .share-btns {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .share-btn {
+      padding: 10px 18px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--white);
+      font-family: var(--body);
+      font-size: 13px;
+      font-weight: 500;
       cursor: pointer;
       text-decoration: none;
-      transition: all 0.2s;
-      border: none;
+      transition: border-color 0.2s;
     }
-    .btn-primary { background: var(--orange); color: #000; }
-    .btn-primary:hover { filter: brightness(1.1); }
-    .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--white); }
-    .btn-ghost:hover { border-color: rgba(255,255,255,0.2); }
+    .share-btn:hover { border-color: rgba(255,255,255,0.2); }
+
+    /* Back link */
+    .back-link {
+      text-align: center;
+      animation: fadeUp 0.6s ease 0.55s both;
+    }
+    .back-link a {
+      color: var(--orange);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .back-link a:hover { text-decoration: underline; }
 
     .note {
+      text-align: center;
       font-size: 12px;
       color: rgba(255,255,255,0.25);
-      margin-top: 28px;
+      margin-top: 24px;
       line-height: 1.6;
       animation: fadeUp 0.6s ease 0.6s both;
     }
 
+    /* Confetti canvas */
+    #confetti {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 999;
+    }
+
     @media (max-width: 480px) {
-      .logo { height: 40px; margin-bottom: 36px; }
+      .success-page { padding: 28px 16px 48px; }
+      .success-logo img { height: 40px; }
+      .feedback-btns { flex-direction: column; }
+      .feedback-btn { justify-content: center; }
     }
   </style>
 </head>
 <body>
-  <div class="page">
 
-    <img src="/cj_funtime_logo.png" alt="CJ's Fun Time Rental" class="logo">
+<canvas id="confetti"></canvas>
 
-    <div class="check">✓</div>
+<div class="success-page">
 
-    <h1>You're <span>Booked!</span></h1>
-
-    <p class="sub">Your reservation is confirmed and your receipt is on its way to your inbox. Get ready — Chris will reach out with exact pickup details before your trip.</p>
-
-    <div class="card">
-      <div class="card-title">What Happens Next</div>
-      <div class="card-item">Check your email for your booking confirmation and receipt.</div>
-      <div class="card-item">Chris will contact you with the exact Lancaster, PA pickup location.</div>
-      <div class="card-item">Bring your valid driver's license — no motorcycle license needed.</div>
-      <div class="card-item">You'll receive a reminder the day before your pickup.</div>
-    </div>
-
-    <div class="actions">
-      <a href="/" class="btn btn-primary">Back to Home &rarr;</a>
-      <a href="https://www.instagram.com/cjsfuntimerentals/" target="_blank" rel="noopener" class="btn btn-ghost">Follow us on Instagram</a>
-    </div>
-
-    <p class="note">Questions? Reply to your confirmation email and Chris will get back to you.</p>
-
+  <div class="success-logo">
+    <a href="/"><img src="/cj_funtime_logo.png" alt="CJ's Fun Time Rental"></a>
   </div>
+
+  <div class="check-wrap">
+    <div class="check-circle">
+      <svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+    </div>
+  </div>
+
+  <div class="success-hero">
+    <h1>You're <span>Booked!</span></h1>
+    <p>Your reservation is confirmed and a receipt is on its way to your inbox. Get ready for the ride of your life.</p>
+  </div>
+
+  <!-- Vehicle preview — populated by JS if session data available -->
+  <div class="success-vehicle" id="vehicle-card" style="display:none;">
+    <img id="vehicle-img" src="" alt="">
+    <div class="success-vehicle-info">
+      <span class="success-vehicle-name" id="vehicle-name"></span>
+      <span class="success-vehicle-date" id="vehicle-date"></span>
+    </div>
+  </div>
+
+  <!-- What happens next -->
+  <div class="next-steps">
+    <h2>What Happens Next</h2>
+    <div class="step-list">
+      <div class="step-item done">
+        <div class="step-num">&#10003;</div>
+        <div class="step-text">
+          <h3>Confirmation Email Sent</h3>
+          <p>Check your inbox for your booking summary and receipt.</p>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">2</div>
+        <div class="step-text">
+          <h3>Chris Will Reach Out</h3>
+          <p>You'll get a text or call with your exact pickup location and time.</p>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">3</div>
+        <div class="step-text">
+          <h3>Show Up &amp; Ride</h3>
+          <p>Chris walks you through the vehicle, and you're off. Just bring your driver's license.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Booking experience feedback -->
+  <div class="feedback-section" id="feedback-section">
+    <p class="feedback-label">How was the booking experience?</p>
+    <div class="feedback-btns">
+      <button class="feedback-btn" data-rating="great" onclick="submitFeedback('great')">
+        <span class="emoji">&#128077;</span> Smooth &amp; easy
+      </button>
+      <button class="feedback-btn" data-rating="ok" onclick="submitFeedback('ok')">
+        <span class="emoji">&#128528;</span> Could be better
+      </button>
+    </div>
+    <div class="feedback-thanks">Thanks for the feedback!</div>
+  </div>
+
+  <!-- Share -->
+  <div class="share-section">
+    <p>Excited? Tell your friends about your upcoming ride</p>
+    <div class="share-btns">
+      <a class="share-btn" href="https://www.facebook.com/sharer/sharer.php?u=https://cjfuntimerentals.com" target="_blank" rel="noopener">Facebook</a>
+      <a class="share-btn" href="https://twitter.com/intent/tweet?text=Just%20booked%20a%20Polaris%20Slingshot%20ride%20in%20Lancaster%2C%20PA%20%F0%9F%94%A5&url=https://cjfuntimerentals.com" target="_blank" rel="noopener">X / Twitter</a>
+      <a class="share-btn" href="sms:?body=Just booked a Slingshot ride in Lancaster, PA! Check it out: https://cjfuntimerentals.com">Text a Friend</a>
+    </div>
+  </div>
+
+  <div class="back-link">
+    <a href="/">&larr; Back to CJ's Fun Time Rental</a>
+  </div>
+
+  <p class="note">Questions? Reply to your confirmation email and Chris will get back to you.</p>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ── Confetti burst ────────────────────────────────────────────
+  var canvas = document.getElementById('confetti');
+  var ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  var colors = ['#FF6B00', '#FF8A3D', '#4ade80', '#FFD700', '#fff'];
+  var particles = [];
+  for (var i = 0; i < 80; i++) {
+    particles.push({
+      x: canvas.width / 2 + (Math.random() - 0.5) * 200,
+      y: canvas.height * 0.25,
+      vx: (Math.random() - 0.5) * 12,
+      vy: -Math.random() * 14 - 4,
+      size: Math.random() * 6 + 3,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      rotation: Math.random() * 360,
+      rotSpeed: (Math.random() - 0.5) * 10,
+      life: 1
+    });
+  }
+
+  function animateConfetti() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    var alive = false;
+    for (var i = 0; i < particles.length; i++) {
+      var p = particles[i];
+      if (p.life <= 0) continue;
+      alive = true;
+      p.x += p.vx;
+      p.vy += 0.3;
+      p.y += p.vy;
+      p.rotation += p.rotSpeed;
+      p.life -= 0.008;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rotation * Math.PI / 180);
+      ctx.globalAlpha = Math.max(0, p.life);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+      ctx.restore();
+    }
+    if (alive) requestAnimationFrame(animateConfetti);
+    else canvas.style.display = 'none';
+  }
+  setTimeout(animateConfetti, 300);
+
+  // ── Vehicle card from URL params ──────────────────────────────
+  var VEHICLES = {
+    slingshot_2022: { img: '/cj_orange_sling.jpg', name: '2022 Polaris Slingshot SL' },
+    slingshot_2020: { img: '/gray_polaris_front.png', name: '2020 Polaris Slingshot S' },
+    canam_spyder:   { img: '/Can_Am_Spyder_F3_Limited.png', name: '2021 Can-Am Spyder F3 Limited' }
+  };
+
+  var params = new URLSearchParams(window.location.search);
+  var vehicleKey = params.get('vehicle');
+  var startDate = params.get('date');
+
+  if (vehicleKey && VEHICLES[vehicleKey]) {
+    var v = VEHICLES[vehicleKey];
+    document.getElementById('vehicle-img').src = v.img;
+    document.getElementById('vehicle-img').alt = v.name;
+    document.getElementById('vehicle-name').textContent = v.name;
+    document.getElementById('vehicle-date').textContent = startDate || '';
+    document.getElementById('vehicle-card').style.display = 'block';
+  }
+
+  // ── Feedback ──────────────────────────────────────────────────
+  window.submitFeedback = function (rating) {
+    var section = document.getElementById('feedback-section');
+    section.classList.add('submitted');
+
+    // Save to Supabase (fire and forget)
+    var sessionId = params.get('session_id') || '';
+    try {
+      fetch('https://yzdtevrwystezhbmgcwn.supabase.co/rest/v1/booking_feedback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl6ZHRldnJ3eXN0ZXpoYm1nY3duIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM4NjIzNTIsImV4cCI6MjA1OTQzODM1Mn0.Kf0-RFfFiMwxekxI5nxiY8LLJifAcMMqbp34bQ35wgg',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({
+          session_id: sessionId,
+          rating: rating
+        })
+      });
+    } catch (e) { /* silent fail */ }
+  };
+})();
+</script>
+
 </body>
 </html>

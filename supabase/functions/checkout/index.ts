@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
       'metadata[days]': String(days || ''),
       'metadata[deliveryDropoff]': String(!!deliveryDropoff),
       'metadata[deliveryPickup]': String(!!deliveryPickup),
-      'success_url': 'https://cjfuntimerentals.com/booking-success?session_id={CHECKOUT_SESSION_ID}',
+      'success_url': `https://cjfuntimerentals.com/booking-success?session_id={CHECKOUT_SESSION_ID}&vehicle=${encodeURIComponent(vehicleKey)}&date=${encodeURIComponent(startDate)}`,
       'cancel_url': 'https://cjfuntimerentals.com',
       'phone_number_collection[enabled]': 'true',
     };

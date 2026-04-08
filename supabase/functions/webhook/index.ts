@@ -106,7 +106,7 @@ Deno.serve(async (req) => {
           ${emailRow('Vehicle', vehicleName)}
           ${emailRow('Pick-up', meta.startDate)}
           ${emailRow('Return', meta.endDate || meta.startDate)}
-          ${emailRow('Duration', meta.days + ' day' + (Number(meta.days) === 1 ? '' : 's'))}
+          ${emailRow('Duration', meta.durationType === 'hourly' ? (meta.hours || '3') + ' hours' : meta.durationType === '9hr' ? '9 hours' : meta.durationType === '24hr' ? '24 hours' : meta.days + ' day' + (Number(meta.days) === 1 ? '' : 's'))}
           ${savings ? emailRow('Discount', '- $' + savings) : ''}
           ${emailRow('Total', '<strong style="color:#FF6B00;font-size:16px;">$' + total + '</strong>')}
         </table>
@@ -128,7 +128,8 @@ Deno.serve(async (req) => {
           ${emailRow('Vehicle', vehicleName)}
           ${emailRow('Pick-up', meta.startDate)}
           ${emailRow('Return', meta.endDate || meta.startDate)}
-          ${emailRow('Days', meta.days)}
+          ${emailRow('Type', meta.durationType === 'hourly' ? (meta.hours || '3') + ' hours' : meta.durationType === '9hr' ? '9 hours' : meta.durationType === '24hr' ? '24 hours' : meta.days + ' day' + (Number(meta.days) === 1 ? '' : 's'))}
+          ${meta.deliveryDropoff === 'true' || meta.deliveryPickup === 'true' ? emailRow('Delivery', [meta.deliveryDropoff === 'true' ? 'Drop-off' : '', meta.deliveryPickup === 'true' ? 'Pickup' : ''].filter(Boolean).join(' + ')) : ''}
           ${emailRow('Total', '$' + total)}
         </table>
       </div>
