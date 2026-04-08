@@ -682,9 +682,9 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, file));
 });
 
+// /site redirects to / to avoid duplicate content
 app.get('/site', (req, res) => {
-  res.setHeader('Cache-Control', 'no-cache, no-store');
-  res.sendFile(path.join(__dirname, 'full-site.html'));
+  res.redirect(301, '/');
 });
 
 // ── Landing pages ──────────────────────────────────────────────────────────────
@@ -712,7 +712,7 @@ app.get('/blog/:slug', (req, res) => {
   const slug = req.params.slug.replace(/[^a-z0-9-]/gi, '');
   res.setHeader('Cache-Control', 'no-cache, no-store');
   res.sendFile(path.join(__dirname, 'blog', `${slug}.html`), err => {
-    if (err) res.status(404).sendFile(path.join(__dirname, 'full-site.html'));
+    if (err) res.status(404).send('<!DOCTYPE html><html><head><title>Not Found</title><meta name="robots" content="noindex"></head><body style="background:#111;color:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><div style="text-align:center"><h1>Page Not Found</h1><p><a href="/" style="color:#FF6B00">Back to Home</a></p></div></body></html>');
   });
 });
 

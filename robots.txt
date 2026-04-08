@@ -3,4 +3,4 @@ Allow: /
 Disallow: /admin
 Disallow: /api/
 
-Sitemap: https://cjsfuntimerental.com/sitemap.xml
+Sitemap: https://cjfuntimerentals.com/sitemap.xml
