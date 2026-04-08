@@ -1,5 +1,5 @@
 {
-  "_version": 1,
+  "_version": 2,
   "sectionOrder": ["header", "hero", "fleet", "how", "reviews", "ctaSection", "leadCapture", "faq"],
   "sections": {
     "header":      { "visible": true },
@@ -11,27 +11,53 @@
     "ctaSection":  { "visible": true },
     "leadCapture": { "visible": true }
   },
+  "pricing": {
+    "hourlyRate": 30,
+    "hourlyMin": 3,
+    "ninehrRate": {
+      "slingshot": 175,
+      "canam": 160
+    },
+    "dailyRate": {
+      "slingshot": 220,
+      "canam": 200
+    },
+    "multiDay": [
+      { "minDays": 7, "label": "Weekly rate",  "slingshot": 165, "canam": 150, "enabled": true },
+      { "minDays": 4, "label": "4–6 day rate", "slingshot": 185, "canam": 170, "enabled": true },
+      { "minDays": 2, "label": "2–3 day rate", "slingshot": 200, "canam": 185, "enabled": true }
+    ],
+    "delivery": {
+      "enabled": true,
+      "fee": 50,
+      "maxMiles": 30,
+      "locationName": "Lancaster, PA"
+    }
+  },
   "vehicles": {
     "slingshot_2022": {
       "available":  true,
       "name":       "2022 Polaris Slingshot",
       "tag":        "Most Popular · No Moto License",
       "specs":      "3-Wheel Autocycle · 2 Seats · AutoDrive · Open-Air",
-      "ratePerDay": 180
+      "type":       "slingshot",
+      "ratePerDay": 220
     },
     "slingshot_2020": {
       "available":  true,
       "name":       "2020 Polaris Slingshot",
       "tag":        "Great Value · Manual",
       "specs":      "3-Wheel Autocycle · 2 Seats · 5-Speed Manual",
-      "ratePerDay": 180
+      "type":       "slingshot",
+      "ratePerDay": 220
     },
     "canam_spyder": {
       "available":  true,
       "name":       "2021 Can-Am Spyder F3 Limited",
       "tag":        "Premium Touring",
       "specs":      "3-Wheel Stability · 2 Seats · F3 Limited · Heated Grips",
-      "ratePerDay": 203
+      "type":       "canam",
+      "ratePerDay": 200
     }
   },
   "copy": {
@@ -43,17 +69,17 @@
     },
     "fleet": {
       "headline": "Choose<br>Your Ride",
-      "subtext":  "Three vehicles. All 3-wheel. All automatic. All open-air. Starting at $180/day."
+      "subtext":  "Three vehicles. All 3-wheel. All open-air. Hourly, 9-hour, and 24-hour rentals available."
     },
     "how": {
       "headline":   "Ready in 3 Steps",
       "subtext":    "From booking to riding — simple as that.",
       "step1Title": "Book & Pay",
-      "step1Body":  "Choose your vehicle — the 2022 Polaris Slingshot SL (AutoDrive), the 2020 Slingshot S (manual), or the 2021 Can-Am Spyder F3 Limited. Pick your dates and pay securely online with Stripe. Weekends fill fast, especially May through October — lock in your spot before someone else does.",
+      "step1Body":  "Choose your vehicle — the 2022 Polaris Slingshot SL (AutoDrive), the 2020 Slingshot S (manual), or the 2021 Can-Am Spyder F3 Limited. Pick your rental type and pay securely online with Stripe.",
       "step2Title": "Meet in Lancaster",
       "step2Body":  "Chris meets you at the Lancaster, PA pickup location and walks you through the vehicle controls, safety features, and anything you want to know. Most renters are comfortable and rolling within 10 minutes. All you need is a valid PA or out-of-state driver's license — no motorcycle experience required.",
       "step3Title": "Hit the Road",
-      "step3Body":  "Explore Central Pennsylvania on three wheels with no constraints. Head to Gettysburg (45 min), the Pocono Mountains (90 min), or cruise Lancaster County's back roads and covered bridge routes. Each rental includes 600 miles — more than enough for a full day or multi-day adventure."
+      "step3Body":  "Explore Central Pennsylvania on three wheels with no constraints. Head to Gettysburg (45 min), the Pocono Mountains (90 min), or cruise Lancaster County's back roads and covered bridge routes. Each rental includes 300 miles — more than enough for a full day or multi-day adventure."
     },
     "reviews": {
       "headline":    "What Guests Say",
@@ -86,7 +112,7 @@
     {
       "id":       "faq-2",
       "question": "How much does it cost to rent a Polaris Slingshot near me?",
-      "answer":   "Our Slingshots start at $180/day and the Can-Am Spyder F3 is $203/day. Multi-day rentals qualify for discounts — 10% off for 3+ days, 15% off for a full week. No hidden fees, book directly on this page.",
+      "answer":   "Slingshots start at $30/hour (3-hour minimum), $175 for a 9-hour day, or $220 for a full 24-hour rental. Multi-day rentals get discounted daily rates — the longer you rent, the more you save. The Can-Am Spyder F3 starts at $160 for 9 hours. No hidden fees, book directly on this page.",
       "visible":  true
     },
     {
@@ -104,13 +130,13 @@
     {
       "id":       "faq-5",
       "question": "Where can I rent a Slingshot near York, Harrisburg, or Reading PA?",
-      "answer":   "We're based in Lancaster, PA — centrally located and easy to reach from York (30 min), Harrisburg (45 min), and Reading (45 min). We serve all of Central Pennsylvania. Reserve online and Chris will confirm your exact pickup location.",
+      "answer":   "We're based in Lancaster, PA — centrally located and easy to reach from York (30 min), Harrisburg (45 min), and Reading (45 min). We serve all of Central Pennsylvania. We also offer drop-off service within 30 miles of Lancaster for $50 each way. Reserve online and Chris will confirm your exact pickup location.",
       "visible":  true
     },
     {
       "id":       "faq-6",
       "question": "What's included in the rental — are there mileage limits?",
-      "answer":   "Each rental includes 600 miles per trip. That's more than enough for a full day of exploring Central PA's scenic routes. Insurance coverage is included and full details are provided at booking confirmation.",
+      "answer":   "Each rental includes 300 miles per trip. That's more than enough for a full day of exploring Central PA's scenic routes. Insurance coverage is included and full details are provided at booking confirmation.",
       "visible":  true
     },
     {
@@ -118,11 +144,14 @@
       "question": "Can I take a rented Slingshot or Spyder on the highway in Pennsylvania?",
       "answer":   "Yes. Both vehicles are fully highway-capable and street-legal in Pennsylvania. They're built for it — scenic routes, open highways, back roads through Lancaster County. Just bring your standard driver's license and you're good to go.",
       "visible":  true
+    },
+    {
+      "id":       "faq-8",
+      "question": "Do you offer drop-off or delivery service?",
+      "answer":   "Yes! We offer vehicle drop-off and pickup within 30 miles of Lancaster, PA for $50 each way. Select this option during booking. Chris will coordinate the delivery details after your reservation is confirmed.",
+      "visible":  true
     }
   ],
-  "discounts": [
-    { "days": 7, "pct": 15, "label": "Weekly discount", "enabled": true },
-    { "days": 3, "pct": 10, "label": "3-day discount",  "enabled": true }
-  ],
+  "discounts": [],
   "blockedDates": []
 }

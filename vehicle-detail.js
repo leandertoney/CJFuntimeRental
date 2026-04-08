@@ -6,7 +6,7 @@
  *
  * Triggered by [data-vehicle-detail="<key>"] buttons in the fleet grid.
  * "Book This Ride" inside the panel opens the booking modal (stripe-checkout.js)
- * with the vehicle pre-selected and dates pre-filled.
+ * with the vehicle pre-selected.
  */
 
 (function () {
@@ -16,22 +16,25 @@
     slingshot_2022: {
       key: 'slingshot_2022',
       label: '2022 Polaris Slingshot SL',
-      rate: 180,
+      type: 'slingshot',
+      rate9hr: 175,
+      rate24hr: 220,
+      rateHourly: 30,
       img: 'cj_orange_sling.jpg',
       badges: ['Best Seller', 'AutoDrive (No Clutch)', '3-Wheeler'],
-      tagline: 'The ultimate open-air thrill machine \u2014 orange, aggressive, unforgettable.',
+      tagline: 'The ultimate open-air thrill machine — orange, aggressive, unforgettable.',
       specs: [
         '2022 model year',
-        'AutoDrive \u2014 no clutch, no stall',
-        '2.0L 4-Cyl \u00b7 203 hp',
+        'AutoDrive — no clutch, no stall',
+        '2.0L 4-Cyl · 203 hp',
         '3-wheel autocycle',
         '2 seats (driver + passenger)',
         '300 miles included per trip',
       ],
       features: [
-        'Open-air cockpit with 180\u00b0 panoramic views',
+        'Open-air cockpit with 180° panoramic views',
         'Premium Rockford Fosgate audio system',
-        'Alpine 7\u201d touchscreen with Apple CarPlay',
+        'Alpine 7″ touchscreen with Apple CarPlay',
         'LED daytime running lights & performance lighting',
         'Sporty bucket seats with 4-point harness mounts',
         'Rear-view camera standard',
@@ -47,7 +50,7 @@
         'Insurance & protection included in every rental',
       ],
       connectivity: [
-        'Apple CarPlay via Alpine 7\u201d touchscreen',
+        'Apple CarPlay via Alpine 7″ touchscreen',
         'Bluetooth audio & hands-free calling',
         'Rockford Fosgate 4-speaker sound system',
         'USB charging ports',
@@ -60,12 +63,12 @@
         'Full tank of gas at pickup',
         'Pre-trip vehicle walkthrough',
         'No motorcycle license required',
-        '3-day discount: 10% off',
-        'Weekly discount: 15% off',
+        'Drop-off available within 30 mi ($50/way)',
+        'Multi-day discounts available',
       ],
       reviews: [
         { name: 'Samuel A.', rating: 5, text: "This was an incredible experience! CJ was the best host I've ever had on any platform. Would 100% book again." },
-        { name: 'Kayla R.', rating: 5, text: "The orange slingshot was absolutely stunning. So much fun \u2014 drew attention everywhere we went in Lancaster." },
+        { name: 'Kayla R.', rating: 5, text: "The orange slingshot was absolutely stunning. So much fun — drew attention everywhere we went in Lancaster." },
         { name: 'Brian T.', rating: 5, text: "Super clean, super fast, and CJ made the whole process smooth. AutoDrive is perfect if you're nervous about manual." },
         { name: 'Deondra M.', rating: 5, text: "Best road trip vehicle I've ever driven. The sound system alone is worth it." },
       ],
@@ -74,22 +77,25 @@
     slingshot_2020: {
       key: 'slingshot_2020',
       label: '2020 Polaris Slingshot S',
-      rate: 180,
+      type: 'slingshot',
+      rate9hr: 175,
+      rate24hr: 220,
+      rateHourly: 30,
       img: 'gray_polaris_front.png',
       badges: ['3-Wheeler', 'Manual Transmission', "Pure Driver's Machine"],
-      tagline: "Raw, manual, mechanical \u2014 the Slingshot the way driving was meant to feel.",
+      tagline: "Raw, manual, mechanical — the Slingshot the way driving was meant to feel.",
       specs: [
         '2020 model year',
         '5-speed manual transmission',
-        '2.0L 4-Cyl \u00b7 173 hp',
+        '2.0L 4-Cyl · 173 hp',
         '3-wheel autocycle',
         '2 seats (driver + passenger)',
         '300 miles included per trip',
       ],
       features: [
-        'Open-air cockpit with 180\u00b0 panoramic views',
+        'Open-air cockpit with 180° panoramic views',
         'Aggressive sport-tuned suspension',
-        '7\u201d touchscreen infotainment display',
+        '7″ touchscreen infotainment display',
         'LED daytime running lights',
         'Sporty bucket seats',
         'Push-button start',
@@ -105,7 +111,7 @@
         'Insurance & protection included in every rental',
       ],
       connectivity: [
-        '7\u201d Touchscreen infotainment display',
+        '7″ Touchscreen infotainment display',
         'Bluetooth audio & phone integration',
         'USB charging port',
         'AM/FM/SiriusXM ready',
@@ -117,8 +123,8 @@
         'Full tank of gas at pickup',
         'Pre-trip vehicle walkthrough',
         'No motorcycle license required',
-        '3-day discount: 10% off',
-        'Weekly discount: 15% off',
+        'Drop-off available within 30 mi ($50/way)',
+        'Multi-day discounts available',
       ],
       reviews: [
         { name: 'Jake S.', rating: 5, text: "The manual transmission on the gray Slingshot made it feel so raw and real. Loved every second." },
@@ -130,21 +136,24 @@
     canam_spyder: {
       key: 'canam_spyder',
       label: '2021 Can-Am Spyder F3 Limited',
-      rate: 160,
+      type: 'canam',
+      rate9hr: 160,
+      rate24hr: 200,
+      rateHourly: 30,
       img: 'Can_Am_Spyder_F3_Limited.png',
       badges: ['Premium Pick', '3-Wheeler', 'Touring Comfort'],
-      tagline: 'Long-haul luxury meets open-road freedom \u2014 the Can-Am built for adventure.',
+      tagline: 'Long-haul luxury meets open-road freedom — the Can-Am built for adventure.',
       specs: [
         '2021 model year',
         'SE6 semi-automatic transmission',
-        'Rotax 1330 ACE \u00b7 115 hp',
+        'Rotax 1330 ACE · 115 hp',
         '3-wheel motorcycle',
         '2 seats (driver + passenger)',
         '300 miles included per trip',
         'Motorcycle license required in PA',
       ],
       features: [
-        'SE6 semi-auto transmission \u2014 smooth paddle-shift',
+        'SE6 semi-auto transmission — smooth paddle-shift',
         'Heated grips & heated seat (driver)',
         'Premium touring windshield',
         'Integrated hard-sided saddlebags',
@@ -175,8 +184,8 @@
         'Full tank of gas at pickup',
         'Pre-trip vehicle walkthrough',
         'Motorcycle license required in PA',
-        '3-day discount: 10% off',
-        'Weekly discount: 15% off',
+        'Drop-off available within 30 mi ($50/way)',
+        'Multi-day discounts available',
       ],
       reviews: [
         { name: 'Tiffany G.', rating: 5, text: "The Can-Am is so comfortable for longer rides. Heated grips and the GPS made our day trip to Philly amazing." },
@@ -196,32 +205,8 @@
     { src: 'cj_baby_driver.png',   alt: 'Baby Driver rental' },
   ];
 
-  var SAVINGS = [
-    { days: 7, pct: 15, label: 'Weekly discount' },
-    { days: 3, pct: 10, label: '3-day discount' },
-  ];
-
   // ── Helpers ────────────────────────────────────────────────────────────────
 
-  function calcDays(startDate, startTime, endDate, endTime) {
-    if (!startDate || !endDate) return 0;
-    var start = new Date(startDate + 'T' + (startTime || '00:00'));
-    var end   = new Date(endDate   + 'T' + (endTime   || '00:00'));
-    var ms = end - start;
-    if (ms <= 0) return 0;
-    return Math.ceil(ms / (1000 * 60 * 60 * 24));
-  }
-
-  function calcSavings(days, baseTotal) {
-    for (var i = 0; i < SAVINGS.length; i++) {
-      if (days >= SAVINGS[i].days) {
-        return { label: SAVINGS[i].label, amount: Math.round(baseTotal * SAVINGS[i].pct / 100) };
-      }
-    }
-    return null;
-  }
-
-  // Renders items as .vd-spec-item divs (for the 2-col grid with checkmark ::before)
   function renderSpecItems(items) {
     return items.map(function (item) {
       return '<div class="vd-spec-item">' + item + '</div>';
@@ -247,6 +232,7 @@
   function renderBadges(badges) {
     return badges.map(function (b) { return '<span class="vd-badge">' + b + '</span>'; }).join('');
   }
+
   function renderPhotoStrip() {
     return '<div class="vd-photo-strip" id="vd-photo-strip">' +
       SOCIAL_PHOTOS.map(function (p, i) {
@@ -257,46 +243,16 @@
     '</div>';
   }
 
-
-
-  // ── Live price update (operates on DOM IDs in the booking sidebar) ──────────
-
-  function updateSummary() {
-    var panel = document.getElementById('vd-panel');
-    var vehicleKey = panel ? panel.getAttribute('data-vehicle') : null;
-    var v = vehicleKey ? VEHICLES[vehicleKey] : null;
-    if (!v) return;
-
-    var startDate = (document.getElementById('vd-start-date') || {}).value;
-    var startTime = (document.getElementById('vd-start-time') || {}).value;
-    var endDate   = (document.getElementById('vd-end-date')   || {}).value;
-    var endTime   = (document.getElementById('vd-end-time')   || {}).value;
-
-    var days = calcDays(startDate, startTime, endDate, endTime);
-    var baseTotal = v.rate * (days || 1);
-    var savings = days > 1 ? calcSavings(days, baseTotal) : null;
-    var finalTotal = savings ? baseTotal - savings.amount : baseTotal;
-
-    var rowDays    = document.getElementById('vd-row-days');
-    var rowSavings = document.getElementById('vd-row-savings');
-    var sumDays    = document.getElementById('vd-sum-days');
-    var sumSavings = document.getElementById('vd-sum-savings');
-    var sumTotal   = document.getElementById('vd-sum-total');
-    var bookRate   = document.getElementById('vd-book-rate');
-
-    if (bookRate) bookRate.textContent = '$' + v.rate;
-
-    if (days > 0) {
-      if (rowDays)    rowDays.style.display    = 'flex';
-      if (sumDays)    sumDays.textContent       = days + ' day' + (days !== 1 ? 's' : '');
-      if (rowSavings) rowSavings.style.display  = savings ? 'flex' : 'none';
-      if (sumSavings && savings) sumSavings.textContent = '\u2212$' + savings.amount + ' (' + savings.label + ')';
-      if (sumTotal)   sumTotal.textContent      = '$' + finalTotal;
-    } else {
-      if (rowDays)    rowDays.style.display    = 'none';
-      if (rowSavings) rowSavings.style.display = 'none';
-      if (sumTotal)   sumTotal.textContent     = '\u2014';
-    }
+  function getPricingForVehicle(v) {
+    // Try to get pricing from SITE_CONFIG first
+    var p = (window.SITE_CONFIG && window.SITE_CONFIG.pricing) || {};
+    var type = v.type || (v.key && v.key.indexOf('canam') !== -1 ? 'canam' : 'slingshot');
+    return {
+      hourly: (p.hourlyRate) || v.rateHourly || 30,
+      ninehr: (p.ninehrRate && p.ninehrRate[type]) || v.rate9hr || 175,
+      daily:  (p.dailyRate && p.dailyRate[type]) || v.rate24hr || 220,
+      hourlyMin: (p.hourlyMin) || 3
+    };
   }
 
   // ── Panel open / close ─────────────────────────────────────────────────────
@@ -306,13 +262,28 @@
     // Load from SITE_CONFIG (dynamic) with fallback to hardcoded VEHICLES
     var src = (window.SITE_CONFIG && window.SITE_CONFIG.vehicles) || VEHICLES;
     var v = src[vehicleKey];
+    if (!v) v = VEHICLES[vehicleKey];
     if (!v) return;
-    // Normalize field names (config uses ratePerDay/specsList, detail uses rate/specs)
-    if (!v.rate && v.ratePerDay) v.rate = v.ratePerDay;
+
+    // Normalize field names
     if (!v.key) v.key = vehicleKey;
     if (!v.label && v.name) v.label = v.name;
-    // Config stores detailed specs as 'specsList'; the panel renderer expects 'specs' as array
+    if (!v.type) v.type = vehicleKey.indexOf('canam') !== -1 ? 'canam' : 'slingshot';
     if (v.specsList && !Array.isArray(v.specs)) v.specs = v.specsList;
+
+    // Get fallback detail data
+    var detail = VEHICLES[vehicleKey] || {};
+    if (!v.badges)       v.badges       = detail.badges       || [];
+    if (!v.tagline)      v.tagline      = detail.tagline      || '';
+    if (!Array.isArray(v.specs))     v.specs     = detail.specs     || [];
+    if (!v.features)     v.features     = detail.features     || [];
+    if (!v.safety)       v.safety       = detail.safety       || [];
+    if (!v.connectivity) v.connectivity = detail.connectivity || [];
+    if (!v.included)     v.included     = detail.included     || [];
+    if (!v.reviews)      v.reviews      = detail.reviews      || [];
+    if (!v.img)          v.img          = detail.img          || '';
+
+    var prices = getPricingForVehicle(v);
 
     var panel = document.getElementById('vd-panel');
     if (!panel) return;
@@ -324,7 +295,7 @@
       '<div class="vd-header">' +
         '<button class="vd-back" id="vd-back">\u2190 Back to Fleet</button>' +
         '<span class="vd-header-title">' + v.label + '</span>' +
-        '<span class="vd-header-price">$' + v.rate + ' / day</span>' +
+        '<span class="vd-header-price">from $' + prices.ninehr + '</span>' +
       '</div>' +
 
       // Hero image with badges bottom-left
@@ -378,56 +349,39 @@
           '</div>' +
         '</div>' +
 
-        // Right booking sidebar
+        // Right booking sidebar — pricing table + book button
         '<div class="vd-booking">' +
           '<div class="vd-booking-title">Reserve This Ride</div>' +
-          '<div class="vd-booking-price">From <span id="vd-book-rate">$' + v.rate + '</span> / day</div>' +
 
-          '<div class="vd-field-row">' +
-            '<div class="vd-field">' +
-              '<label>Start Date</label>' +
-              '<input type="date" id="vd-start-date">' +
+          '<div class="vd-pricing-table">' +
+            '<div class="vd-pricing-row">' +
+              '<span class="vd-pricing-label">Hourly <span class="vd-pricing-note">' + prices.hourlyMin + 'hr min</span></span>' +
+              '<span class="vd-pricing-value">$' + prices.hourly + '/hr</span>' +
             '</div>' +
-            '<div class="vd-field">' +
-              '<label>Start Time</label>' +
-              '<input type="time" id="vd-start-time" value="09:00">' +
+            '<div class="vd-pricing-row">' +
+              '<span class="vd-pricing-label">9 Hours</span>' +
+              '<span class="vd-pricing-value">$' + prices.ninehr + '</span>' +
             '</div>' +
-          '</div>' +
-          '<div class="vd-field-row">' +
-            '<div class="vd-field">' +
-              '<label>End Date</label>' +
-              '<input type="date" id="vd-end-date">' +
+            '<div class="vd-pricing-row">' +
+              '<span class="vd-pricing-label">24 Hours</span>' +
+              '<span class="vd-pricing-value">$' + prices.daily + '</span>' +
             '</div>' +
-            '<div class="vd-field">' +
-              '<label>End Time</label>' +
-              '<input type="time" id="vd-end-time" value="09:00">' +
+            '<div class="vd-pricing-row vd-pricing-note-row">' +
+              '<span class="vd-pricing-label">Multi-Day</span>' +
+              '<span class="vd-pricing-value">Discounted rates</span>' +
             '</div>' +
           '</div>' +
+
           '<div class="vd-field">' +
             '<label>Pickup &amp; Return</label>' +
             '<input type="text" value="Lancaster, PA" readonly>' +
           '</div>' +
 
-          '<hr class="vd-booking-divider">' +
-
-          '<div class="vd-booking-summary">' +
-            '<div class="vd-booking-row" id="vd-row-days" style="display:none">' +
-              '<span class="l">Duration</span><span class="r" id="vd-sum-days">\u2014</span>' +
-            '</div>' +
-            '<div class="vd-booking-row saving" id="vd-row-savings" style="display:none">' +
-              '<span class="l">Trip Savings</span><span class="r" id="vd-sum-savings">\u2014</span>' +
-            '</div>' +
-          '</div>' +
-
-          '<div class="vd-booking-total">' +
-            '<span>Estimated Total</span>' +
-            '<span class="price" id="vd-sum-total">\u2014</span>' +
-          '</div>' +
-
           '<div class="vd-inclusions-mini">' +
             '<div class="vd-inclusion">Insurance &amp; protection included</div>' +
             '<div class="vd-inclusion">300 miles included</div>' +
-            '<div class="vd-inclusion">No motorcycle license required</div>' +
+            '<div class="vd-inclusion">Drop-off available (+$50/way)</div>' +
+            (v.type !== 'canam' ? '<div class="vd-inclusion">No motorcycle license required</div>' : '<div class="vd-inclusion">Motorcycle license required in PA</div>') +
           '</div>' +
 
           '<button class="btn btn-primary vd-book-btn" id="vd-book-btn">Book This Ride &rarr;</button>' +
@@ -436,30 +390,21 @@
 
       '</div>';
 
-    // Wire date inputs → live summary
-    ['vd-start-date', 'vd-start-time', 'vd-end-date', 'vd-end-time'].forEach(function (id) {
-      var el = document.getElementById(id);
-      if (el) el.addEventListener('change', updateSummary);
-    });
-
     // Back / close button
     var backBtn = document.getElementById('vd-back');
     if (backBtn) backBtn.addEventListener('click', closePanel);
 
-    // Book This Ride → pass dates to booking modal
+    // Book This Ride → open booking modal with vehicle preselected
     var bookBtn = document.getElementById('vd-book-btn');
     if (bookBtn) {
       bookBtn.addEventListener('click', function () {
-        var sd = (document.getElementById('vd-start-date') || {}).value;
-        var st = (document.getElementById('vd-start-time') || {}).value;
-        var ed = (document.getElementById('vd-end-date')   || {}).value;
-        var et = (document.getElementById('vd-end-time')   || {}).value;
         closePanel();
         if (window.CJStripe) {
-          window.CJStripe.openModal(vehicleKey, { startDate: sd, startTime: st, endDate: ed, endTime: et });
+          window.CJStripe.openModal(vehicleKey);
         }
       });
     }
+
     // Photo strip → swap hero image
     var strip = document.getElementById('vd-photo-strip');
     if (strip) {
@@ -475,7 +420,6 @@
         thumb.classList.add('active');
       });
     }
-
 
     panel.setAttribute('aria-hidden', 'false');
     panel.classList.add('open');

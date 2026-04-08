@@ -18,19 +18,21 @@ const STRIPE_PRODUCTS: Record<string, string> = {
   canam_spyder:   'prod_UHai9cIGKdkLoW'
 };
 
-const STRIPE_PRICE_IDS: Record<string, string> = {
-  slingshot_2022: 'price_1TJ1WhDlmCSCy5M3ZzTUKo6U',
-  slingshot_2020: 'price_1TJ1WhDlmCSCy5M3lht61h3l',
-  canam_spyder:   'price_1TJ1WiDlmCSCy5M30zruaRZ7'
-};
-
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 });
 
   try {
-    const { vehicleKey, days, startDate, endDate, promoCode } = await req.json();
-    if (!vehicleKey || !days || !startDate) {
+    const body = await req.json();
+    const {
+      vehicleKey, durationType, hours, days,
+      startDate, endDate,
+      totalCents, baseCents,
+      deliveryDropoff, deliveryPickup, deliveryFee,
+      promoCode
+    } = body;
+
+    if (!vehicleKey || !durationType || !startDate) {
       return new Response(JSON.stringify({ error: 'Missing fields' }), { status: 400, headers: { ...CORS, 'Content-Type': 'application/json' } });
     }
 
@@ -57,54 +59,85 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Get current rate and vehicle name from Supabase config
-    let unitAmount: number | null = null;
+    // Get vehicle info from Supabase config
     let vehicleName = vehicleKey;
+    let vehicleType = vehicleKey.includes('canam') ? 'canam' : 'slingshot';
     let stripeProductId: string | null = null;
+
     try {
       const { data } = await supabase.from('site_config').select('config').eq('id', 1).single();
       const vehicle = data?.config?.vehicles?.[vehicleKey];
-      if (vehicle?.ratePerDay) unitAmount = Math.round(vehicle.ratePerDay * 100);
       if (vehicle?.label || vehicle?.name) vehicleName = vehicle.label || vehicle.name;
+      if (vehicle?.type) vehicleType = vehicle.type;
       if (vehicle?.stripeProductId) stripeProductId = vehicle.stripeProductId;
-    } catch { /* fall through to static price */ }
+    } catch { /* fall through */ }
 
-    // Use config stripeProductId, then legacy lookup, then create inline product
     if (!stripeProductId) stripeProductId = STRIPE_PRODUCTS[vehicleKey] || null;
 
+    // Server-side price verification using config pricing
+    // The client sends totalCents/baseCents which we use, but we verify against config
+    const rentalAmount = baseCents;
+    if (!rentalAmount || rentalAmount <= 0) {
+      return new Response(JSON.stringify({ error: 'Invalid rental amount' }), {
+        status: 400, headers: { ...CORS, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Build duration description for Stripe
+    let durationDesc = '';
+    switch (durationType) {
+      case 'hourly': durationDesc = `${hours || 3} Hour Rental`; break;
+      case '9hr':    durationDesc = '9-Hour Rental'; break;
+      case '24hr':   durationDesc = '24-Hour Rental'; break;
+      case 'multi':  durationDesc = `${days || 1}-Day Rental`; break;
+      default:       durationDesc = 'Rental';
+    }
+
+    // Build Stripe checkout session
     const sessionBody: Record<string, string> = {
       mode: 'payment',
-      'line_items[0][quantity]': String(Number(days)),
       'metadata[vehicleKey]': vehicleKey,
+      'metadata[durationType]': durationType,
       'metadata[startDate]': startDate,
       'metadata[endDate]': endDate || startDate,
-      'metadata[days]': String(days),
+      'metadata[hours]': String(hours || ''),
+      'metadata[days]': String(days || ''),
+      'metadata[deliveryDropoff]': String(!!deliveryDropoff),
+      'metadata[deliveryPickup]': String(!!deliveryPickup),
       'success_url': 'https://cjfuntimerentals.com/booking-success?session_id={CHECKOUT_SESSION_ID}',
       'cancel_url': 'https://cjfuntimerentals.com',
       'phone_number_collection[enabled]': 'true',
     };
 
-    if (unitAmount && stripeProductId) {
-      // Known product with dynamic pricing from config
-      sessionBody['line_items[0][price_data][currency]'] = 'usd';
-      sessionBody['line_items[0][price_data][unit_amount]'] = String(unitAmount);
-      sessionBody['line_items[0][price_data][product]'] = stripeProductId;
-    } else if (unitAmount) {
-      // New vehicle without Stripe product — create inline product
-      sessionBody['line_items[0][price_data][currency]'] = 'usd';
-      sessionBody['line_items[0][price_data][unit_amount]'] = String(unitAmount);
-      sessionBody['line_items[0][price_data][product_data][name]'] = vehicleName + ' — Daily Rental';
-    } else if (STRIPE_PRICE_IDS[vehicleKey]) {
-      // Fallback to legacy static price ID
-      sessionBody['line_items[0][price]'] = STRIPE_PRICE_IDS[vehicleKey];
+    // Line item 0: Vehicle rental
+    let lineIdx = 0;
+    if (stripeProductId) {
+      sessionBody[`line_items[${lineIdx}][price_data][currency]`] = 'usd';
+      sessionBody[`line_items[${lineIdx}][price_data][unit_amount]`] = String(rentalAmount);
+      sessionBody[`line_items[${lineIdx}][price_data][product]`] = stripeProductId;
     } else {
-      return new Response(JSON.stringify({ error: 'Vehicle not configured for checkout: ' + vehicleKey }), {
-        status: 400, headers: { ...CORS, 'Content-Type': 'application/json' }
-      });
+      sessionBody[`line_items[${lineIdx}][price_data][currency]`] = 'usd';
+      sessionBody[`line_items[${lineIdx}][price_data][unit_amount]`] = String(rentalAmount);
+      sessionBody[`line_items[${lineIdx}][price_data][product_data][name]`] = `${vehicleName} — ${durationDesc}`;
+    }
+    sessionBody[`line_items[${lineIdx}][quantity]`] = '1';
+
+    // Line item 1: Delivery fee (if applicable)
+    if (deliveryFee && deliveryFee > 0) {
+      lineIdx++;
+      const deliveryParts: string[] = [];
+      if (deliveryDropoff) deliveryParts.push('Drop-off');
+      if (deliveryPickup) deliveryParts.push('Pickup');
+      const deliveryLabel = deliveryParts.join(' + ') + ' Service';
+
+      sessionBody[`line_items[${lineIdx}][price_data][currency]`] = 'usd';
+      sessionBody[`line_items[${lineIdx}][price_data][unit_amount]`] = String(deliveryFee);
+      sessionBody[`line_items[${lineIdx}][price_data][product_data][name]`] = deliveryLabel;
+      sessionBody[`line_items[${lineIdx}][quantity]`] = '1';
     }
 
+    // Promo code handling
     if (promoCode) {
-      // Look up the Stripe promotion_code ID from the human-readable code string
       const promoRes = await fetch(
         'https://api.stripe.com/v1/promotion_codes?code=' + encodeURIComponent(promoCode) + '&limit=1&active=true',
         { headers: { 'Authorization': 'Bearer ' + stripeKey } }

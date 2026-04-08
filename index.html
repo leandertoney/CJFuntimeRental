@@ -15,7 +15,7 @@
   <meta property="og:type" content="website">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Polaris Slingshot Rental in Lancaster, PA | CJ's Fun Time Rental">
-  <meta name="twitter:description" content="Rent a Polaris Slingshot or Can-Am Spyder in Lancaster, PA. No motorcycle license needed. From $180/day. Serving York, Harrisburg & Central PA.">
+  <meta name="twitter:description" content="Rent a Polaris Slingshot or Can-Am Spyder in Lancaster, PA. No motorcycle license needed. Hourly, 9-hour, and 24-hour rentals. Serving York, Harrisburg & Central PA.">
   <meta name="twitter:image" content="https://cjsfuntimerental.com/cj_orange_sling.jpg">
   <link rel="canonical" href="https://cjsfuntimerental.com/">
   <link rel="preload" as="image" href="cj_orange_sling.jpg" fetchpriority="high">
@@ -129,7 +129,7 @@
         "name": "How much does it cost to rent a Polaris Slingshot near me?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Our Slingshots start at $180/day and the Can-Am Spyder F3 is $203/day. Multi-day rentals qualify for discounts — 10% off for 3+ days, 15% off for a full week. No hidden fees, book directly on this page."
+          "text": "Slingshots start at $30/hour (3-hour minimum), $175 for a 9-hour day, or $220 for 24 hours. The Can-Am Spyder F3 starts at $160 for 9 hours. Multi-day rentals get discounted daily rates. No hidden fees, book directly on this page."
         }
       },
       {
@@ -161,7 +161,7 @@
         "name": "What's included in the rental — are there mileage limits?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Each rental includes 600 miles per trip. That's more than enough for a full day of exploring Central PA's scenic routes. Insurance coverage is included and full details are provided at booking confirmation."
+          "text": "Each rental includes 300 miles per trip. That's more than enough for a full day of exploring Central PA's scenic routes. Insurance coverage is included and full details are provided at booking confirmation."
         }
       },
       {
@@ -1523,6 +1523,48 @@
       margin-bottom: 24px;
     }
     .vd-booking-price span { color: var(--orange); font-weight: 600; font-size: 15px; }
+
+    /* Pricing table in vehicle detail */
+    .vd-pricing-table {
+      background: var(--dark);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 4px 0;
+      margin-bottom: 20px;
+    }
+    .vd-pricing-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 16px;
+      font-size: 13px;
+    }
+    .vd-pricing-row + .vd-pricing-row {
+      border-top: 1px solid var(--border);
+    }
+    .vd-pricing-label {
+      color: var(--white);
+      font-weight: 500;
+    }
+    .vd-pricing-label .vd-pricing-note {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 400;
+      margin-left: 6px;
+    }
+    .vd-pricing-value {
+      font-family: var(--heading);
+      font-size: 1.05rem;
+      letter-spacing: 1px;
+      color: var(--orange);
+    }
+    .vd-pricing-note-row .vd-pricing-value {
+      font-family: var(--body);
+      font-size: 12px;
+      letter-spacing: 0;
+      color: #4ade80;
+    }
+
     .vd-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
     .vd-field label { font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); }
     .vd-field input {
@@ -1698,6 +1740,67 @@
     .bmd-label { font-size: 13px; font-weight: 600; color: var(--white); }
     .bmd-sub { font-size: 11px; color: var(--muted); }
     .bm-duration-btn.selected .bmd-label { color: var(--orange); }
+
+    /* Upsell nudge */
+    .bm-upsell-nudge {
+      background: rgba(74,222,128,0.08);
+      border: 1px solid rgba(74,222,128,0.25);
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin-top: 14px;
+      font-size: 13px;
+      color: #4ade80;
+      line-height: 1.5;
+    }
+    .bm-upsell-nudge strong { color: #4ade80; font-weight: 700; }
+
+    /* Multi-day rate info */
+    .bm-rate-info {
+      background: rgba(255,107,0,0.06);
+      border: 1px solid rgba(255,107,0,0.18);
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin-top: 14px;
+      font-size: 13px;
+      color: rgba(255,255,255,0.8);
+      line-height: 1.5;
+    }
+    .bm-rate-info strong { color: var(--orange); }
+
+    /* Delivery / drop-off section */
+    .bm-delivery-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 18px;
+      margin-top: 20px;
+      margin-bottom: 16px;
+    }
+    .bm-delivery-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .bm-delivery-icon { font-size: 20px; flex-shrink: 0; line-height: 1.3; }
+    .bm-delivery-title { display: block; font-size: 13px; font-weight: 600; color: var(--white); }
+    .bm-delivery-subtitle { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .bm-delivery-options { display: flex; flex-direction: column; gap: 10px; }
+    .bm-delivery-option {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: rgba(255,255,255,0.85);
+      cursor: pointer;
+    }
+    .bm-delivery-option input[type="checkbox"] {
+      accent-color: var(--orange);
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+    .bm-delivery-option strong { color: var(--orange); }
 
     /* Static location display */
     .bm-location-info {
@@ -1933,7 +2036,7 @@
     <div class="container">
       <div class="fleet-header">
         <h2>Choose<br>Your Ride</h2>
-        <p>Three vehicles. All 3-wheel. All open-air. Starting at $160/day.</p>
+        <p>Three vehicles. All 3-wheel. All open-air. Hourly, 9-hour, and 24-hour rentals available.</p>
       </div>
       <div class="fleet-grid" id="fleet-grid">
         <!-- Rendered dynamically from SITE_CONFIG -->
@@ -2109,7 +2212,7 @@
         </div>
         <div class="reveal" style="border:1px solid var(--border);border-radius:12px;padding:28px 24px;">
           <h3 style="font-family:var(--heading);font-size:1.2rem;letter-spacing:2px;margin-bottom:10px;color:var(--orange);">600 Miles Per Trip Included</h3>
-          <p style="font-size:13px;color:var(--muted);line-height:1.75;">Most Slingshot rentals in the Mid-Atlantic cap mileage at 150–200 miles per day. We include 600 miles per trip — enough for a full-day ride from Lancaster to Gettysburg, the Delaware Water Gap, or the Pocono Mountains and back.</p>
+          <p style="font-size:13px;color:var(--muted);line-height:1.75;">Most Slingshot rentals in the Mid-Atlantic cap mileage at 150–200 miles per day. We include 300 miles per trip — enough for a full-day ride from Lancaster to Gettysburg, the Delaware Water Gap, or the Pocono Mountains and back.</p>
         </div>
         <div class="reveal" style="border:1px solid var(--border);border-radius:12px;padding:28px 24px;">
           <h3 style="font-family:var(--heading);font-size:1.2rem;letter-spacing:2px;margin-bottom:10px;color:var(--orange);">Insurance Included on Every Rental</h3>
@@ -2167,7 +2270,7 @@
           </div>
           <div class="faq-item">
             <button class="faq-question"><span>How much does it cost to rent a Polaris Slingshot near me?</span><span class="faq-icon">+</span></button>
-            <div class="faq-answer"><p>Our Slingshots start at $180/day and the Can-Am Spyder F3 is $203/day. Multi-day rentals qualify for discounts — 10% off for 3+ days, 15% off for a full week. No hidden fees, book directly on this page.</p></div>
+            <div class="faq-answer"><p>Slingshots start at $30/hour (3-hour minimum), $175 for a 9-hour day, or $220 for 24 hours. The Can-Am Spyder F3 starts at $160 for 9 hours. Multi-day rentals get discounted daily rates. No hidden fees, book directly on this page.</p></div>
           </div>
           <div class="faq-item">
             <button class="faq-question"><span>What's the difference between a Polaris Slingshot and a Can-Am Spyder?</span><span class="faq-icon">+</span></button>
@@ -2183,7 +2286,7 @@
           </div>
           <div class="faq-item">
             <button class="faq-question"><span>What's included in the rental — are there mileage limits?</span><span class="faq-icon">+</span></button>
-            <div class="faq-answer"><p>Each rental includes 600 miles per trip. That's more than enough for a full day of exploring Central PA's scenic routes. Insurance coverage is included and full details are provided at booking confirmation.</p></div>
+            <div class="faq-answer"><p>Each rental includes 300 miles per trip. That's more than enough for a full day of exploring Central PA's scenic routes. Insurance coverage is included and full details are provided at booking confirmation.</p></div>
           </div>
           <div class="faq-item">
             <button class="faq-question"><span>Can I take a rented Slingshot or Spyder on the highway in Pennsylvania?</span><span class="faq-icon">+</span></button>
@@ -2495,7 +2598,7 @@
 
         <div class="vd-inclusions-mini">
           <div class="vd-inclusion">Insurance &amp; protection included</div>
-          <div class="vd-inclusion">600 miles included</div>
+          <div class="vd-inclusion">300 miles included</div>
           <div class="vd-inclusion">No motorcycle license required</div>
         </div>
 
@@ -2525,27 +2628,27 @@
         <div class="bm-panel active" id="bm-panel-1">
           <h3>Choose Your Ride</h3>
           <p>Select the vehicle you'd like to book.</p>
-          <div class="bm-vehicles">
-            <button class="bm-vehicle-btn" data-vehicle="slingshot_2022" data-rate="180" data-label="2022 Polaris Slingshot">
+          <div class="bm-vehicles" id="bm-vehicles">
+            <button class="bm-vehicle-btn" data-vehicle="slingshot_2022" data-rate="220" data-label="2022 Polaris Slingshot">
               <div class="bv-info">
                 <span class="bv-name">2022 Polaris Slingshot</span>
-                <span class="bv-tag">Most Popular &nbsp;·&nbsp; No Moto License &nbsp;·&nbsp; Manual</span>
+                <span class="bv-tag">Most Popular &nbsp;·&nbsp; No Moto License</span>
               </div>
-              <span class="bv-price">$180 / day</span>
+              <span class="bv-price">from $175</span>
             </button>
-            <button class="bm-vehicle-btn" data-vehicle="slingshot_2020" data-rate="180" data-label="2020 Polaris Slingshot">
+            <button class="bm-vehicle-btn" data-vehicle="slingshot_2020" data-rate="220" data-label="2020 Polaris Slingshot">
               <div class="bv-info">
                 <span class="bv-name">2020 Polaris Slingshot</span>
-                <span class="bv-tag">Great Value &nbsp;·&nbsp; No Moto License &nbsp;·&nbsp; Manual</span>
+                <span class="bv-tag">Great Value &nbsp;·&nbsp; Manual</span>
               </div>
-              <span class="bv-price">$180 / day</span>
+              <span class="bv-price">from $175</span>
             </button>
-            <button class="bm-vehicle-btn" data-vehicle="canam_spyder" data-rate="203" data-label="2021 Can-Am Spyder F3 Limited">
+            <button class="bm-vehicle-btn" data-vehicle="canam_spyder" data-rate="200" data-label="2021 Can-Am Spyder F3 Limited">
               <div class="bv-info">
                 <span class="bv-name">2021 Can-Am Spyder F3 Limited</span>
-                <span class="bv-tag">Touring &nbsp;·&nbsp; No Moto License</span>
+                <span class="bv-tag">Premium Touring</span>
               </div>
-              <span class="bv-price">$203 / day</span>
+              <span class="bv-price">from $160</span>
             </button>
           </div>
         </div>
@@ -2553,32 +2656,59 @@
         <!-- Step 2: Trip Details -->
         <div class="bm-panel" id="bm-panel-2">
           <h3>Trip Details</h3>
-          <p>Choose your pickup date and rental duration.</p>
+          <p>Choose your rental type and pickup date.</p>
 
           <!-- Duration presets -->
           <div class="bm-field" style="margin-bottom:20px;">
-            <label>Rental Duration</label>
+            <label>Rental Type</label>
             <div class="bm-duration-btns" id="bm-duration-btns">
-              <button type="button" class="bm-duration-btn" data-duration="half-am">
-                <span class="bmd-label">Half Day — AM</span>
-                <span class="bmd-sub">9:00 AM – 1:00 PM</span>
+              <button type="button" class="bm-duration-btn" data-duration="hourly">
+                <span class="bmd-label">Hourly</span>
+                <span class="bmd-sub">3-hour minimum · $30/hr</span>
               </button>
-              <button type="button" class="bm-duration-btn" data-duration="half-pm">
-                <span class="bmd-label">Half Day — PM</span>
-                <span class="bmd-sub">1:00 PM – 6:00 PM</span>
+              <button type="button" class="bm-duration-btn" data-duration="9hr">
+                <span class="bmd-label">9 Hours</span>
+                <span class="bmd-sub">Full day · from $160</span>
               </button>
-              <button type="button" class="bm-duration-btn" data-duration="full">
-                <span class="bmd-label">Full Day</span>
-                <span class="bmd-sub">9:00 AM – 6:00 PM</span>
+              <button type="button" class="bm-duration-btn" data-duration="24hr">
+                <span class="bmd-label">24 Hours</span>
+                <span class="bmd-sub">Overnight · from $200</span>
               </button>
               <button type="button" class="bm-duration-btn" data-duration="multi">
                 <span class="bmd-label">Multi-Day</span>
-                <span class="bmd-sub">Custom dates</span>
+                <span class="bmd-sub">2+ days · discounted rates</span>
               </button>
             </div>
           </div>
 
-          <!-- Single-day date picker (half day / full day) -->
+          <!-- Hourly: hours selector -->
+          <div id="bm-hourly-wrap" style="display:none; margin-bottom:20px;">
+            <div class="bm-row">
+              <div class="bm-field">
+                <label>Pickup Date</label>
+                <input type="date" id="bm-hourly-date">
+              </div>
+              <div class="bm-field">
+                <label>Start Time</label>
+                <input type="time" id="bm-hourly-start" value="09:00">
+              </div>
+            </div>
+            <div class="bm-field" style="margin-top:14px;">
+              <label>Number of Hours</label>
+              <select id="bm-hourly-hours">
+                <option value="3">3 hours — $90</option>
+                <option value="4">4 hours — $120</option>
+                <option value="5">5 hours — $150</option>
+                <option value="6">6 hours — $180</option>
+                <option value="7">7 hours — $210</option>
+                <option value="8">8 hours — $240</option>
+              </select>
+            </div>
+            <!-- Upsell nudge — shown dynamically by JS -->
+            <div id="bm-upsell-nudge" class="bm-upsell-nudge" style="display:none;"></div>
+          </div>
+
+          <!-- 9hr / 24hr: single date picker -->
           <div id="bm-single-date-wrap" class="bm-field" style="display:none; margin-bottom:20px;">
             <label>Pickup Date</label>
             <input type="date" id="bm-start-date">
@@ -2599,9 +2729,31 @@
                 <input type="date" id="bm-multi-end-date">
               </div>
             </div>
+            <div id="bm-multi-rate-info" class="bm-rate-info" style="display:none;"></div>
           </div>
 
-          <!-- Pickup location — static info, not a form field -->
+          <!-- Delivery / Drop-off option -->
+          <div class="bm-delivery-section" id="bm-delivery-section">
+            <div class="bm-delivery-header">
+              <span class="bm-delivery-icon">&#128666;</span>
+              <div>
+                <span class="bm-delivery-title">Drop-off &amp; Pickup Service</span>
+                <span class="bm-delivery-subtitle">Available within 30 miles of Lancaster, PA</span>
+              </div>
+            </div>
+            <div class="bm-delivery-options">
+              <label class="bm-delivery-option">
+                <input type="checkbox" id="bm-delivery-dropoff" value="dropoff">
+                <span>Deliver vehicle to me <strong>+$50</strong></span>
+              </label>
+              <label class="bm-delivery-option">
+                <input type="checkbox" id="bm-delivery-pickup" value="pickup">
+                <span>Pick up vehicle from me <strong>+$50</strong></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Pickup location — static info -->
           <div class="bm-location-info">
             <span class="bm-location-pin">&#128205;</span>
             <div>
@@ -2625,20 +2777,32 @@
               <span class="value">Lancaster, PA</span>
             </div>
             <div class="bm-summary-row">
-              <span class="label">Trip Start</span>
-              <span class="value" id="bm-summary-start">—</span>
+              <span class="label">Rental Type</span>
+              <span class="value" id="bm-summary-rental-type">—</span>
             </div>
             <div class="bm-summary-row">
-              <span class="label">Trip End</span>
+              <span class="label">Date</span>
+              <span class="value" id="bm-summary-start">—</span>
+            </div>
+            <div class="bm-summary-row" id="bm-summary-end-row" style="display:none">
+              <span class="label">Return</span>
               <span class="value" id="bm-summary-end">—</span>
             </div>
             <div class="bm-summary-row">
               <span class="label">Duration</span>
               <span class="value" id="bm-summary-days">—</span>
             </div>
+            <div class="bm-summary-row" id="bm-summary-base-row">
+              <span class="label">Rental</span>
+              <span class="value" id="bm-summary-base">—</span>
+            </div>
             <div class="bm-summary-row saving" id="bm-savings-row" style="display:none">
-              <span class="label">Trip Savings</span>
+              <span class="label">Multi-Day Savings</span>
               <span class="value" id="bm-summary-savings">—</span>
+            </div>
+            <div class="bm-summary-row" id="bm-delivery-row" style="display:none">
+              <span class="label" id="bm-delivery-label">Delivery</span>
+              <span class="value" id="bm-summary-delivery">—</span>
             </div>
           </div>
           <hr class="bm-divider">
@@ -2649,9 +2813,8 @@
           <hr class="bm-divider">
           <div class="bm-inclusions">
             <div class="bm-inclusion-item">Insurance &amp; protection included</div>
-            <div class="bm-inclusion-item">600 miles included per trip</div>
+            <div class="bm-inclusion-item">300 miles included per trip</div>
             <div class="bm-inclusion-item">Pickup &amp; return in Lancaster, PA</div>
-            <div class="bm-inclusion-item">No motorcycle license required</div>
           </div>
           <!-- Promo code -->
           <div class="bm-promo-wrap">

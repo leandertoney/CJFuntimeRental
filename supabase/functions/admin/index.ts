@@ -110,7 +110,7 @@ async function executeToolCall(name: string, input: Record<string, unknown>) {
       const key = input.vehicleKey as string;
       const v = cfg?.vehicles?.[key];
       if (!v) return { error: 'Unknown vehicle key: ' + key };
-      const editableFields = ['ratePerDay','available','name','label','tag','specs','img','tagline','badges','specsList','features','safety','connectivity','included','reviews'];
+      const editableFields = ['ratePerDay','available','name','label','tag','specs','type','img','tagline','badges','specsList','features','safety','connectivity','included','reviews'];
       for (const f of editableFields) {
         if (input[f] !== undefined) (v as Record<string, unknown>)[f] = input[f];
       }
@@ -127,6 +127,7 @@ async function executeToolCall(name: string, input: Record<string, unknown>) {
         label: input.label || input.name || key,
         tag: input.tag || '',
         specs: input.specs || '',
+        type: input.type || (key.includes('canam') ? 'canam' : 'slingshot'),
         ratePerDay: input.ratePerDay || 0,
         img: input.img || '',
         badges: input.badges || [],

@@ -442,6 +442,37 @@ body.logged-in #admin-shell { display: flex; }
 .toggle-switch input:checked + .toggle-slider { background: #FF6B00; }
 .toggle-switch input:checked + .toggle-slider::before { transform: translateX(22px); }
 
+/* ── ADMIN RATE GRID ────────────────────────────────────────── */
+.admin-rate-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 8px;
+}
+.admin-rate-card {
+  background: #1a1a1a;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 16px;
+}
+.admin-rate-card label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #777;
+  margin-bottom: 10px;
+}
+.admin-rate-card input[type="number"] {
+  width: 100%;
+}
+.admin-rate-card .rate-note {
+  font-size: 11px;
+  color: #555;
+  margin-top: 6px;
+}
+
 /* ── VEHICLE CARDS ──────────────────────────────────────────── */
 .vehicle-grid {
   display: grid;

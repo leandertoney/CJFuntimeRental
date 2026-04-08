@@ -626,11 +626,40 @@
 
   // ── Pricing panel ────────────────────────────────────────────
   function renderPricingPanel() {
+    // Populate base rate fields from cfg.pricing
+    var p = cfg.pricing || {};
+    var el;
+
+    el = document.getElementById('admin-hourly-rate');
+    if (el) el.value = p.hourlyRate || 30;
+    el = document.getElementById('admin-hourly-min');
+    if (el) el.value = p.hourlyMin || 3;
+
+    el = document.getElementById('admin-9hr-slingshot');
+    if (el) el.value = (p.ninehrRate && p.ninehrRate.slingshot) || 175;
+    el = document.getElementById('admin-9hr-canam');
+    if (el) el.value = (p.ninehrRate && p.ninehrRate.canam) || 160;
+
+    el = document.getElementById('admin-24hr-slingshot');
+    if (el) el.value = (p.dailyRate && p.dailyRate.slingshot) || 220;
+    el = document.getElementById('admin-24hr-canam');
+    if (el) el.value = (p.dailyRate && p.dailyRate.canam) || 200;
+
+    var del = p.delivery || {};
+    el = document.getElementById('admin-delivery-enabled');
+    if (el) el.checked = del.enabled !== false;
+    el = document.getElementById('admin-delivery-fee');
+    if (el) el.value = del.fee || 50;
+    el = document.getElementById('admin-delivery-miles');
+    if (el) el.value = del.maxMiles || 30;
+
+    // Vehicle availability cards
     var container = document.getElementById('vehicle-cards');
     var html = '';
     Object.keys(cfg.vehicles).forEach(function (key) {
       var v = cfg.vehicles[key];
       var avail = v.available ? 'checked' : '';
+      var vtype = v.type || (key.indexOf('canam') !== -1 ? 'canam' : 'slingshot');
       html += '<div class="vehicle-admin-card">'
         + '<h3>' + esc(v.name) + '</h3>'
         + '<div class="vac-row">'
@@ -641,11 +670,8 @@
         +   '</label>'
         + '</div>'
         + '<div class="vac-row">'
-        +   '<label>Daily Rate</label>'
-        +   '<div class="rate-input-wrap">'
-        +     '<span>$</span>'
-        +     '<input type="number" min="1" max="9999" data-binding="vehicles.' + key + '.ratePerDay" value="' + v.ratePerDay + '">'
-        +   '</div>'
+        +   '<label>Type</label>'
+        +   '<span style="font-size:13px;color:#aaa;text-transform:capitalize">' + esc(vtype) + '</span>'
         + '</div>'
         + '</div>';
     });
@@ -781,23 +807,29 @@
     });
   }
 
-  // ── Discounts panel ──────────────────────────────────────────
+  // ── Multi-Day Tiers panel ─────────────────────────────────────
   function renderDiscountsPanel() {
+    // Multi-day tiers are now stored in cfg.pricing.multiDay
+    if (!cfg.pricing) cfg.pricing = {};
+    if (!cfg.pricing.multiDay) cfg.pricing.multiDay = [];
+
     var tbody = document.getElementById('discount-rows');
     renderDiscountRows(tbody);
     document.getElementById('add-discount-btn').onclick = function () {
-      cfg.discounts.push({ days: 1, pct: 5, label: 'New tier', enabled: true });
+      cfg.pricing.multiDay.push({ minDays: 2, slingshot: 200, canam: 185, label: 'New tier', enabled: true });
       renderDiscountRows(tbody);
     };
   }
 
   function renderDiscountRows(tbody) {
+    var tiers = cfg.pricing.multiDay || [];
     var html = '';
-    cfg.discounts.forEach(function (d, idx) {
+    tiers.forEach(function (d, idx) {
       var en = d.enabled ? 'checked' : '';
       html += '<tr data-idx="' + idx + '">'
-        + '<td><input type="number" min="1" max="365" class="d-days" value="' + d.days + '"></td>'
-        + '<td><input type="number" min="1" max="100" class="d-pct" value="' + d.pct + '"></td>'
+        + '<td><input type="number" min="1" max="365" class="d-days" value="' + d.minDays + '"></td>'
+        + '<td><div class="rate-input-wrap" style="width:100px"><span>$</span><input type="number" min="1" max="9999" class="d-slingshot" value="' + (d.slingshot || 0) + '"></div></td>'
+        + '<td><div class="rate-input-wrap" style="width:100px"><span>$</span><input type="number" min="1" max="9999" class="d-canam" value="' + (d.canam || 0) + '"></div></td>'
         + '<td><input type="text" class="d-label" value="' + esc(d.label) + '"></td>'
         + '<td>'
         +   '<label class="toggle-switch" style="display:inline-block">'
@@ -812,12 +844,13 @@
 
     tbody.querySelectorAll('tr').forEach(function (row) {
       var idx = parseInt(row.getAttribute('data-idx'));
-      row.querySelector('.d-days').addEventListener('input',    function () { cfg.discounts[idx].days    = parseInt(this.value) || 1; });
-      row.querySelector('.d-pct').addEventListener('input',     function () { cfg.discounts[idx].pct     = parseInt(this.value) || 0; });
-      row.querySelector('.d-label').addEventListener('input',   function () { cfg.discounts[idx].label   = this.value; });
-      row.querySelector('.d-enabled').addEventListener('change',function () { cfg.discounts[idx].enabled = this.checked; });
-      row.querySelector('.d-delete').addEventListener('click',  function () {
-        cfg.discounts.splice(idx, 1);
+      row.querySelector('.d-days').addEventListener('input',       function () { cfg.pricing.multiDay[idx].minDays   = parseInt(this.value) || 1; });
+      row.querySelector('.d-slingshot').addEventListener('input',  function () { cfg.pricing.multiDay[idx].slingshot = parseInt(this.value) || 0; });
+      row.querySelector('.d-canam').addEventListener('input',      function () { cfg.pricing.multiDay[idx].canam     = parseInt(this.value) || 0; });
+      row.querySelector('.d-label').addEventListener('input',      function () { cfg.pricing.multiDay[idx].label     = this.value; });
+      row.querySelector('.d-enabled').addEventListener('change',   function () { cfg.pricing.multiDay[idx].enabled   = this.checked; });
+      row.querySelector('.d-delete').addEventListener('click',     function () {
+        cfg.pricing.multiDay.splice(idx, 1);
         renderDiscountRows(tbody);
       });
     });
@@ -1065,6 +1098,7 @@
   // ── collectFormData ──────────────────────────────────────────
   // Harvests all data-binding inputs back into cfg before save/nav
   function collectFormData() {
+    // Collect data-binding fields (vehicles, copy, etc.)
     document.querySelectorAll('[data-binding]').forEach(function (el) {
       var path  = el.getAttribute('data-binding').split('.');
       var value;
@@ -1078,13 +1112,42 @@
       // Walk path into cfg
       var obj = cfg;
       for (var i = 0; i < path.length - 1; i++) {
+        if (!obj[path[i]]) obj[path[i]] = {};
         obj = obj[path[i]];
       }
       obj[path[path.length - 1]] = value;
     });
 
-    // FAQ and discount rows manage cfg directly via inline handlers,
-    // so nothing extra needed for them here.
+    // Collect data-pricing fields into cfg.pricing
+    if (!cfg.pricing) cfg.pricing = {};
+    document.querySelectorAll('[data-pricing]').forEach(function (el) {
+      var path = el.getAttribute('data-pricing').split('.');
+      var value;
+      if (el.type === 'checkbox') {
+        value = el.checked;
+      } else if (el.type === 'number') {
+        value = Number(el.value);
+      } else {
+        value = el.value;
+      }
+      var obj = cfg.pricing;
+      for (var i = 0; i < path.length - 1; i++) {
+        if (!obj[path[i]]) obj[path[i]] = {};
+        obj = obj[path[i]];
+      }
+      obj[path[path.length - 1]] = value;
+    });
+
+    // Also sync ratePerDay on vehicles to the 24hr rate for backward compat
+    if (cfg.pricing.dailyRate && cfg.vehicles) {
+      Object.keys(cfg.vehicles).forEach(function (key) {
+        var v = cfg.vehicles[key];
+        var type = v.type || (key.indexOf('canam') !== -1 ? 'canam' : 'slingshot');
+        v.ratePerDay = cfg.pricing.dailyRate[type] || v.ratePerDay;
+      });
+    }
+
+    // Multi-day tiers and FAQ manage cfg directly via inline handlers.
   }
 
   // ── Helpers ──────────────────────────────────────────────────

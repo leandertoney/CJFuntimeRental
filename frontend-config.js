@@ -34,7 +34,7 @@
       });
     }
 
-    // Apply section order — re-insert elements before the footer in config order
+    // Apply section order
     if (cfg.sectionOrder && cfg.sectionOrder.length) {
       var footer = document.querySelector('.site-footer');
       if (footer) {
@@ -47,6 +47,15 @@
 
     // ── 2. Dynamic vehicle rendering ───────────────────────────
     if (cfg.vehicles) {
+      var pricing = cfg.pricing || {};
+
+      // Helper: get the display "from" price for a vehicle
+      function getFromPrice(v) {
+        var type = v.type || 'slingshot';
+        if (pricing.ninehrRate && pricing.ninehrRate[type]) return pricing.ninehrRate[type];
+        return v.ratePerDay || 175;
+      }
+
       // Build fleet cards
       var fleetGrid = document.getElementById('fleet-grid');
       if (fleetGrid) {
@@ -54,6 +63,7 @@
         Object.keys(cfg.vehicles).forEach(function (key) {
           var v = cfg.vehicles[key];
           if (v.available === false) return;
+          var fromPrice = getFromPrice(v);
           fleetHtml += '<div class="fleet-card">'
             + '<img src="' + escHtml(v.img || '') + '" class="fleet-card-photo" alt="' + escHtml(v.name || '') + ' rental Lancaster PA" loading="lazy">'
             + '<div class="fleet-card-info">'
@@ -63,7 +73,7 @@
             + '<p class="fleet-card-specs">' + escHtml(v.specs || '') + '</p>'
             + '</div>'
             + '<div class="fleet-card-bottom">'
-            + '<div class="fleet-card-price">$' + v.ratePerDay + '<span>/ day</span></div>'
+            + '<div class="fleet-card-price">from $' + fromPrice + '<span>/ 9hrs</span></div>'
             + '<button class="fleet-card-book" data-vehicle-detail="' + escHtml(key) + '">View Details &rarr;</button>'
             + '</div>'
             + '</div>'
@@ -88,12 +98,13 @@
         Object.keys(cfg.vehicles).forEach(function (key) {
           var v = cfg.vehicles[key];
           if (v.available === false) return;
+          var fromPrice = getFromPrice(v);
           bmHtml += '<button class="bm-vehicle-btn" data-vehicle="' + escHtml(key) + '" data-rate="' + v.ratePerDay + '" data-label="' + escHtml(v.label || v.name || '') + '">'
             + '<div class="bv-info">'
             + '<span class="bv-name">' + escHtml(v.label || v.name || '') + '</span>'
             + '<span class="bv-tag">' + escHtml(v.tag || '') + '</span>'
             + '</div>'
-            + '<span class="bv-price">$' + v.ratePerDay + ' / day</span>'
+            + '<span class="bv-price">from $' + fromPrice + '</span>'
             + '</button>';
         });
         bmVehicles.innerHTML = bmHtml;
@@ -198,15 +209,7 @@
       }
     }
 
-    // ── 5. Discounts → stripe-checkout.js ─────────────────────
-    if (cfg.discounts) {
-      window.CJFR_SAVINGS = cfg.discounts
-        .filter(function (d) { return d.enabled !== false; })
-        .map(function (d) { return { days: d.days, pct: d.pct, label: d.label }; })
-        .sort(function (a, b) { return b.days - a.days; });
-    }
-
-    // ── 6. Blocked dates ───────────────────────────────────────
+    // ── 5. Blocked dates ───────────────────────────────────────
     if (cfg.blockedDates && cfg.blockedDates.length) {
       window.CJFR_BLOCKED_DATES = cfg.blockedDates;
       document.querySelectorAll('input[type="date"]').forEach(function (input) {

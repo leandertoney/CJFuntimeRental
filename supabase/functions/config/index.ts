@@ -28,6 +28,7 @@ Deno.serve(async (req) => {
       sections:     cfg.sections,
       sectionOrder: cfg.sectionOrder,
       vehicles:     cfg.vehicles,
+      pricing:      cfg.pricing,
       copy:         cfg.copy,
       faqs:         cfg.faqs,
       discounts:    cfg.discounts,
