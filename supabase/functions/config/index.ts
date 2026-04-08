@@ -24,15 +24,27 @@ Deno.serve(async (req) => {
     if (error) throw error;
 
     const cfg = data.config;
+
+    // Fetch cached Google reviews
+    let googleReviews: unknown[] = [];
+    try {
+      const { data: reviews } = await supabase
+        .from('google_reviews')
+        .select('author_name, author_photo, rating, text, relative_time, publish_time')
+        .order('publish_time', { ascending: false });
+      if (reviews && reviews.length > 0) googleReviews = reviews;
+    } catch { /* no reviews yet */ }
+
     const pub = {
-      sections:     cfg.sections,
-      sectionOrder: cfg.sectionOrder,
-      vehicles:     cfg.vehicles,
-      pricing:      cfg.pricing,
-      copy:         cfg.copy,
-      faqs:         cfg.faqs,
-      discounts:    cfg.discounts,
-      blockedDates: cfg.blockedDates
+      sections:      cfg.sections,
+      sectionOrder:  cfg.sectionOrder,
+      vehicles:      cfg.vehicles,
+      pricing:       cfg.pricing,
+      copy:          cfg.copy,
+      faqs:          cfg.faqs,
+      discounts:     cfg.discounts,
+      blockedDates:  cfg.blockedDates,
+      googleReviews: googleReviews
     };
 
     const js = 'window.SITE_CONFIG = ' + JSON.stringify(pub) + ';';

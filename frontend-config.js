@@ -209,7 +209,45 @@
       }
     }
 
-    // ── 5. Blocked dates ───────────────────────────────────────
+    // ── 5. Google Reviews (prioritized over hardcoded) ─────────
+    if (cfg.googleReviews && cfg.googleReviews.length > 0) {
+      var reviewsGrid = document.getElementById('reviews-grid');
+      if (reviewsGrid) {
+        var reviewsHtml = '';
+        cfg.googleReviews.forEach(function (r) {
+          var stars = '';
+          for (var s = 0; s < (r.rating || 5); s++) stars += '\u2605';
+
+          var authorHtml = '';
+          if (r.author_photo) {
+            authorHtml = '<div class="review-author-row">'
+              + '<img class="review-author-photo" src="' + escHtml(r.author_photo) + '" alt="' + escHtml(r.author_name) + '" loading="lazy">'
+              + '<div class="review-author-info">'
+              + '<span class="review-author">' + escHtml(r.author_name) + '</span>'
+              + '<span class="review-source">Google Review</span>'
+              + '</div></div>';
+          } else {
+            authorHtml = '<div class="review-author-row">'
+              + '<div class="review-author-info">'
+              + '<span class="review-author">' + escHtml(r.author_name) + '</span>'
+              + '<span class="review-source">Google Review</span>'
+              + '</div></div>';
+          }
+
+          reviewsHtml += '<div class="review-card">'
+            + '<div class="review-stars">' + stars + '</div>'
+            + '<p class="review-quote">\u201c' + escHtml(r.text) + '\u201d</p>'
+            + authorHtml
+            + '</div>';
+        });
+
+        // Append existing hardcoded reviews after Google reviews
+        var existingCards = reviewsGrid.innerHTML;
+        reviewsGrid.innerHTML = reviewsHtml + existingCards;
+      }
+    }
+
+    // ── 6. Blocked dates ───────────────────────────────────────
     if (cfg.blockedDates && cfg.blockedDates.length) {
       window.CJFR_BLOCKED_DATES = cfg.blockedDates;
       document.querySelectorAll('input[type="date"]').forEach(function (input) {
