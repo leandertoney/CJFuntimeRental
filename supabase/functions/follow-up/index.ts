@@ -3,6 +3,37 @@ import { Resend } from 'https://esm.sh/resend@2';
 const resend = new Resend(Deno.env.get('RESEND_API_KEY')!);
 const FROM = "CJ's Fun Time Rental <bookings@cjfuntimerentals.com>";
 const GOOGLE_REVIEW_URL = 'https://g.page/r/CUCQ9L4rz2SUEBI/review';
+const COMEBACK_CODE = 'COMEBACK10';
+
+/** Ensure the COMEBACK10 promo code exists in Stripe (idempotent) */
+async function ensurePromoCode(): Promise<void> {
+  const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
+  if (!stripeKey) return;
+
+  // Check if it already exists
+  const checkRes = await fetch(
+    'https://api.stripe.com/v1/promotion_codes?code=' + COMEBACK_CODE + '&limit=1',
+    { headers: { 'Authorization': 'Bearer ' + stripeKey } }
+  );
+  const checkData = await checkRes.json();
+  if (checkData.data && checkData.data.length > 0) return; // already exists
+
+  // Create coupon (10% off, once, reusable)
+  const couponRes = await fetch('https://api.stripe.com/v1/coupons', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + stripeKey, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ percent_off: '10', duration: 'once', name: 'Comeback 10% Off' })
+  });
+  const coupon = await couponRes.json();
+  if (!coupon.id) return;
+
+  // Create promotion code (reusable, no max redemptions)
+  await fetch('https://api.stripe.com/v1/promotion_codes', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + stripeKey, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ coupon: coupon.id, code: COMEBACK_CODE })
+  });
+}
 
 function baseEmail(content: string) {
   return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#0f0f0f;font-family:'Helvetica Neue',Arial,sans-serif;color:#fff;">
@@ -28,6 +59,9 @@ Deno.serve(async (req) => {
     }
 
     const firstName = (name || 'there').split(' ')[0];
+
+    // Ensure COMEBACK10 promo code exists in Stripe
+    await ensurePromoCode();
 
     const html = baseEmail(`
       <h1 style="font-family:Impact,Arial,sans-serif;font-size:36px;letter-spacing:3px;margin:0 0 8px;">How Was<br><span style="color:#FF6B00;">Your Ride?</span></h1>
