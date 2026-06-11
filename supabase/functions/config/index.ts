@@ -35,6 +35,18 @@ Deno.serve(async (req) => {
       if (reviews && reviews.length > 0) googleReviews = reviews;
     } catch { /* no reviews yet */ }
 
+    // Fetch upcoming bookings for availability checking
+    let upcomingBookings: unknown[] = [];
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const { data: bookings } = await supabase
+        .from('bookings')
+        .select('vehicle, start_date, end_date')
+        .eq('status', 'confirmed')
+        .gte('end_date', today);
+      if (bookings && bookings.length > 0) upcomingBookings = bookings;
+    } catch { /* no bookings */ }
+
     const pub = {
       sections:      cfg.sections,
       sectionOrder:  cfg.sectionOrder,
@@ -44,7 +56,8 @@ Deno.serve(async (req) => {
       faqs:          cfg.faqs,
       discounts:     cfg.discounts,
       blockedDates:  cfg.blockedDates,
-      googleReviews: googleReviews
+      googleReviews: googleReviews,
+      bookings:      upcomingBookings
     };
 
     const js = 'window.SITE_CONFIG = ' + JSON.stringify(pub) + ';';

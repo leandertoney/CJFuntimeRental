@@ -65,22 +65,16 @@
 
   // Fetch existing bookings for availability checking
   function fetchExistingBookings(vehicleKey) {
-    if (!vehicleKey) return Promise.resolve([]);
-
-    return fetch(SUPABASE_FUNCTIONS + '/check-availability', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ vehicleKey: vehicleKey })
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      existingBookings = data.bookings || [];
-      return existingBookings;
-    })
-    .catch(function(err) {
-      console.error('[Availability Check]', err);
-      return [];
-    });
+    // Bookings are loaded from SITE_CONFIG which includes upcoming bookings
+    if (window.SITE_CONFIG && window.SITE_CONFIG.bookings) {
+      existingBookings = window.SITE_CONFIG.bookings.filter(function(b) {
+        return b.vehicle === vehicleKey ||
+               b.vehicle.toLowerCase().includes(vehicleKey.toLowerCase()) ||
+               vehicleKey.toLowerCase().includes(b.vehicle.toLowerCase());
+      });
+      console.log('[Availability] Loaded ' + existingBookings.length + ' bookings for ' + vehicleKey);
+    }
+    return Promise.resolve(existingBookings);
   }
 
   // Check if a date range conflicts with existing bookings
