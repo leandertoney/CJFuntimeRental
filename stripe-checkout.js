@@ -50,6 +50,9 @@
     promoCode: null
   };
 
+  // Cache for existing bookings
+  var existingBookings = [];
+
   // ── Helpers ────────────────────────────────────────────────────────────────
 
   function $(id) { return document.getElementById(id); }
@@ -58,6 +61,68 @@
     if (!dateStr) return '—';
     var d = new Date(dateStr + 'T12:00:00');
     return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  // Fetch existing bookings for availability checking
+  function fetchExistingBookings(vehicleKey) {
+    if (!vehicleKey) return Promise.resolve([]);
+
+    return fetch(SUPABASE_FUNCTIONS + '/check-availability', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ vehicleKey: vehicleKey })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      existingBookings = data.bookings || [];
+      return existingBookings;
+    })
+    .catch(function(err) {
+      console.error('[Availability Check]', err);
+      return [];
+    });
+  }
+
+  // Check if a date range conflicts with existing bookings
+  function isDateRangeAvailable(startDate, endDate, vehicleKey) {
+    if (!startDate || !existingBookings.length) return { available: true };
+
+    var reqStart = new Date(startDate + 'T00:00:00');
+    var reqEnd = new Date((endDate || startDate) + 'T23:59:59');
+
+    for (var i = 0; i < existingBookings.length; i++) {
+      var booking = existingBookings[i];
+      if (booking.vehicle !== vehicleKey && !vehicleKey.includes(booking.vehicle)) continue;
+
+      var bStart = new Date(booking.start_date + 'T00:00:00');
+      var bEnd = new Date(booking.end_date + 'T23:59:59');
+
+      // Check for overlap
+      if (reqStart <= bEnd && reqEnd >= bStart) {
+        return {
+          available: false,
+          conflictStart: booking.start_date,
+          conflictEnd: booking.end_date,
+          message: 'This vehicle is already booked from ' + formatDate(booking.start_date) + ' to ' + formatDate(booking.end_date) + '. Please choose different dates.'
+        };
+      }
+    }
+
+    // Check blocked dates
+    var blocked = (window.SITE_CONFIG && window.SITE_CONFIG.blockedDates) || [];
+    if (blocked.length > 0) {
+      for (var d = new Date(reqStart); d <= reqEnd; d.setDate(d.getDate() + 1)) {
+        var iso = d.toISOString().split('T')[0];
+        if (blocked.indexOf(iso) !== -1) {
+          return {
+            available: false,
+            message: 'Sorry, ' + formatDate(iso) + ' is unavailable. Please choose different dates.'
+          };
+        }
+      }
+    }
+
+    return { available: true };
   }
 
   function getVehicleType(key) {
@@ -226,12 +291,19 @@
   function selectVehicleBtn(btn) {
     document.querySelectorAll('.bm-vehicle-btn').forEach(function (b) { b.classList.remove('selected'); });
     btn.classList.add('selected');
+    var vehicleKey = btn.getAttribute('data-vehicle');
     state.vehicle = {
-      key:   btn.getAttribute('data-vehicle'),
+      key:   vehicleKey,
       label: btn.getAttribute('data-label'),
       rate:  parseInt(btn.getAttribute('data-rate'), 10),
-      type:  getVehicleType(btn.getAttribute('data-vehicle'))
+      type:  getVehicleType(vehicleKey)
     };
+
+    // Fetch existing bookings for this vehicle
+    fetchExistingBookings(vehicleKey).then(function() {
+      console.log('[Availability] Loaded ' + existingBookings.length + ' existing bookings for ' + vehicleKey);
+    });
+
     var nextBtn = $('bm-step1-next');
     if (nextBtn) nextBtn.disabled = false;
   }
@@ -559,17 +631,12 @@
         state.endTime = '09:00';
       }
 
-      // Check blocked dates
-      var blocked = (window.SITE_CONFIG && window.SITE_CONFIG.blockedDates) || [];
-      if (blocked.length > 0 && state.startDate) {
-        var checkStart = new Date(state.startDate);
-        var checkEnd   = new Date(state.endDate || state.startDate);
-        for (var d = new Date(checkStart); d <= checkEnd; d.setDate(d.getDate() + 1)) {
-          var iso = d.toISOString().split('T')[0];
-          if (blocked.indexOf(iso) !== -1) {
-            alert('Sorry, ' + iso + ' is unavailable. Please choose different dates.');
-            return;
-          }
+      // Validate availability before proceeding to checkout
+      if (state.startDate && state.vehicle) {
+        var availability = isDateRangeAvailable(state.startDate, state.endDate, state.vehicle.key);
+        if (!availability.available) {
+          alert(availability.message);
+          return;
         }
       }
 

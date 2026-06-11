@@ -82,3 +82,9 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/google-reviews/deno.json"
 entrypoint = "./functions/google-reviews/index.ts"
+
+[functions.check-availability]
+enabled = true
+verify_jwt = false
+import_map = "./functions/check-availability/deno.json"
+entrypoint = "./functions/check-availability/index.ts"
