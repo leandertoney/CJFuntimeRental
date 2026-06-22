@@ -1090,7 +1090,9 @@
     tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:32px;color:#555">Loading…</td></tr>';
     empty.classList.add('hidden');
 
-    apiFetch(ADMIN_API + '/bookings')
+    fetch('/api/bookings', {
+      headers: { 'Content-Type': 'application/json' }
+    })
       .then(function (r) { return r.json(); })
       .then(function (bookings) {
         count.textContent = bookings.length + ' booking' + (bookings.length !== 1 ? 's' : '');
@@ -1107,7 +1109,7 @@
         bookings.forEach(function (b, idx) {
           var d = new Date(b.created_at);
           var statusClass = b.status === 'confirmed' ? 'status-confirmed' : 'status-pending';
-          html += '<tr>'
+          html += '<tr data-booking-id="' + esc(b.id) + '">'
             + '<td class="lead-num">' + (idx + 1) + '</td>'
             + '<td class="lead-email"><strong>' + esc(b.name || '—') + '</strong><br><span style="color:#555;font-size:11px;">' + esc(b.email) + '</span></td>'
             + '<td>' + esc(b.vehicle || '—') + '</td>'
@@ -1119,6 +1121,15 @@
             + '</tr>';
         });
         tbody.innerHTML = html;
+
+        // Bind row click handlers to open booking detail modal
+        tbody.querySelectorAll('tr').forEach(function (row) {
+          row.addEventListener('click', function () {
+            var bookingId = this.getAttribute('data-booking-id');
+            var booking = bookings.find(function (b) { return b.id === bookingId; });
+            if (booking) openBookingDetailModal(booking);
+          });
+        });
 
         expBtn.onclick = function () {
           var rows = [['#', 'Name', 'Email', 'Phone', 'Vehicle', 'Pick-up', 'Return', 'Days', 'Total', 'Status', 'Booked On']];
@@ -1454,6 +1465,102 @@
       messages.scrollTop = messages.scrollHeight;
     }
   }
+
+  // ── Booking Detail Modal ────────────────────────────────────
+  var currentBooking = null;
+
+  function openBookingDetailModal(booking) {
+    currentBooking = booking;
+    var modal = document.getElementById('booking-detail-modal');
+
+    // Populate customer info (read-only)
+    document.getElementById('bd-name').textContent = booking.name || '—';
+    document.getElementById('bd-email').textContent = booking.email || '—';
+    document.getElementById('bd-phone').textContent = booking.phone || '—';
+    document.getElementById('bd-vehicle').textContent = booking.vehicle || '—';
+    document.getElementById('bd-dates').textContent = (booking.start_date || '') + ' to ' + (booking.end_date || '');
+    document.getElementById('bd-total').textContent = '$' + (booking.total || 0).toLocaleString();
+
+    // Populate pickup/return fields (editable)
+    document.getElementById('bd-pickup-location').value = booking.pickup_location || '';
+    document.getElementById('bd-pickup-address').value = booking.pickup_address || '';
+    document.getElementById('bd-pickup-time').value = booking.pickup_time || '';
+    document.getElementById('bd-fuel-level').value = booking.fuel_level || '';
+    document.getElementById('bd-pickup-instructions').value = booking.pickup_instructions || '';
+
+    document.getElementById('bd-return-location').value = booking.return_location || '';
+    document.getElementById('bd-return-address').value = booking.return_address || '';
+    document.getElementById('bd-return-time').value = booking.return_time || '';
+    document.getElementById('bd-key-drop').value = booking.key_drop_location || '';
+    document.getElementById('bd-return-instructions').value = booking.return_instructions || '';
+
+    // Clear messages
+    document.getElementById('bd-error').classList.add('hidden');
+    document.getElementById('bd-success').classList.add('hidden');
+
+    modal.classList.remove('hidden');
+  }
+
+  function closeBookingDetailModal() {
+    document.getElementById('booking-detail-modal').classList.add('hidden');
+    currentBooking = null;
+  }
+
+  function saveBookingDetails() {
+    if (!currentBooking) return;
+
+    var data = {
+      id: currentBooking.id,
+      pickup_location: document.getElementById('bd-pickup-location').value.trim(),
+      pickup_address: document.getElementById('bd-pickup-address').value.trim(),
+      pickup_time: document.getElementById('bd-pickup-time').value.trim(),
+      fuel_level: document.getElementById('bd-fuel-level').value.trim(),
+      pickup_instructions: document.getElementById('bd-pickup-instructions').value.trim(),
+      return_location: document.getElementById('bd-return-location').value.trim(),
+      return_address: document.getElementById('bd-return-address').value.trim(),
+      return_time: document.getElementById('bd-return-time').value.trim(),
+      key_drop_location: document.getElementById('bd-key-drop').value.trim(),
+      return_instructions: document.getElementById('bd-return-instructions').value.trim()
+    };
+
+    var errorEl = document.getElementById('bd-error');
+    var successEl = document.getElementById('bd-success');
+
+    errorEl.classList.add('hidden');
+    successEl.classList.add('hidden');
+
+    fetch('/api/bookings/' + currentBooking.id, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    })
+      .then(function (r) {
+        if (!r.ok) throw new Error('Failed to save');
+        return r.json();
+      })
+      .then(function () {
+        successEl.textContent = '✓ Details saved successfully!';
+        successEl.classList.remove('hidden');
+
+        // Update currentBooking object with new data
+        Object.keys(data).forEach(function (key) {
+          if (key !== 'id') currentBooking[key] = data[key];
+        });
+
+        setTimeout(closeBookingDetailModal, 1500);
+      })
+      .catch(function (err) {
+        errorEl.textContent = 'Error: ' + err.message;
+        errorEl.classList.remove('hidden');
+      });
+  }
+
+  // Bind modal event listeners
+  document.getElementById('bd-cancel').addEventListener('click', closeBookingDetailModal);
+  document.getElementById('bd-save').addEventListener('click', saveBookingDetails);
+  document.getElementById('booking-detail-modal').addEventListener('click', function (e) {
+    if (e.target === this) closeBookingDetailModal();
+  });
 
   document.addEventListener('DOMContentLoaded', init);
 }());

@@ -417,6 +417,92 @@
     </form>
   </div>
 
+  <!-- Booking Detail Modal -->
+  <div id="booking-detail-modal" class="modal-overlay hidden">
+    <div class="modal-box" style="max-width:700px">
+      <h3 class="modal-title">Booking Details</h3>
+
+      <div class="booking-detail-section">
+        <h4>Customer Information</h4>
+        <div class="booking-detail-grid">
+          <div class="booking-detail-item">
+            <strong>Name:</strong> <span id="bd-name"></span>
+          </div>
+          <div class="booking-detail-item">
+            <strong>Email:</strong> <span id="bd-email"></span>
+          </div>
+          <div class="booking-detail-item">
+            <strong>Phone:</strong> <span id="bd-phone"></span>
+          </div>
+          <div class="booking-detail-item">
+            <strong>Vehicle:</strong> <span id="bd-vehicle"></span>
+          </div>
+          <div class="booking-detail-item">
+            <strong>Dates:</strong> <span id="bd-dates"></span>
+          </div>
+          <div class="booking-detail-item">
+            <strong>Total:</strong> <span id="bd-total"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="booking-detail-section">
+        <h4>Pickup Details</h4>
+        <div class="login-field">
+          <label for="bd-pickup-location">Location Name</label>
+          <input type="text" id="bd-pickup-location" placeholder="e.g., CJ's Fun Time Rental Office">
+        </div>
+        <div class="login-field">
+          <label for="bd-pickup-address">Full Address</label>
+          <input type="text" id="bd-pickup-address" placeholder="e.g., 123 Main St, Lancaster, PA 17602">
+        </div>
+        <div class="login-field">
+          <label for="bd-pickup-time">Pickup Time</label>
+          <input type="text" id="bd-pickup-time" placeholder="e.g., 9:00 AM">
+        </div>
+        <div class="login-field">
+          <label for="bd-fuel-level">Fuel Level</label>
+          <input type="text" id="bd-fuel-level" placeholder="e.g., Full, 3/4 tank">
+        </div>
+        <div class="login-field">
+          <label for="bd-pickup-instructions">Pickup Instructions</label>
+          <textarea id="bd-pickup-instructions" rows="3" placeholder="Parking info, check-in process, what to bring, etc."></textarea>
+        </div>
+      </div>
+
+      <div class="booking-detail-section">
+        <h4>Return Details</h4>
+        <div class="login-field">
+          <label for="bd-return-location">Location Name</label>
+          <input type="text" id="bd-return-location" placeholder="e.g., CJ's Fun Time Rental Office">
+        </div>
+        <div class="login-field">
+          <label for="bd-return-address">Full Address</label>
+          <input type="text" id="bd-return-address" placeholder="e.g., 123 Main St, Lancaster, PA 17602">
+        </div>
+        <div class="login-field">
+          <label for="bd-return-time">Return Time</label>
+          <input type="text" id="bd-return-time" placeholder="e.g., 6:00 PM">
+        </div>
+        <div class="login-field">
+          <label for="bd-key-drop">Key Drop Location (if after hours)</label>
+          <input type="text" id="bd-key-drop" placeholder="e.g., Lockbox on front door, code 1234">
+        </div>
+        <div class="login-field">
+          <label for="bd-return-instructions">Return Instructions</label>
+          <textarea id="bd-return-instructions" rows="3" placeholder="Fuel requirements, parking location, checkout process, etc."></textarea>
+        </div>
+      </div>
+
+      <p id="bd-error" class="login-error hidden"></p>
+      <p id="bd-success" class="login-error hidden" style="color:#4ade80"></p>
+      <div class="modal-actions">
+        <button id="bd-cancel" type="button" class="btn-secondary-admin">Cancel</button>
+        <button id="bd-save" class="btn-primary-admin">Save Details</button>
+      </div>
+    </div>
+  </div>
+
   <script src="/admin/admin.js"></script>
 </body>
 </html>

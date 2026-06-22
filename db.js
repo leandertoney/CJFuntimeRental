@@ -88,4 +88,12 @@ async function insertBooking(booking) {
   if (error) throw error;
 }
 
-module.exports = { readConfig, writeConfig, readLeads, insertLead, deleteLead, readBookings, insertBooking };
+async function updateBooking(id, updates) {
+  const { error } = await getDB()
+    .from('bookings')
+    .update(updates)
+    .eq('id', id);
+  if (error) throw error;
+}
+
+module.exports = { readConfig, writeConfig, readLeads, insertLead, deleteLead, readBookings, insertBooking, updateBooking };

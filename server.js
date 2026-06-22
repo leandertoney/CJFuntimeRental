@@ -16,7 +16,7 @@ function writeAdminUsers(users) {
 }
 const OpenAI  = require('openai');
 const { sendDiscountCode, sendBookingConfirmation, sendOwnerBookingAlert, sendPickupReminder } = require('./emails');
-const { readConfig, writeConfig, readLeads, insertLead, deleteLead, readBookings, insertBooking } = require('./db');
+const { readConfig, writeConfig, readLeads, insertLead, deleteLead, readBookings, insertBooking, updateBooking } = require('./db');
 
 // ── Stripe (only active when key is set) ──────────────────────────────────────
 function getStripe() {
@@ -373,6 +373,33 @@ app.post('/api/booking-confirmed', async (req, res) => {
 
 app.get('/api/bookings', requireAuth, async (req, res) => {
   res.json(await readBookings());
+});
+
+app.put('/api/bookings/:id', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+
+    // Only allow updating pickup/return fields
+    const allowedFields = [
+      'pickup_location', 'pickup_address', 'pickup_time', 'pickup_instructions',
+      'return_location', 'return_address', 'return_time', 'return_instructions',
+      'fuel_level', 'key_drop_location'
+    ];
+
+    const filteredUpdates = {};
+    allowedFields.forEach(field => {
+      if (field in updates) {
+        filteredUpdates[field] = updates[field] || null;
+      }
+    });
+
+    await updateBooking(id, filteredUpdates);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Update booking error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Protected — admin only

@@ -1508,3 +1508,47 @@ body.logged-in #admin-shell { display: flex; }
   font-family: 'Courier New', monospace;
   font-size: 11px;
 }
+
+/* ── Booking Detail Modal ──────────────────────────────────── */
+.booking-detail-section {
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #2a2a2a;
+}
+.booking-detail-section:last-of-type {
+  border-bottom: none;
+}
+.booking-detail-section h4 {
+  margin: 0 0 16px 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.9);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.booking-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+.booking-detail-item {
+  font-size: 14px;
+  color: rgba(255,255,255,0.7);
+}
+.booking-detail-item strong {
+  color: rgba(255,255,255,0.5);
+  font-weight: 500;
+  margin-right: 6px;
+}
+.booking-detail-item span {
+  color: #fff;
+}
+
+/* Make booking rows clickable */
+#bookings-tbody tr {
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+#bookings-tbody tr:hover {
+  background: rgba(255, 107, 0, 0.05);
+}
