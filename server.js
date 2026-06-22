@@ -15,7 +15,7 @@ function writeAdminUsers(users) {
   fs.writeFileSync(ADMIN_USERS_PATH, JSON.stringify(users, null, 2));
 }
 const OpenAI  = require('openai');
-const { sendDiscountCode, sendBookingConfirmation, sendOwnerBookingAlert, sendPickupReminder } = require('./emails');
+const { sendDiscountCode, sendBookingConfirmation, sendOwnerBookingAlert, sendPickupReminder, sendWelcomeEmail } = require('./emails');
 const { readConfig, writeConfig, readLeads, insertLead, deleteLead, readBookings, insertBooking, updateBooking } = require('./db');
 
 // ── Stripe (only active when key is set) ──────────────────────────────────────
@@ -337,7 +337,8 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
     // Send emails
     await Promise.all([
       sendBookingConfirmation({ email, name, vehicle: vehicleName, startDate: meta.startDate, endDate: meta.endDate, days: meta.days, total, savings: discount }),
-      sendOwnerBookingAlert({ name, email, phone, vehicle: vehicleName, startDate: meta.startDate, endDate: meta.endDate, days: meta.days, total })
+      sendOwnerBookingAlert({ name, email, phone, vehicle: vehicleName, startDate: meta.startDate, endDate: meta.endDate, days: meta.days, total }),
+      sendWelcomeEmail({ email, name, vehicle: vehicleName, startDate: meta.startDate, endDate: meta.endDate })
     ]).catch(err => console.error('Post-payment email error:', err.message));
   }
 
@@ -362,7 +363,8 @@ app.post('/api/booking-confirmed', async (req, res) => {
     });
     await Promise.all([
       sendBookingConfirmation({ email, name, vehicle, startDate, endDate, days, total, savings }),
-      sendOwnerBookingAlert({ name, email, phone: req.body.phone, vehicle, startDate, endDate, days, total })
+      sendOwnerBookingAlert({ name, email, phone: req.body.phone, vehicle, startDate, endDate, days, total }),
+      sendWelcomeEmail({ email, name, vehicle, startDate, endDate })
     ]);
     res.json({ ok: true });
   } catch (err) {

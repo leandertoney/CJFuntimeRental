@@ -213,9 +213,77 @@ async function sendPickupReminder({ email, name, vehicle, startDate }) {
 }
 
 
+// ── Template-based emails ──────────────────────────────────────────────────────
+const { readConfig } = require('./db');
+
+// Helper: render template with variable substitution
+function renderTemplate(template, variables) {
+  let rendered = template;
+  Object.keys(variables).forEach(key => {
+    const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
+    rendered = rendered.replace(regex, variables[key] || '');
+  });
+  return rendered;
+}
+
+// Helper: convert markdown-style formatting to HTML
+function markdownToHtml(text) {
+  return text
+    .split('\n\n')
+    .map(para => {
+      // Bold (**text**)
+      para = para.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      // Bullet points (• item)
+      if (para.includes('•')) {
+        const lines = para.split('\n').filter(l => l.trim());
+        return '<ul style="margin:16px 0;padding-left:20px;">' +
+          lines.map(l => '<li style="margin:6px 0;color:rgba(255,255,255,0.85);">' + l.replace(/^•\s*/, '') + '</li>').join('') +
+          '</ul>';
+      }
+      // Regular paragraph
+      return '<p style="font-size:15px;color:rgba(255,255,255,0.85);margin:0 0 16px;line-height:1.7;">' + para + '</p>';
+    })
+    .join('');
+}
+
+async function sendTemplatedEmail(templateKey, to, variables) {
+  const config = await readConfig();
+  const template = config.email_templates?.[templateKey];
+
+  if (!template || !template.enabled) {
+    console.log(`Email template "${templateKey}" is disabled or not found`);
+    return null;
+  }
+
+  const subject = renderTemplate(template.subject, variables);
+  const bodyText = renderTemplate(template.body, variables);
+  const bodyHtml = markdownToHtml(bodyText);
+
+  const html = base(bodyHtml);
+
+  return getResend().emails.send({
+    from: FROM,
+    to,
+    subject,
+    html
+  });
+}
+
+async function sendWelcomeEmail({ email, name, vehicle, startDate, endDate }) {
+  const firstName = name ? name.split(' ')[0] : 'there';
+  return sendTemplatedEmail('welcome', email, {
+    firstName,
+    vehicleName: vehicle,
+    startDate,
+    endDate
+  });
+}
+
 module.exports = {
   sendDiscountCode,
   sendBookingConfirmation,
   sendOwnerBookingAlert,
-  sendPickupReminder
+  sendPickupReminder,
+  sendWelcomeEmail,
+  sendTemplatedEmail
 };
