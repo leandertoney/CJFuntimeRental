@@ -15,7 +15,7 @@ function writeAdminUsers(users) {
   fs.writeFileSync(ADMIN_USERS_PATH, JSON.stringify(users, null, 2));
 }
 const OpenAI  = require('openai');
-const { sendDiscountCode, sendBookingConfirmation, sendOwnerBookingAlert, sendPickupReminder, sendWelcomeEmail } = require('./emails');
+const { sendDiscountCode, sendBookingConfirmation, sendOwnerBookingAlert, sendPickupReminder, sendWelcomeEmail, sendPickupReminderTemplated, sendReturnInstructions, sendMidRentalCheckin } = require('./emails');
 const { readConfig, writeConfig, readLeads, insertLead, deleteLead, readBookings, insertBooking, updateBooking } = require('./db');
 
 // ── Stripe (only active when key is set) ──────────────────────────────────────
@@ -340,6 +340,62 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
       sendOwnerBookingAlert({ name, email, phone, vehicle: vehicleName, startDate: meta.startDate, endDate: meta.endDate, days: meta.days, total }),
       sendWelcomeEmail({ email, name, vehicle: vehicleName, startDate: meta.startDate, endDate: meta.endDate })
     ]).catch(err => console.error('Post-payment email error:', err.message));
+
+    // Send time-sensitive emails immediately if booking is last-minute
+    try {
+      const now = new Date();
+      const startDate = new Date(meta.startDate);
+      const endDate = new Date(meta.endDate || meta.startDate);
+      const hoursUntilStart = (startDate - now) / (1000 * 60 * 60);
+      const hoursUntilEnd = (endDate - now) / (1000 * 60 * 60);
+
+      // If rental starts within 48 hours, send pickup reminder immediately
+      if (hoursUntilStart <= 48 && hoursUntilStart > 0) {
+        console.log(`Last-minute booking: Sending pickup reminder immediately (${hoursUntilStart.toFixed(1)}h until start)`);
+        await sendPickupReminderTemplated({
+          email,
+          name,
+          vehicle: vehicleName,
+          startDate: meta.startDate,
+          pickupLocation: null,  // Will use defaults or "TBD"
+          pickupAddress: null,
+          pickupTime: null,
+          fuelLevel: null,
+          pickupInstructions: null
+        }).catch(err => console.error('Immediate pickup reminder error:', err.message));
+      }
+
+      // If rental ends within 24 hours, send return instructions immediately (rare)
+      if (hoursUntilEnd <= 24 && hoursUntilEnd > 0) {
+        console.log(`Same-day or next-day return: Sending return instructions immediately`);
+        await sendReturnInstructions({
+          email,
+          name,
+          vehicle: vehicleName,
+          endDate: meta.endDate || meta.startDate,
+          returnLocation: null,
+          returnAddress: null,
+          returnTime: null,
+          fuelLevel: null,
+          returnInstructions: null,
+          keyDropLocation: null
+        }).catch(err => console.error('Immediate return instructions error:', err.message));
+      }
+
+      // If multi-day rental already started (very rare edge case), send check-in
+      const daysSinceStart = (now - startDate) / (1000 * 60 * 60 * 24);
+      if (Number(meta.days) >= 2 && daysSinceStart >= 1 && daysSinceStart < 2) {
+        console.log(`Booking made during active rental: Sending mid-rental check-in immediately`);
+        await sendMidRentalCheckin({
+          email,
+          name,
+          vehicle: vehicleName,
+          endDate: meta.endDate || meta.startDate
+        }).catch(err => console.error('Immediate mid-rental check-in error:', err.message));
+      }
+    } catch (err) {
+      console.error('Last-minute email logic error:', err.message);
+    }
   }
 
   res.json({ received: true });
@@ -366,6 +422,39 @@ app.post('/api/booking-confirmed', async (req, res) => {
       sendOwnerBookingAlert({ name, email, phone: req.body.phone, vehicle, startDate, endDate, days, total }),
       sendWelcomeEmail({ email, name, vehicle, startDate, endDate })
     ]);
+
+    // Send time-sensitive emails immediately if booking is last-minute
+    try {
+      const now = new Date();
+      const start = new Date(startDate);
+      const end = new Date(endDate || startDate);
+      const hoursUntilStart = (start - now) / (1000 * 60 * 60);
+      const hoursUntilEnd = (end - now) / (1000 * 60 * 60);
+
+      if (hoursUntilStart <= 48 && hoursUntilStart > 0) {
+        console.log(`Last-minute booking: Sending pickup reminder immediately (${hoursUntilStart.toFixed(1)}h until start)`);
+        await sendPickupReminderTemplated({
+          email, name, vehicle, startDate,
+          pickupLocation: null, pickupAddress: null, pickupTime: null, fuelLevel: null, pickupInstructions: null
+        }).catch(err => console.error('Immediate pickup reminder error:', err.message));
+      }
+
+      if (hoursUntilEnd <= 24 && hoursUntilEnd > 0) {
+        await sendReturnInstructions({
+          email, name, vehicle, endDate: endDate || startDate,
+          returnLocation: null, returnAddress: null, returnTime: null, fuelLevel: null, returnInstructions: null, keyDropLocation: null
+        }).catch(err => console.error('Immediate return instructions error:', err.message));
+      }
+
+      const daysSinceStart = (now - start) / (1000 * 60 * 60 * 24);
+      if (Number(days) >= 2 && daysSinceStart >= 1 && daysSinceStart < 2) {
+        await sendMidRentalCheckin({ email, name, vehicle, endDate: endDate || startDate })
+          .catch(err => console.error('Immediate mid-rental check-in error:', err.message));
+      }
+    } catch (err) {
+      console.error('Last-minute email logic error:', err.message);
+    }
+
     res.json({ ok: true });
   } catch (err) {
     console.error('Booking error:', err.message);
