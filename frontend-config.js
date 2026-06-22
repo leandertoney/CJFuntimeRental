@@ -74,15 +74,27 @@
             + '</div>'
             + '<div class="fleet-card-bottom">'
             + '<div class="fleet-card-price">from $' + fromPrice + '<span>/ 9hrs</span></div>'
-            + '<button class="fleet-card-book" data-vehicle-detail="' + escHtml(key) + '">View Details &rarr;</button>'
+            + '<div style="display:flex;gap:8px;width:100%;">'
+            + '<button class="fleet-card-book" data-vehicle-book="' + escHtml(key) + '" style="flex:1">Book Now</button>'
+            + '<button class="fleet-card-book" data-vehicle-detail="' + escHtml(key) + '" style="flex:1;background:transparent;border:1px solid var(--border)">Details</button>'
+            + '</div>'
             + '</div>'
             + '</div>'
             + '</div>';
         });
         fleetGrid.innerHTML = fleetHtml;
 
-        // Bind fleet card detail buttons
-        fleetGrid.querySelectorAll('.fleet-card-book[data-vehicle-detail]').forEach(function (btn) {
+        // Bind fleet card "Book Now" buttons - direct to booking modal
+        fleetGrid.querySelectorAll('[data-vehicle-book]').forEach(function (btn) {
+          btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            var vkey = this.getAttribute('data-vehicle-book');
+            if (window.CJStripe) window.CJStripe.openModal(vkey);
+          });
+        });
+
+        // Bind fleet card "Details" buttons - open detail panel
+        fleetGrid.querySelectorAll('[data-vehicle-detail]').forEach(function (btn) {
           btn.addEventListener('click', function (e) {
             e.preventDefault();
             var vkey = this.getAttribute('data-vehicle-detail');
