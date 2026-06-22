@@ -279,11 +279,62 @@ async function sendWelcomeEmail({ email, name, vehicle, startDate, endDate }) {
   });
 }
 
+async function sendPickupReminderTemplated({ email, name, vehicle, startDate, pickupLocation, pickupAddress, pickupTime, fuelLevel, pickupInstructions }) {
+  const firstName = name ? name.split(' ')[0] : 'there';
+  const keyDropInstructions = ''; // Only used for return
+
+  return sendTemplatedEmail('pickup_reminder', email, {
+    firstName,
+    vehicleName: vehicle,
+    startDate,
+    pickupLocation: pickupLocation || 'TBD',
+    pickupAddress: pickupAddress || 'Will be sent shortly',
+    pickupTime: pickupTime || 'TBD',
+    fuelLevel: fuelLevel || 'Full',
+    pickupInstructions: pickupInstructions || 'Check your email for updates.',
+    keyDropInstructions
+  });
+}
+
+async function sendReturnInstructions({ email, name, vehicle, endDate, returnLocation, returnAddress, returnTime, fuelLevel, returnInstructions, keyDropLocation }) {
+  const firstName = name ? name.split(' ')[0] : 'there';
+
+  let keyDropInstructions = '';
+  if (keyDropLocation) {
+    keyDropInstructions = `**After Hours?**\nReturning after hours? ${keyDropLocation}`;
+  }
+
+  return sendTemplatedEmail('return_instructions', email, {
+    firstName,
+    vehicleName: vehicle,
+    endDate,
+    returnLocation: returnLocation || 'Same as pickup',
+    returnAddress: returnAddress || 'Same as pickup address',
+    returnTime: returnTime || 'TBD',
+    fuelLevel: fuelLevel || 'Full',
+    returnInstructions: returnInstructions || 'Please return the vehicle in the same condition.',
+    keyDropInstructions
+  });
+}
+
+async function sendMidRentalCheckin({ email, name, vehicle, endDate }) {
+  const firstName = name ? name.split(' ')[0] : 'there';
+
+  return sendTemplatedEmail('mid_rental_checkin', email, {
+    firstName,
+    vehicleName: vehicle,
+    endDate
+  });
+}
+
 module.exports = {
   sendDiscountCode,
   sendBookingConfirmation,
   sendOwnerBookingAlert,
   sendPickupReminder,
   sendWelcomeEmail,
+  sendPickupReminderTemplated,
+  sendReturnInstructions,
+  sendMidRentalCheckin,
   sendTemplatedEmail
 };
