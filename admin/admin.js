@@ -374,6 +374,7 @@
     pricing:   'Pricing & Availability',
     copy:      'Edit Copy',
     faq:       'FAQ',
+    emails:    'Email Templates',
     discounts: 'Discounts',
     calendar:  'Blocked Dates',
     bookings:  'Bookings',
@@ -392,6 +393,7 @@
       pricing:   renderPricingPanel,
       copy:      renderCopyPanel,
       faq:       renderFaqPanel,
+      emails:    renderEmailsPanel,
       discounts: renderDiscountsPanel,
       calendar:  renderCalendarPanel,
       bookings:  renderBookingsPanel,
@@ -803,6 +805,128 @@
           cfg.faqs.splice(toIdx, 0, moved);
           renderFaqItems(container);
         }
+      });
+    });
+  }
+
+  // ── Email Templates panel ─────────────────────────────────────
+  function renderEmailsPanel() {
+    var container = document.getElementById('email-templates-container');
+    var templates = cfg.email_templates || {};
+
+    var EMAIL_CONFIGS = [
+      {
+        key: 'booking_confirmation',
+        label: 'Booking Confirmation',
+        description: 'Sent immediately after customer completes payment',
+        variables: ['firstName', 'vehicleName', 'startDate', 'endDate', 'days', 'daysPlural', 'total', 'savingsLine']
+      },
+      {
+        key: 'owner_alert',
+        label: 'Owner Booking Alert',
+        description: 'Sent to business owner when new booking is received',
+        variables: ['name', 'email', 'phone', 'vehicleName', 'startDate', 'endDate', 'days', 'daysPlural', 'total']
+      },
+      {
+        key: 'welcome',
+        label: 'Welcome Email',
+        description: 'Sent immediately after booking with preparation tips',
+        variables: ['firstName', 'vehicleName', 'startDate', 'endDate']
+      },
+      {
+        key: 'pickup_reminder',
+        label: 'Pickup Reminder',
+        description: 'Sent 48 hours before rental start time',
+        variables: ['firstName', 'vehicleName', 'pickupLocation', 'pickupAddress', 'pickupTime', 'fuelLevel', 'pickupInstructions']
+      },
+      {
+        key: 'return_instructions',
+        label: 'Return Instructions',
+        description: 'Sent 24 hours before rental end time',
+        variables: ['firstName', 'vehicleName', 'returnLocation', 'returnAddress', 'returnTime', 'fuelLevel', 'returnInstructions', 'keyDropInstructions']
+      },
+      {
+        key: 'mid_rental_checkin',
+        label: 'Mid-Rental Check-in',
+        description: 'Sent on day 2 of multi-day rentals',
+        variables: ['firstName', 'vehicleName', 'endDate']
+      }
+    ];
+
+    var html = '';
+    EMAIL_CONFIGS.forEach(function (emailCfg) {
+      var tpl = templates[emailCfg.key] || { enabled: true, subject: '', body: '' };
+      var checked = tpl.enabled !== false ? 'checked' : '';
+      var disabled = tpl.enabled === false ? 'disabled' : '';
+
+      html += '<div class="email-template-card">'
+        + '<div class="email-template-header">'
+        +   '<div>'
+        +     '<h4>' + emailCfg.label + '</h4>'
+        +     '<p class="email-template-desc">' + emailCfg.description + '</p>'
+        +   '</div>'
+        +   '<label class="email-enabled-toggle">'
+        +     '<input type="checkbox" class="email-enabled-check" data-key="' + emailCfg.key + '" ' + checked + '>'
+        +     '<span>Enabled</span>'
+        +   '</label>'
+        + '</div>'
+        + '<div class="email-template-fields">'
+        +   '<div class="email-field">'
+        +     '<label>Subject Line</label>'
+        +     '<input type="text" class="email-subject-input" data-key="' + emailCfg.key + '" '
+        +       'placeholder="Enter email subject..." value="' + esc(tpl.subject || '') + '" ' + disabled + '>'
+        +   '</div>'
+        +   '<div class="email-field">'
+        +     '<label>Email Body</label>'
+        +     '<textarea class="email-body-input" data-key="' + emailCfg.key + '" '
+        +       'placeholder="Enter email content..." rows="12" ' + disabled + '>' + esc(tpl.body || '') + '</textarea>'
+        +   '</div>'
+        +   '<div class="email-variables">'
+        +     '<strong>Available Variables:</strong> '
+        +     emailCfg.variables.map(function (v) { return '<code>{{' + v + '}}</code>'; }).join(' ')
+        +   '</div>'
+        + '</div>'
+        + '</div>';
+    });
+
+    container.innerHTML = html;
+
+    // Bind enabled toggles
+    container.querySelectorAll('.email-enabled-check').forEach(function (checkbox) {
+      checkbox.addEventListener('change', function () {
+        var key = this.getAttribute('data-key');
+        if (!cfg.email_templates[key]) cfg.email_templates[key] = {};
+        cfg.email_templates[key].enabled = this.checked;
+
+        // Enable/disable inputs
+        var card = this.closest('.email-template-card');
+        var subjectInput = card.querySelector('.email-subject-input');
+        var bodyInput = card.querySelector('.email-body-input');
+        if (this.checked) {
+          subjectInput.removeAttribute('disabled');
+          bodyInput.removeAttribute('disabled');
+        } else {
+          subjectInput.setAttribute('disabled', '');
+          bodyInput.setAttribute('disabled', '');
+        }
+      });
+    });
+
+    // Bind subject inputs
+    container.querySelectorAll('.email-subject-input').forEach(function (input) {
+      input.addEventListener('input', function () {
+        var key = this.getAttribute('data-key');
+        if (!cfg.email_templates[key]) cfg.email_templates[key] = {};
+        cfg.email_templates[key].subject = this.value;
+      });
+    });
+
+    // Bind body textareas
+    container.querySelectorAll('.email-body-input').forEach(function (textarea) {
+      textarea.addEventListener('input', function () {
+        var key = this.getAttribute('data-key');
+        if (!cfg.email_templates[key]) cfg.email_templates[key] = {};
+        cfg.email_templates[key].body = this.value;
       });
     });
   }

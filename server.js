@@ -94,12 +94,13 @@ app.get('/site-config.js', async (req, res) => {
   try {
     const cfg = await readConfig();
     const pub = {
-      sections:     cfg.sections,
-      vehicles:     cfg.vehicles,
-      copy:         cfg.copy,
-      faqs:         cfg.faqs,
-      discounts:    cfg.discounts,
-      blockedDates: cfg.blockedDates
+      sections:        cfg.sections,
+      vehicles:        cfg.vehicles,
+      copy:            cfg.copy,
+      faqs:            cfg.faqs,
+      discounts:       cfg.discounts,
+      blockedDates:    cfg.blockedDates,
+      email_templates: cfg.email_templates
     };
     res.setHeader('Content-Type', 'application/javascript');
     res.setHeader('Cache-Control', 'no-cache, no-store');
@@ -174,7 +175,7 @@ app.post('/api/config', requireAuth, async (req, res) => {
     if (!incoming || typeof incoming !== 'object') {
       return res.status(400).json({ error: 'Invalid config' });
     }
-    const required = ['sections', 'vehicles', 'copy', 'faqs', 'discounts', 'blockedDates'];
+    const required = ['sections', 'vehicles', 'copy', 'faqs', 'discounts', 'blockedDates', 'email_templates'];
     for (const key of required) {
       if (!(key in incoming)) return res.status(400).json({ error: 'Missing key: ' + key });
     }
