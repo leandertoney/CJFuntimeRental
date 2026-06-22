@@ -23,6 +23,15 @@ Deno.serve(async (req) => {
   try {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Read default pickup details from site config
+    const { data: configData } = await supabase
+      .from('site_config')
+      .select('config')
+      .eq('id', 1)
+      .single();
+
+    const defaultPickup = configData?.config?.default_pickup_details || {};
+
     // Calculate target date (48 hours from now)
     const targetDate = new Date();
     targetDate.setHours(targetDate.getHours() + 48);
@@ -52,15 +61,27 @@ Deno.serve(async (req) => {
       bookings.map(async (booking: Booking) => {
         const firstName = booking.name ? booking.name.split(' ')[0] : 'there';
 
-        // Handle delivery service
-        let pickupLocation = booking.pickup_location || 'TBD';
-        let pickupAddress = booking.pickup_address || 'Will be sent shortly';
-        let pickupInstructions = booking.pickup_instructions || 'Check your email for updates.';
+        // Determine pickup location based on delivery status and defaults
+        let pickupLocation: string;
+        let pickupAddress: string;
+        let pickupInstructions: string;
+        let pickupTime: string;
+        let fuelLevel: string;
 
         if (booking.delivery_dropoff && booking.delivery_address) {
+          // Delivery service: use customer's address
           pickupLocation = 'Your Location (Delivery Service)';
           pickupAddress = booking.delivery_address;
           pickupInstructions = booking.pickup_instructions || "We'll deliver the vehicle to your location. Please ensure someone is available to receive it and complete a brief walk-around inspection.";
+          pickupTime = booking.pickup_time || 'TBD';
+          fuelLevel = booking.fuel_level || 'Full';
+        } else {
+          // Office pickup: use booking details or fall back to defaults
+          pickupLocation = booking.pickup_location || defaultPickup.pickup_location || 'TBD';
+          pickupAddress = booking.pickup_address || defaultPickup.pickup_address || 'Will be sent shortly';
+          pickupInstructions = booking.pickup_instructions || defaultPickup.pickup_instructions || 'Check your email for updates.';
+          pickupTime = booking.pickup_time || defaultPickup.pickup_time || 'TBD';
+          fuelLevel = booking.fuel_level || defaultPickup.fuel_level || 'Full';
         }
 
         const response = await fetch('https://api.resend.com/emails', {
@@ -79,8 +100,8 @@ Deno.serve(async (req) => {
               startDate: booking.start_date,
               pickupLocation,
               pickupAddress,
-              pickupTime: booking.pickup_time || 'TBD',
-              fuelLevel: booking.fuel_level || 'Full',
+              pickupTime,
+              fuelLevel,
               pickupInstructions
             })
           })

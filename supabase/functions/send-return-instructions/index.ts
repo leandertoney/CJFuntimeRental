@@ -24,6 +24,15 @@ Deno.serve(async (req) => {
   try {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Read default pickup/return details from site config
+    const { data: configData } = await supabase
+      .from('site_config')
+      .select('config')
+      .eq('id', 1)
+      .single();
+
+    const defaultPickup = configData?.config?.default_pickup_details || {};
+
     // Calculate target date (24 hours from now)
     const targetDate = new Date();
     targetDate.setHours(targetDate.getHours() + 24);
@@ -53,21 +62,36 @@ Deno.serve(async (req) => {
       bookings.map(async (booking: Booking) => {
         const firstName = booking.name ? booking.name.split(' ')[0] : 'there';
 
-        // Handle pickup service
-        let returnLocation = booking.return_location || 'Same as pickup';
-        let returnAddress = booking.return_address || 'Same as pickup address';
-        let returnInstructions = booking.return_instructions || 'Please return the vehicle in the same condition.';
+        // Determine return location based on pickup service status and defaults
+        let returnLocation: string;
+        let returnAddress: string;
+        let returnInstructions: string;
+        let returnTime: string;
+        let fuelLevel: string;
+        let keyDropInfo: string;
 
         if (booking.delivery_pickup && booking.delivery_address) {
+          // Pickup service: use customer's address
           returnLocation = 'Your Location (Pickup Service)';
           returnAddress = booking.delivery_address;
           returnInstructions = booking.return_instructions || "We'll pick up the vehicle from your location. Please have it ready and parked in an accessible area.";
-        }
+          returnTime = booking.return_time || 'TBD';
+          fuelLevel = booking.fuel_level || 'Full';
+          keyDropInfo = ''; // Not relevant for pickup service
+        } else {
+          // Office return: use booking details or fall back to defaults
+          returnLocation = booking.return_location || defaultPickup.return_location || 'Same as pickup';
+          returnAddress = booking.return_address || defaultPickup.return_address || 'Same as pickup address';
+          returnInstructions = booking.return_instructions || defaultPickup.return_instructions || 'Please return the vehicle in the same condition.';
+          returnTime = booking.return_time || defaultPickup.return_time || 'TBD';
+          fuelLevel = booking.fuel_level || defaultPickup.fuel_level || 'Full';
 
-        // Key drop not relevant for pickup service
-        const keyDropInfo = (booking.key_drop_location && !booking.delivery_pickup)
-          ? `<p style="font-size:15px;color:rgba(255,255,255,0.85);margin:0 0 16px;line-height:1.7;"><strong>After Hours?</strong><br>Returning after hours? ${booking.key_drop_location}</p>`
-          : '';
+          // Key drop info (only for office returns)
+          const keyDropLoc = booking.key_drop_location || defaultPickup.key_drop_location;
+          keyDropInfo = keyDropLoc
+            ? `<p style="font-size:15px;color:rgba(255,255,255,0.85);margin:0 0 16px;line-height:1.7;"><strong>After Hours?</strong><br>Returning after hours? ${keyDropLoc}</p>`
+            : '';
+        }
 
         const response = await fetch('https://api.resend.com/emails', {
           method: 'POST',
@@ -85,8 +109,8 @@ Deno.serve(async (req) => {
               endDate: booking.end_date,
               returnLocation,
               returnAddress,
-              returnTime: booking.return_time || 'TBD',
-              fuelLevel: booking.fuel_level || 'Full',
+              returnTime,
+              fuelLevel,
               returnInstructions,
               keyDropInfo
             })
