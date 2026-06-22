@@ -83,7 +83,10 @@ async function insertBooking(booking) {
       total:             booking.total,
       savings:           booking.savings || 0,
       stripe_session_id: booking.id,
-      status:            'confirmed'
+      status:            'confirmed',
+      delivery_dropoff:  booking.deliveryDropoff || false,
+      delivery_pickup:   booking.deliveryPickup || false,
+      delivery_address:  booking.deliveryAddress || null
     });
   if (error) throw error;
 }

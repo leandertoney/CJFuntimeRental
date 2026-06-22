@@ -279,28 +279,50 @@ async function sendWelcomeEmail({ email, name, vehicle, startDate, endDate }) {
   });
 }
 
-async function sendPickupReminderTemplated({ email, name, vehicle, startDate, pickupLocation, pickupAddress, pickupTime, fuelLevel, pickupInstructions }) {
+async function sendPickupReminderTemplated({ email, name, vehicle, startDate, pickupLocation, pickupAddress, pickupTime, fuelLevel, pickupInstructions, isDelivery, deliveryAddress }) {
   const firstName = name ? name.split(' ')[0] : 'there';
   const keyDropInstructions = ''; // Only used for return
+
+  // If delivery service, override location/address with delivery messaging
+  let finalLocation = pickupLocation || 'TBD';
+  let finalAddress = pickupAddress || 'Will be sent shortly';
+  let finalInstructions = pickupInstructions || 'Check your email for updates.';
+
+  if (isDelivery && deliveryAddress) {
+    finalLocation = 'Your Location (Delivery Service)';
+    finalAddress = deliveryAddress;
+    finalInstructions = pickupInstructions || "We'll deliver the vehicle to your location. Please ensure someone is available to receive it and complete a brief walk-around inspection.";
+  }
 
   return sendTemplatedEmail('pickup_reminder', email, {
     firstName,
     vehicleName: vehicle,
     startDate,
-    pickupLocation: pickupLocation || 'TBD',
-    pickupAddress: pickupAddress || 'Will be sent shortly',
+    pickupLocation: finalLocation,
+    pickupAddress: finalAddress,
     pickupTime: pickupTime || 'TBD',
     fuelLevel: fuelLevel || 'Full',
-    pickupInstructions: pickupInstructions || 'Check your email for updates.',
+    pickupInstructions: finalInstructions,
     keyDropInstructions
   });
 }
 
-async function sendReturnInstructions({ email, name, vehicle, endDate, returnLocation, returnAddress, returnTime, fuelLevel, returnInstructions, keyDropLocation }) {
+async function sendReturnInstructions({ email, name, vehicle, endDate, returnLocation, returnAddress, returnTime, fuelLevel, returnInstructions, keyDropLocation, isPickupService, deliveryAddress }) {
   const firstName = name ? name.split(' ')[0] : 'there';
 
+  // If pickup service, override location/address with pickup service messaging
+  let finalLocation = returnLocation || 'Same as pickup';
+  let finalAddress = returnAddress || 'Same as pickup address';
+  let finalInstructions = returnInstructions || 'Please return the vehicle in the same condition.';
+
+  if (isPickupService && deliveryAddress) {
+    finalLocation = 'Your Location (Pickup Service)';
+    finalAddress = deliveryAddress;
+    finalInstructions = returnInstructions || "We'll pick up the vehicle from your location. Please have it ready and parked in an accessible area.";
+  }
+
   let keyDropInstructions = '';
-  if (keyDropLocation) {
+  if (keyDropLocation && !isPickupService) { // Key drop not relevant for pickup service
     keyDropInstructions = `**After Hours?**\nReturning after hours? ${keyDropLocation}`;
   }
 
@@ -308,11 +330,11 @@ async function sendReturnInstructions({ email, name, vehicle, endDate, returnLoc
     firstName,
     vehicleName: vehicle,
     endDate,
-    returnLocation: returnLocation || 'Same as pickup',
-    returnAddress: returnAddress || 'Same as pickup address',
+    returnLocation: finalLocation,
+    returnAddress: finalAddress,
     returnTime: returnTime || 'TBD',
     fuelLevel: fuelLevel || 'Full',
-    returnInstructions: returnInstructions || 'Please return the vehicle in the same condition.',
+    returnInstructions: finalInstructions,
     keyDropInstructions
   });
 }

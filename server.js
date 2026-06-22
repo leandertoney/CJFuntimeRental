@@ -320,18 +320,40 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
       vehicleName = cfg.vehicles[meta.vehicleKey]?.name || vehicleName;
     } catch (_) {}
 
+    // Extract delivery preferences from metadata
+    const deliveryDropoff = meta.deliveryDropoff === 'true';
+    const deliveryPickup = meta.deliveryPickup === 'true';
+
+    // Get customer address for delivery (prefer shipping, fallback to billing)
+    let deliveryAddress = null;
+    if (deliveryDropoff || deliveryPickup) {
+      const shipping = session.shipping_details || session.shipping;
+      const billing = customer.address;
+
+      if (shipping && shipping.address) {
+        const addr = shipping.address;
+        deliveryAddress = `${addr.line1 || ''}${addr.line2 ? ' ' + addr.line2 : ''}, ${addr.city || ''}, ${addr.state || ''} ${addr.postal_code || ''}`.trim();
+      } else if (billing) {
+        const addr = billing;
+        deliveryAddress = `${addr.line1 || ''}${addr.line2 ? ' ' + addr.line2 : ''}, ${addr.city || ''}, ${addr.state || ''} ${addr.postal_code || ''}`.trim();
+      }
+    }
+
     // Save booking to Supabase
     await insertBooking({
-      id:        session.id,
-      email:     email.toLowerCase(),
+      id:               session.id,
+      email:            email.toLowerCase(),
       name,
       phone,
-      vehicle:   vehicleName,
-      startDate: meta.startDate,
-      endDate:   meta.endDate,
-      days:      Number(meta.days) || 1,
-      total:     Number(total),
-      savings:   discount ? Number(discount) : 0
+      vehicle:          vehicleName,
+      startDate:        meta.startDate,
+      endDate:          meta.endDate,
+      days:             Number(meta.days) || 1,
+      total:            Number(total),
+      savings:          discount ? Number(discount) : 0,
+      deliveryDropoff:  deliveryDropoff,
+      deliveryPickup:   deliveryPickup,
+      deliveryAddress:  deliveryAddress
     });
 
     // Send emails
@@ -361,7 +383,9 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
           pickupAddress: null,
           pickupTime: null,
           fuelLevel: null,
-          pickupInstructions: null
+          pickupInstructions: null,
+          isDelivery: deliveryDropoff,
+          deliveryAddress: deliveryAddress
         }).catch(err => console.error('Immediate pickup reminder error:', err.message));
       }
 
@@ -378,7 +402,9 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
           returnTime: null,
           fuelLevel: null,
           returnInstructions: null,
-          keyDropLocation: null
+          keyDropLocation: null,
+          isPickupService: deliveryPickup,
+          deliveryAddress: deliveryAddress
         }).catch(err => console.error('Immediate return instructions error:', err.message));
       }
 
@@ -407,15 +433,18 @@ app.post('/api/booking-confirmed', async (req, res) => {
   if (!email || !vehicle || !startDate) return res.status(400).json({ error: 'Missing fields' });
   try {
     await insertBooking({
-      id:        crypto.randomBytes(8).toString('hex'),
-      email:     email.trim().toLowerCase(),
-      name:      name || '',
-      phone:     req.body.phone || '',
+      id:               crypto.randomBytes(8).toString('hex'),
+      email:            email.trim().toLowerCase(),
+      name:             name || '',
+      phone:            req.body.phone || '',
       vehicle, startDate,
-      endDate:   endDate || startDate,
-      days:      Number(days) || 1,
-      total:     Number(total) || 0,
-      savings:   Number(savings) || 0
+      endDate:          endDate || startDate,
+      days:             Number(days) || 1,
+      total:            Number(total) || 0,
+      savings:          Number(savings) || 0,
+      deliveryDropoff:  false,  // Manual bookings don't have delivery options
+      deliveryPickup:   false,
+      deliveryAddress:  null
     });
     await Promise.all([
       sendBookingConfirmation({ email, name, vehicle, startDate, endDate, days, total, savings }),
@@ -435,14 +464,16 @@ app.post('/api/booking-confirmed', async (req, res) => {
         console.log(`Last-minute booking: Sending pickup reminder immediately (${hoursUntilStart.toFixed(1)}h until start)`);
         await sendPickupReminderTemplated({
           email, name, vehicle, startDate,
-          pickupLocation: null, pickupAddress: null, pickupTime: null, fuelLevel: null, pickupInstructions: null
+          pickupLocation: null, pickupAddress: null, pickupTime: null, fuelLevel: null, pickupInstructions: null,
+          isDelivery: false, deliveryAddress: null
         }).catch(err => console.error('Immediate pickup reminder error:', err.message));
       }
 
       if (hoursUntilEnd <= 24 && hoursUntilEnd > 0) {
         await sendReturnInstructions({
           email, name, vehicle, endDate: endDate || startDate,
-          returnLocation: null, returnAddress: null, returnTime: null, fuelLevel: null, returnInstructions: null, keyDropLocation: null
+          returnLocation: null, returnAddress: null, returnTime: null, fuelLevel: null, returnInstructions: null, keyDropLocation: null,
+          isPickupService: false, deliveryAddress: null
         }).catch(err => console.error('Immediate return instructions error:', err.message));
       }
 

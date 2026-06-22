@@ -15,6 +15,8 @@ interface Booking {
   pickup_time?: string;
   fuel_level?: string;
   pickup_instructions?: string;
+  delivery_dropoff?: boolean;
+  delivery_address?: string;
 }
 
 Deno.serve(async (req) => {
@@ -50,6 +52,17 @@ Deno.serve(async (req) => {
       bookings.map(async (booking: Booking) => {
         const firstName = booking.name ? booking.name.split(' ')[0] : 'there';
 
+        // Handle delivery service
+        let pickupLocation = booking.pickup_location || 'TBD';
+        let pickupAddress = booking.pickup_address || 'Will be sent shortly';
+        let pickupInstructions = booking.pickup_instructions || 'Check your email for updates.';
+
+        if (booking.delivery_dropoff && booking.delivery_address) {
+          pickupLocation = 'Your Location (Delivery Service)';
+          pickupAddress = booking.delivery_address;
+          pickupInstructions = booking.pickup_instructions || "We'll deliver the vehicle to your location. Please ensure someone is available to receive it and complete a brief walk-around inspection.";
+        }
+
         const response = await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: {
@@ -64,11 +77,11 @@ Deno.serve(async (req) => {
               firstName,
               vehicleName: booking.vehicle,
               startDate: booking.start_date,
-              pickupLocation: booking.pickup_location || 'TBD',
-              pickupAddress: booking.pickup_address || 'Will be sent shortly',
+              pickupLocation,
+              pickupAddress,
               pickupTime: booking.pickup_time || 'TBD',
               fuelLevel: booking.fuel_level || 'Full',
-              pickupInstructions: booking.pickup_instructions || 'Check your email for updates.'
+              pickupInstructions
             })
           })
         });

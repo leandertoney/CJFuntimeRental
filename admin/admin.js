@@ -1109,10 +1109,20 @@
         bookings.forEach(function (b, idx) {
           var d = new Date(b.created_at);
           var statusClass = b.status === 'confirmed' ? 'status-confirmed' : 'status-pending';
+
+          // Build delivery badges
+          var deliveryBadges = '';
+          if (b.delivery_dropoff) {
+            deliveryBadges += '<span class="source-badge" style="background:#fbbf24;color:#000;margin-left:4px;font-size:10px;">🚚 Delivery</span>';
+          }
+          if (b.delivery_pickup) {
+            deliveryBadges += '<span class="source-badge" style="background:#fbbf24;color:#000;margin-left:4px;font-size:10px;">🚚 Pickup</span>';
+          }
+
           html += '<tr data-booking-id="' + esc(b.id) + '">'
             + '<td class="lead-num">' + (idx + 1) + '</td>'
             + '<td class="lead-email"><strong>' + esc(b.name || '—') + '</strong><br><span style="color:#555;font-size:11px;">' + esc(b.email) + '</span></td>'
-            + '<td>' + esc(b.vehicle || '—') + '</td>'
+            + '<td>' + esc(b.vehicle || '—') + deliveryBadges + '</td>'
             + '<td>' + esc(b.start_date || '—') + '</td>'
             + '<td>' + esc(b.end_date || '—') + '</td>'
             + '<td style="text-align:center;">' + (b.days || '—') + '</td>'
@@ -1481,15 +1491,52 @@
     document.getElementById('bd-dates').textContent = (booking.start_date || '') + ' to ' + (booking.end_date || '');
     document.getElementById('bd-total').textContent = '$' + (booking.total || 0).toLocaleString();
 
+    // Show/hide delivery section
+    var deliverySection = document.getElementById('bd-delivery-section');
+    var deliveryInfo = document.getElementById('bd-delivery-info');
+
+    if (booking.delivery_dropoff || booking.delivery_pickup) {
+      var infoText = '';
+      if (booking.delivery_dropoff) {
+        infoText += '<div style="margin-bottom:4px;"><strong>Vehicle Delivery:</strong> Customer paid $50 for vehicle delivery</div>';
+      }
+      if (booking.delivery_pickup) {
+        infoText += '<div style="margin-bottom:4px;"><strong>Vehicle Pickup:</strong> Customer paid $50 for vehicle pickup</div>';
+      }
+      if (booking.delivery_address) {
+        infoText += '<div style="margin-top:8px;"><strong>Delivery Address:</strong><br>' + esc(booking.delivery_address) + '</div>';
+      }
+      deliveryInfo.innerHTML = infoText;
+      deliverySection.classList.remove('hidden');
+    } else {
+      deliverySection.classList.add('hidden');
+    }
+
     // Populate pickup/return fields (editable)
-    document.getElementById('bd-pickup-location').value = booking.pickup_location || '';
-    document.getElementById('bd-pickup-address').value = booking.pickup_address || '';
+    // Auto-fill with delivery address if delivery was requested and fields are empty
+    var pickupAddr = booking.pickup_address || '';
+    var returnAddr = booking.return_address || '';
+
+    if (booking.delivery_dropoff && !pickupAddr && booking.delivery_address) {
+      pickupAddr = booking.delivery_address;
+      document.getElementById('bd-pickup-location').value = booking.pickup_location || 'Customer Location (Delivery)';
+    } else {
+      document.getElementById('bd-pickup-location').value = booking.pickup_location || '';
+    }
+
+    if (booking.delivery_pickup && !returnAddr && booking.delivery_address) {
+      returnAddr = booking.delivery_address;
+      document.getElementById('bd-return-location').value = booking.return_location || 'Customer Location (Pickup)';
+    } else {
+      document.getElementById('bd-return-location').value = booking.return_location || '';
+    }
+
+    document.getElementById('bd-pickup-address').value = pickupAddr;
     document.getElementById('bd-pickup-time').value = booking.pickup_time || '';
     document.getElementById('bd-fuel-level').value = booking.fuel_level || '';
     document.getElementById('bd-pickup-instructions').value = booking.pickup_instructions || '';
 
-    document.getElementById('bd-return-location').value = booking.return_location || '';
-    document.getElementById('bd-return-address').value = booking.return_address || '';
+    document.getElementById('bd-return-address').value = returnAddr;
     document.getElementById('bd-return-time').value = booking.return_time || '';
     document.getElementById('bd-key-drop').value = booking.key_drop_location || '';
     document.getElementById('bd-return-instructions').value = booking.return_instructions || '';

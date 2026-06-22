@@ -16,6 +16,8 @@ interface Booking {
   fuel_level?: string;
   return_instructions?: string;
   key_drop_location?: string;
+  delivery_pickup?: boolean;
+  delivery_address?: string;
 }
 
 Deno.serve(async (req) => {
@@ -50,7 +52,20 @@ Deno.serve(async (req) => {
     const results = await Promise.allSettled(
       bookings.map(async (booking: Booking) => {
         const firstName = booking.name ? booking.name.split(' ')[0] : 'there';
-        const keyDropInfo = booking.key_drop_location
+
+        // Handle pickup service
+        let returnLocation = booking.return_location || 'Same as pickup';
+        let returnAddress = booking.return_address || 'Same as pickup address';
+        let returnInstructions = booking.return_instructions || 'Please return the vehicle in the same condition.';
+
+        if (booking.delivery_pickup && booking.delivery_address) {
+          returnLocation = 'Your Location (Pickup Service)';
+          returnAddress = booking.delivery_address;
+          returnInstructions = booking.return_instructions || "We'll pick up the vehicle from your location. Please have it ready and parked in an accessible area.";
+        }
+
+        // Key drop not relevant for pickup service
+        const keyDropInfo = (booking.key_drop_location && !booking.delivery_pickup)
           ? `<p style="font-size:15px;color:rgba(255,255,255,0.85);margin:0 0 16px;line-height:1.7;"><strong>After Hours?</strong><br>Returning after hours? ${booking.key_drop_location}</p>`
           : '';
 
@@ -68,11 +83,11 @@ Deno.serve(async (req) => {
               firstName,
               vehicleName: booking.vehicle,
               endDate: booking.end_date,
-              returnLocation: booking.return_location || 'Same as pickup',
-              returnAddress: booking.return_address || 'Same as pickup address',
+              returnLocation,
+              returnAddress,
               returnTime: booking.return_time || 'TBD',
               fuelLevel: booking.fuel_level || 'Full',
-              returnInstructions: booking.return_instructions || 'Please return the vehicle in the same condition.',
+              returnInstructions,
               keyDropInfo
             })
           })
