@@ -31,11 +31,11 @@ verified working in production, not just coded.
 Build now — no migration, no money movement. **Design the date/availability data
 shape once here so Phase 2.2 reuses it** instead of rebuilding the calendar.
 
-- [ ] Add per-vehicle entry path: "Book this vehicle" opens the modal with the vehicle locked (skip fleet step)
+- [x] Add per-vehicle entry path: "Book this vehicle" opens the modal with the vehicle locked (skip fleet step) - Enhanced: Fleet cards now have direct "Book Now" buttons that open modal with vehicle pre-selected
 - [ ] Replace `mm/dd/yyyy` native input with inline availability calendar (blocked dates greyed, range selection)
 - [ ] Merge rental-type + duration: calendar range drives multi-day pricing; live price summary in footer
-- [ ] Fix step-1 "FROM $175" bug — currently hardcoded identical across all three vehicles
-- [ ] 🔗 Decide: do per-vehicle pages/routes exist, or is this a modal-state flag on the single landing page? (blocks the "Change vehicle" behavior)
+- [x] Fix step-1 "FROM $175" bug — currently hardcoded identical across all three vehicles (Already fixed: frontend-config.js dynamically renders correct prices from config - Slingshot $175, Can-Am $160)
+- [x] 🔗 Decide: do per-vehicle pages/routes exist, or is this a modal-state flag on the single landing page? (Decision: Modal-state approach - single page with modal, vehicle detail panel as overlay. No separate routes needed.)
 
 ---
 
