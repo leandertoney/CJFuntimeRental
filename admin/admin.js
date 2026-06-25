@@ -1609,5 +1609,42 @@
     if (e.target === this) closeBookingDetailModal();
   });
 
-  document.addEventListener('DOMContentLoaded', init);
+  // Mobile menu toggle functionality
+  function initMobileSidebar() {
+    var toggle = document.getElementById('mobile-menu-toggle');
+    var sidebar = document.getElementById('sidebar');
+    var adminMain = document.getElementById('admin-main');
+
+    if (!toggle || !sidebar) return;
+
+    // Toggle sidebar on button click
+    toggle.addEventListener('click', function (e) {
+      e.stopPropagation();
+      sidebar.classList.toggle('mobile-open');
+    });
+
+    // Close sidebar when clicking outside on mobile
+    document.addEventListener('click', function (e) {
+      if (window.innerWidth <= 768 && sidebar.classList.contains('mobile-open')) {
+        if (!sidebar.contains(e.target) && !toggle.contains(e.target)) {
+          sidebar.classList.remove('mobile-open');
+        }
+      }
+    });
+
+    // Close sidebar when clicking a menu item
+    var sidebarLinks = sidebar.querySelectorAll('a, button');
+    sidebarLinks.forEach(function (link) {
+      link.addEventListener('click', function () {
+        if (window.innerWidth <= 768) {
+          sidebar.classList.remove('mobile-open');
+        }
+      });
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    init();
+    initMobileSidebar();
+  });
 }());

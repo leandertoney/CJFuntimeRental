@@ -1552,3 +1552,188 @@ body.logged-in #admin-shell { display: flex; }
 #bookings-tbody tr:hover {
   background: rgba(255, 107, 0, 0.05);
 }
+
+/* ============================================
+   MOBILE RESPONSIVE STYLES
+   ============================================ */
+
+/* Tablet and mobile breakpoint */
+@media (max-width: 768px) {
+  /* Hide sidebar by default on mobile */
+  #sidebar {
+    position: fixed;
+    left: -240px;
+    top: 0;
+    bottom: 0;
+    z-index: 1000;
+    transition: left 0.3s ease;
+  }
+
+  #sidebar.mobile-open {
+    left: 0;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.5);
+  }
+
+  /* Mobile menu toggle button */
+  .mobile-menu-toggle {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    color: #fff;
+    font-size: 20px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .mobile-menu-toggle:hover {
+    background: rgba(255,255,255,0.08);
+  }
+
+  /* Topbar layout adjustments */
+  #admin-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .admin-topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  /* Adjust main content to full width */
+  #admin-main {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  /* Reduce topbar padding */
+  #admin-topbar {
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .admin-topbar-left {
+    gap: 12px;
+  }
+
+  /* Reduce content padding */
+  #admin-content {
+    padding: 16px;
+  }
+
+  /* Stack overview cards to 2 columns */
+  .ov-cards {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  /* Stack overview grid sections */
+  .ov-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  /* Make tables scrollable within containers */
+  .table-scroll-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 -16px;
+    padding: 0 16px;
+  }
+
+  .leads-table,
+  .discount-table {
+    min-width: 600px;
+  }
+
+  /* Adjust chat widget for mobile */
+  .chat-panel {
+    width: calc(100vw - 32px);
+    max-width: 380px;
+    right: 16px;
+    left: auto;
+    bottom: 80px;
+  }
+
+  .chat-trigger {
+    right: 16px;
+    bottom: 16px;
+  }
+
+  /* Stack rate grids */
+  .admin-rate-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Responsive section headers */
+  .admin-section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  /* Adjust modal widths */
+  .modal-content {
+    width: calc(100vw - 32px);
+    max-width: 500px;
+    margin: 16px;
+  }
+
+  /* Booking detail modal adjustments */
+  .booking-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Small mobile breakpoint */
+@media (max-width: 480px) {
+  /* Single column for overview cards */
+  .ov-cards {
+    grid-template-columns: 1fr;
+  }
+
+  /* Further reduce padding */
+  #admin-topbar {
+    padding: 12px;
+  }
+
+  #admin-content {
+    padding: 12px;
+  }
+
+  /* Stack action buttons */
+  .admin-section-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .admin-section-actions button {
+    width: 100%;
+  }
+
+  /* Adjust table scroll */
+  .table-scroll-wrapper {
+    margin: 0 -12px;
+    padding: 0 12px;
+  }
+
+  /* Full width chat on small screens */
+  .chat-panel {
+    width: calc(100vw - 16px);
+    right: 8px;
+    left: 8px;
+    bottom: 72px;
+  }
+
+  .chat-trigger {
+    right: 8px;
+    bottom: 8px;
+  }
+}

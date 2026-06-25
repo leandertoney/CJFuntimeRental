@@ -120,7 +120,10 @@
 
       <!-- Top bar -->
       <div id="admin-topbar">
-        <h2 id="panel-title">Sections</h2>
+        <div class="admin-topbar-left">
+          <button id="mobile-menu-toggle" class="mobile-menu-toggle" style="display: none;">☰</button>
+          <h2 id="panel-title">Sections</h2>
+        </div>
         <div class="topbar-right">
           <span id="save-status"></span>
           <button id="save-btn" class="btn-save">Save &amp; Publish</button>
@@ -242,7 +245,7 @@
           <div class="panel-intro">
             <p>Multi-day rental tiers. Each tier sets a per-day rate for Slingshots and Can-Am when the rental meets the minimum days. Sorted highest-first at checkout.</p>
           </div>
-          <div class="discount-table-wrap">
+          <div class="discount-table-wrap table-scroll-wrapper">
             <table class="discount-table">
               <thead>
                 <tr>
@@ -269,7 +272,7 @@
             <span id="bookings-count" class="leads-count"></span>
             <button id="bookings-export-btn" class="btn-export">Export CSV</button>
           </div>
-          <div id="bookings-table-wrap" class="leads-table-wrap">
+          <div id="bookings-table-wrap" class="leads-table-wrap table-scroll-wrapper">
             <table class="leads-table">
               <thead>
                 <tr>
@@ -298,7 +301,7 @@
             <span id="leads-count" class="leads-count"></span>
             <button id="leads-export-btn" class="btn-export">Export CSV</button>
           </div>
-          <div id="leads-table-wrap" class="leads-table-wrap">
+          <div id="leads-table-wrap" class="leads-table-wrap table-scroll-wrapper">
             <table class="leads-table">
               <thead>
                 <tr>
