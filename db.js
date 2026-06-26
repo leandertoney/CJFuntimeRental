@@ -65,7 +65,21 @@ async function readBookings() {
     .select('*')
     .order('created_at', { ascending: false });
   if (error) throw error;
-  return data;
+
+  // Transform snake_case database columns to camelCase for JavaScript
+  return data.map(booking => ({
+    ...booking,
+    startDate: booking.start_date,
+    endDate: booking.end_date,
+    createdAt: booking.created_at,
+    stripeSessionId: booking.stripe_session_id,
+    deliveryDropoff: booking.delivery_dropoff,
+    deliveryPickup: booking.delivery_pickup,
+    deliveryAddress: booking.delivery_address,
+    pickupLocation: booking.pickup_location,
+    pickupTime: booking.pickup_time,
+    pickupInstructions: booking.pickup_instructions
+  }));
 }
 
 async function insertBooking(booking) {

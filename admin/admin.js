@@ -1091,7 +1091,7 @@
     empty.classList.add('hidden');
 
     fetch('/api/bookings', {
-      headers: { 'Content-Type': 'application/json' }
+      headers: adminHeaders()
     })
       .then(function (r) { return r.json(); })
       .then(function (bookings) {
@@ -1578,7 +1578,7 @@
 
     fetch('/api/bookings/' + currentBooking.id, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: adminHeaders(),
       body: JSON.stringify(data)
     })
       .then(function (r) {
