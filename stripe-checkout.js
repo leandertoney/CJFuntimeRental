@@ -489,8 +489,8 @@
         durationType:  state.durationType,
         hours:         state.durationType === 'hourly' ? state.hours : undefined,
         days:          state.durationType === 'multi' ? calcMultiDayDays() : (state.durationType === '24hr' ? 1 : undefined),
-        startDate:     formatDate(startDateVal),
-        endDate:       formatDate(endDateVal),
+        startDate:     startDateVal,  // Send ISO format (YYYY-MM-DD) for database storage
+        endDate:       endDateVal,     // Send ISO format (YYYY-MM-DD) for database storage
         pickupTime:    state.pickupTime || (state.durationType === 'hourly' ? state.startTime : undefined),
         totalCents:    price.total * 100,
         baseCents:     price.base * 100,
