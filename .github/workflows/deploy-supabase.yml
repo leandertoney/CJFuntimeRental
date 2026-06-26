@@ -32,3 +32,8 @@ jobs:
         run: supabase functions deploy webhook --project-ref yzdtevrwystezhbmgcwn
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Deploy Admin Function
+        run: supabase functions deploy admin --project-ref yzdtevrwystezhbmgcwn
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
