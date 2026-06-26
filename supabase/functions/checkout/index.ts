@@ -26,7 +26,7 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const {
       vehicleKey, durationType, hours, days,
-      startDate, endDate,
+      startDate, endDate, pickupTime,
       totalCents, baseCents,
       deliveryDropoff, deliveryPickup, deliveryFee,
       promoCode
@@ -100,6 +100,7 @@ Deno.serve(async (req) => {
       'metadata[durationType]': durationType,
       'metadata[startDate]': startDate,
       'metadata[endDate]': endDate || startDate,
+      'metadata[pickupTime]': pickupTime || '',
       'metadata[hours]': String(hours || ''),
       'metadata[days]': String(days || ''),
       'metadata[deliveryDropoff]': String(!!deliveryDropoff),

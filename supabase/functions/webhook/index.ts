@@ -15,6 +15,28 @@ function emailRow(label: string, value: string) {
   </tr>`;
 }
 
+function formatTime(time24: string | null | undefined): string {
+  if (!time24 || time24.trim() === '') return '';
+
+  try {
+    const parts = time24.split(':');
+    if (parts.length !== 2) return '';
+
+    const hours = parseInt(parts[0], 10);
+    const minutes = parseInt(parts[1], 10);
+
+    if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+      return '';
+    }
+
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const hours12 = hours % 12 || 12;
+    return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
+  } catch {
+    return '';
+  }
+}
+
 function baseEmail(content: string) {
   return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#0f0f0f;font-family:'Helvetica Neue',Arial,sans-serif;color:#fff;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f0f0f;padding:40px 0;">
@@ -92,19 +114,24 @@ Deno.serve(async (req) => {
       days: Number(meta.days) || 1,
       total: Number(total),
       savings: savings ? Number(savings) : 0,
+      pickup_time: meta.pickupTime || null,
       stripe_session_id: obj.id as string,
       status: 'confirmed'
     });
 
     // Customer confirmation email
+    const pickupTimeFormatted = formatTime(meta.pickupTime);
+    const pickupMessage = pickupTimeFormatted
+      ? `Chris will reach out to confirm your ${pickupTimeFormatted} pickup time.`
+      : "We'll send exact pickup details before your trip.";
     const customerHtml = baseEmail(`
       <h1 style="font-family:Impact,Arial,sans-serif;font-size:36px;letter-spacing:3px;margin:0 0 8px;">You're Booked, ${name.split(' ')[0] || 'Rider'}!</h1>
-      <p style="font-size:15px;color:rgba(255,255,255,0.6);margin:16px 0 32px;line-height:1.7;">Your reservation is confirmed. We'll send exact pickup details before your trip.</p>
+      <p style="font-size:15px;color:rgba(255,255,255,0.6);margin:16px 0 32px;line-height:1.7;">Your reservation is confirmed. ${pickupMessage}</p>
       <div style="background:#1a1a1a;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:24px;margin-bottom:32px;">
         <div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#FF6B00;margin-bottom:16px;">Booking Summary</div>
         <table width="100%" cellpadding="0" cellspacing="0">
           ${emailRow('Vehicle', vehicleName)}
-          ${emailRow('Pick-up', meta.startDate)}
+          ${emailRow('Pick-up', meta.startDate + (pickupTimeFormatted ? ' at ' + pickupTimeFormatted : ''))}
           ${emailRow('Return', meta.endDate || meta.startDate)}
           ${emailRow('Duration', meta.durationType === 'hourly' ? (meta.hours || '3') + ' hours' : meta.durationType === '9hr' ? '9 hours' : meta.durationType === '24hr' ? '24 hours' : meta.days + ' day' + (Number(meta.days) === 1 ? '' : 's'))}
           ${savings ? emailRow('Discount', '- $' + savings) : ''}
@@ -126,7 +153,7 @@ Deno.serve(async (req) => {
           ${emailRow('Email', email)}
           ${emailRow('Phone', phone || '—')}
           ${emailRow('Vehicle', vehicleName)}
-          ${emailRow('Pick-up', meta.startDate)}
+          ${emailRow('Pick-up', meta.startDate + (pickupTimeFormatted ? ' at ' + pickupTimeFormatted : ''))}
           ${emailRow('Return', meta.endDate || meta.startDate)}
           ${emailRow('Type', meta.durationType === 'hourly' ? (meta.hours || '3') + ' hours' : meta.durationType === '9hr' ? '9 hours' : meta.durationType === '24hr' ? '24 hours' : meta.days + ' day' + (Number(meta.days) === 1 ? '' : 's'))}
           ${meta.deliveryDropoff === 'true' || meta.deliveryPickup === 'true' ? emailRow('Delivery', [meta.deliveryDropoff === 'true' ? 'Drop-off' : '', meta.deliveryPickup === 'true' ? 'Pickup' : ''].filter(Boolean).join(' + ')) : ''}

@@ -47,6 +47,7 @@
     endTime: null,
     deliveryDropoff: false,
     deliveryPickup: false,
+    pickupTime: null,    // Preferred pickup time
     promoCode: null
   };
 
@@ -308,21 +309,26 @@
     var hourlyWrap = $('bm-hourly-wrap');
     var singleWrap = $('bm-single-date-wrap');
     var multiWrap  = $('bm-multi-date-wrap');
+    var pickupTimeWrap = $('bm-pickup-time-wrap');
 
     if (hourlyWrap) hourlyWrap.style.display = 'none';
     if (singleWrap) singleWrap.style.display = 'none';
     if (multiWrap)  multiWrap.style.display  = 'none';
+    if (pickupTimeWrap) pickupTimeWrap.style.display = 'none';
 
     switch (duration) {
       case 'hourly':
         if (hourlyWrap) hourlyWrap.style.display = 'block';
+        // Hourly already has its own time picker, don't show the general one
         break;
       case '9hr':
       case '24hr':
         if (singleWrap) singleWrap.style.display = 'block';
+        if (pickupTimeWrap) pickupTimeWrap.style.display = 'block';
         break;
       case 'multi':
         if (multiWrap) multiWrap.style.display = 'block';
+        if (pickupTimeWrap) pickupTimeWrap.style.display = 'block';
         break;
     }
   }
@@ -485,6 +491,7 @@
         days:          state.durationType === 'multi' ? calcMultiDayDays() : (state.durationType === '24hr' ? 1 : undefined),
         startDate:     formatDate(startDateVal),
         endDate:       formatDate(endDateVal),
+        pickupTime:    state.pickupTime || (state.durationType === 'hourly' ? state.startTime : undefined),
         totalCents:    price.total * 100,
         baseCents:     price.base * 100,
         deliveryDropoff: state.deliveryDropoff,
@@ -602,6 +609,9 @@
           state.startTime = '09:00';
           state.endTime = '09:00';
         }
+        // Capture pickup time
+        var pickupTimeSelect = $('bm-pickup-time');
+        state.pickupTime = pickupTimeSelect ? pickupTimeSelect.value : '09:00';
 
       } else if (state.durationType === 'multi') {
         var ms = ($('bm-multi-start-date') || {}).value;
@@ -623,6 +633,9 @@
         state.endDate = me;
         state.startTime = '09:00';
         state.endTime = '09:00';
+        // Capture pickup time
+        var pickupTimeSelect = $('bm-pickup-time');
+        state.pickupTime = pickupTimeSelect ? pickupTimeSelect.value : '09:00';
       }
 
       // Validate availability before proceeding to checkout

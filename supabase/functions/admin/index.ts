@@ -299,20 +299,22 @@ Deno.serve(async (req) => {
     const { data, error } = await supabase.from('bookings').select('*').order('created_at', { ascending: false });
     if (error) return json({ error: error.message }, 500);
 
-    // Transform snake_case database columns to camelCase for JavaScript
-    const bookings = (data || []).map((booking: any) => ({
-      ...booking,
-      startDate: booking.start_date,
-      endDate: booking.end_date,
-      createdAt: booking.created_at,
-      stripeSessionId: booking.stripe_session_id,
-      deliveryDropoff: booking.delivery_dropoff,
-      deliveryPickup: booking.delivery_pickup,
-      deliveryAddress: booking.delivery_address,
-      pickupLocation: booking.pickup_location,
-      pickupTime: booking.pickup_time,
-      pickupInstructions: booking.pickup_instructions
-    }));
+    // Filter out test bookings and transform snake_case to camelCase
+    const bookings = (data || [])
+      .filter((booking: any) => !booking.id.startsWith('test_') && !booking.email.includes('test') && !booking.email.includes('@example.com'))
+      .map((booking: any) => ({
+        ...booking,
+        startDate: booking.start_date,
+        endDate: booking.end_date,
+        createdAt: booking.created_at,
+        stripeSessionId: booking.stripe_session_id,
+        deliveryDropoff: booking.delivery_dropoff,
+        deliveryPickup: booking.delivery_pickup,
+        deliveryAddress: booking.delivery_address,
+        pickupLocation: booking.pickup_location,
+        pickupTime: booking.pickup_time,
+        pickupInstructions: booking.pickup_instructions
+      }));
 
     return json(bookings);
   }

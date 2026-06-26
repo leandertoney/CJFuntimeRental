@@ -465,15 +465,21 @@
     var thisMonthRev    = 0;
     var activeNow       = [];
     var upcoming        = [];
-    var recentBookings  = bookings.slice(0, 5);
 
     var thisMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
 
     bookings.forEach(function (b) {
       totalRevenue += b.total || 0;
       if ((b.createdAt || '').startsWith(thisMonth)) thisMonthRev += b.total || 0;
-      if (b.startDate <= todayStr && b.endDate >= todayStr) activeNow.push(b);
-      if (b.startDate > todayStr) upcoming.push(b);
+
+      // Active rentals: happening today (start <= today AND end >= today)
+      if (b.startDate <= todayStr && b.endDate >= todayStr) {
+        activeNow.push(b);
+      }
+      // Upcoming bookings: starts in the future AND hasn't ended yet
+      else if (b.startDate > todayStr && b.endDate >= todayStr) {
+        upcoming.push(b);
+      }
     });
 
     // sort upcoming by soonest first
@@ -505,22 +511,8 @@
     html += ovCard('Upcoming',       upcoming.length,                     'Future bookings', 'blue');
     html += '</div>';
 
-    // Row 1: Upcoming Bookings (full width, prominent)
+    // Row 1: Active Rentals (full width, prominent)
     html += '<div class="ov-section ov-section-prominent">';
-    html += '<h3 class="ov-section-title">Upcoming Bookings</h3>';
-    if (upcoming.length === 0) {
-      html += '<div class="ov-empty">No upcoming bookings yet.</div>';
-    } else {
-      html += '<div class="ov-list">';
-      upcoming.slice(0, 8).forEach(function (b) { html += ovBookingRow(b); });
-      html += '</div>';
-    }
-    html += '</div>';
-
-    // Row 2: Active Rentals + Recent Bookings side by side
-    html += '<div class="ov-grid">';
-
-    html += '<div class="ov-section">';
     html += '<h3 class="ov-section-title">Active Rentals Right Now</h3>';
     if (activeNow.length === 0) {
       html += '<div class="ov-empty">No rentals active today.</div>';
@@ -531,18 +523,17 @@
     }
     html += '</div>';
 
+    // Row 2: Upcoming Bookings (full width)
     html += '<div class="ov-section">';
-    html += '<h3 class="ov-section-title">Recent Bookings</h3>';
-    if (recentBookings.length === 0) {
-      html += '<div class="ov-empty">No bookings yet — they\'ll appear here after customers check out.</div>';
+    html += '<h3 class="ov-section-title">Upcoming Bookings</h3>';
+    if (upcoming.length === 0) {
+      html += '<div class="ov-empty">No upcoming bookings yet.</div>';
     } else {
       html += '<div class="ov-list">';
-      recentBookings.forEach(function (b) { html += ovBookingRow(b); });
+      upcoming.slice(0, 8).forEach(function (b) { html += ovBookingRow(b); });
       html += '</div>';
     }
     html += '</div>';
-
-    html += '</div>'; // ov-grid
 
     return html;
   }
