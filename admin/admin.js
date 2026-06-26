@@ -402,6 +402,42 @@
     if (map[name]) map[name]();
   }
 
+  // ── Notification badges ──────────────────────────────────────
+  function updateNotificationBadges(bookings, leads) {
+    var now = new Date();
+    var todayStr = now.toISOString().split('T')[0];
+    var sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    // Count active rentals (happening today)
+    var activeCount = bookings.filter(function (b) {
+      return b.startDate <= todayStr && b.endDate >= todayStr;
+    }).length;
+
+    // Count new leads from last 7 days
+    var newLeadsCount = leads.filter(function (l) {
+      var leadDate = (l.created_at || l.date || '').split('T')[0];
+      return leadDate >= sevenDaysAgo;
+    }).length;
+
+    // Update bookings badge
+    var bookingsBadge = document.getElementById('bookings-badge');
+    if (activeCount > 0) {
+      bookingsBadge.textContent = activeCount;
+      bookingsBadge.style.display = '';
+    } else {
+      bookingsBadge.style.display = 'none';
+    }
+
+    // Update leads badge
+    var leadsBadge = document.getElementById('leads-badge');
+    if (newLeadsCount > 0) {
+      leadsBadge.textContent = newLeadsCount;
+      leadsBadge.style.display = '';
+    } else {
+      leadsBadge.style.display = 'none';
+    }
+  }
+
   // ── Overview panel ───────────────────────────────────────────
   function renderOverviewPanel() {
     var container = document.getElementById('overview-content');
@@ -413,6 +449,7 @@
     ]).then(function (results) {
       var bookings = results[0];
       var leads    = results[1];
+      updateNotificationBadges(bookings, leads);
       container.innerHTML = buildOverviewHTML(bookings, leads);
     }).catch(function () {
       container.innerHTML = '<div class="overview-loading">Could not load data.</div>';
@@ -468,7 +505,19 @@
     html += ovCard('Upcoming',       upcoming.length,                     'Future bookings', 'blue');
     html += '</div>';
 
-    // Row 1: Active + Upcoming side by side
+    // Row 1: Upcoming Bookings (full width, prominent)
+    html += '<div class="ov-section ov-section-prominent">';
+    html += '<h3 class="ov-section-title">Upcoming Bookings</h3>';
+    if (upcoming.length === 0) {
+      html += '<div class="ov-empty">No upcoming bookings yet.</div>';
+    } else {
+      html += '<div class="ov-list">';
+      upcoming.slice(0, 8).forEach(function (b) { html += ovBookingRow(b); });
+      html += '</div>';
+    }
+    html += '</div>';
+
+    // Row 2: Active Rentals + Recent Bookings side by side
     html += '<div class="ov-grid">';
 
     html += '<div class="ov-section">';
@@ -483,46 +532,12 @@
     html += '</div>';
 
     html += '<div class="ov-section">';
-    html += '<h3 class="ov-section-title">Upcoming Bookings</h3>';
-    if (upcoming.length === 0) {
-      html += '<div class="ov-empty">No upcoming bookings yet.</div>';
-    } else {
-      html += '<div class="ov-list">';
-      upcoming.slice(0, 5).forEach(function (b) { html += ovBookingRow(b); });
-      html += '</div>';
-    }
-    html += '</div>';
-
-    html += '</div>'; // ov-grid
-
-    // Row 2: Recent Bookings + Recent Leads side by side
-    html += '<div class="ov-grid">';
-
-    html += '<div class="ov-section">';
     html += '<h3 class="ov-section-title">Recent Bookings</h3>';
     if (recentBookings.length === 0) {
       html += '<div class="ov-empty">No bookings yet — they\'ll appear here after customers check out.</div>';
     } else {
       html += '<div class="ov-list">';
       recentBookings.forEach(function (b) { html += ovBookingRow(b); });
-      html += '</div>';
-    }
-    html += '</div>';
-
-    html += '<div class="ov-section">';
-    html += '<h3 class="ov-section-title">Recent Leads</h3>';
-    if (leads.length === 0) {
-      html += '<div class="ov-empty">No leads yet.</div>';
-    } else {
-      html += '<div class="ov-list">';
-      leads.slice(0, 5).forEach(function (l) {
-        var d = l.date ? new Date(l.date).toLocaleDateString() : '—';
-        html += '<div class="ov-row">'
-          + '<div class="ov-row-main">' + esc(l.email) + '</div>'
-          + '<div class="ov-row-meta">' + esc(l.source || 'Website') + ' &middot; ' + d + '</div>'
-          + (l.promoCode ? '<div class="ov-badge ov-badge-promo">' + esc(l.promoCode) + '</div>' : '')
-          + '</div>';
-      });
       html += '</div>';
     }
     html += '</div>';
