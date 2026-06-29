@@ -39,14 +39,16 @@ shape once here so Phase 2.2 reuses it** instead of rebuilding the calendar.
 
 ---
 
-## Phase 1 — Email automation (mostly safe to automate)
+## Phase 1 — Email automation ✅ LIVE (Verified 2026-06-29)
 
-- [ ] 🔒 DB migration: add pickup location/time fields. Order: add column → deploy consuming function → backfill. Do not run ahead of the function.
-- [ ] 🔗 Admin panel: set pickup details per booking (depends on migration)
-- [ ] 🔗 Auto-send pickup instructions 48h before rental (depends on pickup fields)
-- [ ] Return-instructions email (day before return) — template, safe
-- [ ] Welcome/orientation email (immediately after booking) — template, safe
-- [ ] Mid-rental check-in email (multi-day only, day 2) — template, safe
+- [x] 🔒 DB migration: add pickup location/time fields (Migration 20260622000001 applied, fields confirmed via schema query)
+- [x] 🔗 Admin panel: set pickup details per booking (Admin dashboard can view/edit pickup fields)
+- [x] 🔗 Auto-send pickup instructions 48h before rental (send-pickup-reminders cron job active, runs daily 9 AM)
+- [x] Return-instructions email (day before return) (send-return-instructions cron job active, runs daily 10 AM)
+- [x] Welcome/orientation email (immediately after booking) (Booking confirmation sent via webhook immediately after Stripe checkout)
+- [x] Mid-rental check-in email (multi-day only, day 2) (send-mid-rental-checkins cron job active, runs daily 11 AM)
+
+**Verified via get_cron_jobs():** 5 active cron jobs, duplicate pickup system eliminated. All 3 new email functions added to GitHub Actions auto-deploy. Post-rental review request (COMEBACK10 loop) active at 2 PM daily via post-rental-followup cron job.
 
 ---
 
