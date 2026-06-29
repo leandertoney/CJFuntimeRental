@@ -52,3 +52,8 @@ jobs:
         run: supabase functions deploy send-mid-rental-checkins --project-ref yzdtevrwystezhbmgcwn
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Deploy Health Check Function
+        run: supabase functions deploy health-check --project-ref yzdtevrwystezhbmgcwn
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}

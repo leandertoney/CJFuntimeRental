@@ -103,3 +103,8 @@ entrypoint = "./functions/send-return-instructions/index.ts"
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/send-mid-rental-checkins/index.ts"
+
+[functions.health-check]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/health-check/index.ts"
