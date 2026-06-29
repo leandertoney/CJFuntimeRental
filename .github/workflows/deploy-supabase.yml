@@ -37,3 +37,18 @@ jobs:
         run: supabase functions deploy admin --project-ref yzdtevrwystezhbmgcwn
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Deploy Pickup Reminders Function
+        run: supabase functions deploy send-pickup-reminders --project-ref yzdtevrwystezhbmgcwn
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Deploy Return Instructions Function
+        run: supabase functions deploy send-return-instructions --project-ref yzdtevrwystezhbmgcwn
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Deploy Mid-Rental Checkins Function
+        run: supabase functions deploy send-mid-rental-checkins --project-ref yzdtevrwystezhbmgcwn
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}

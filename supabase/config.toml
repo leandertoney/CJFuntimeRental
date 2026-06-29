@@ -88,3 +88,18 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/check-availability/deno.json"
 entrypoint = "./functions/check-availability/index.ts"
+
+[functions.send-pickup-reminders]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/send-pickup-reminders/index.ts"
+
+[functions.send-return-instructions]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/send-return-instructions/index.ts"
+
+[functions.send-mid-rental-checkins]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/send-mid-rental-checkins/index.ts"
