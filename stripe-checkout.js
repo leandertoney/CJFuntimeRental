@@ -3,13 +3,13 @@
  *
  * Handles the 3-step booking modal:
  *   Step 1 — Vehicle selection
- *   Step 2 — Rental type (hourly / 9hr / 24hr / multi-day) + delivery options
+ *   Step 2 — Rental type (hourly / 10hr / 24hr / multi-day) + delivery options
  *   Step 3 — Order summary + Stripe checkout
  *
- * Pricing model (v2):
- *   Hourly:    $30/hr, 3-hour minimum (all vehicles)
- *   9 hours:   Slingshots $175, Can-Am $160
- *   24 hours:  Slingshots $220, Can-Am $200
+ * Pricing model (v3 - June 2026):
+ *   Hourly:    $35/hr, 3-hour minimum (all vehicles)
+ *   10 hours:  $180 (all vehicles)
+ *   24 hours:  $250 (all vehicles)
  *   Multi-day: Tiered per-day rates (2-3d, 4-6d, 7+d)
  *   Delivery:  $50 each way within 30 mi of Lancaster
  *
@@ -24,14 +24,14 @@
 
   // ── Default pricing — overridable via window.SITE_CONFIG.pricing ───────────
   var PRICING = {
-    hourlyRate: 30,
+    hourlyRate: 35,
     hourlyMin: 3,
-    ninehrRate: { slingshot: 175, canam: 160 },
-    dailyRate:  { slingshot: 220, canam: 200 },
+    tenhrRate: { slingshot: 180, canam: 180 },
+    dailyRate:  { slingshot: 250, canam: 250 },
     multiDay: [
-      { minDays: 7, label: 'Weekly rate',  slingshot: 165, canam: 150, enabled: true },
-      { minDays: 4, label: '4–6 day rate', slingshot: 185, canam: 170, enabled: true },
-      { minDays: 2, label: '2–3 day rate', slingshot: 200, canam: 185, enabled: true }
+      { minDays: 7, label: 'Weekly rate',  slingshot: 190, canam: 190, enabled: true },
+      { minDays: 4, label: '4–6 day rate', slingshot: 210, canam: 210, enabled: true },
+      { minDays: 2, label: '2–3 day rate', slingshot: 225, canam: 225, enabled: true }
     ],
     delivery: { enabled: true, fee: 50, maxMiles: 30, locationName: 'Lancaster, PA' }
   };
@@ -39,7 +39,7 @@
   // State
   var state = {
     vehicle: null,       // { key, label, rate, type }
-    durationType: null,  // 'hourly' | '9hr' | '24hr' | 'multi'
+    durationType: null,  // 'hourly' | '10hr' | '24hr' | 'multi'
     hours: 3,
     startDate: null,
     startTime: null,
@@ -171,13 +171,14 @@
         perUnit = p.hourlyRate;
         base = perUnit * state.hours;
         label = state.hours + ' hour' + (state.hours !== 1 ? 's' : '') + ' × $' + perUnit + '/hr';
-        // Calculate what 9hr rate would be for savings comparison
-        fullDayRate = p.ninehrRate[type] || p.ninehrRate.slingshot;
+        // Calculate what 10hr rate would be for savings comparison
+        fullDayRate = p.tenhrRate[type] || p.tenhrRate.slingshot;
         break;
-      case '9hr':
-        base = p.ninehrRate[type] || p.ninehrRate.slingshot;
+      case '10hr':
+      case '9hr': // backward compatibility
+        base = p.tenhrRate[type] || p.tenhrRate.slingshot;
         perUnit = base;
-        label = '9-hour rental';
+        label = '10-hour rental';
         break;
       case '24hr':
         base = p.dailyRate[type] || p.dailyRate.slingshot;
@@ -321,7 +322,8 @@
         if (hourlyWrap) hourlyWrap.style.display = 'block';
         // Hourly already has its own time picker, don't show the general one
         break;
-      case '9hr':
+      case '10hr':
+      case '9hr': // backward compatibility
       case '24hr':
         if (singleWrap) singleWrap.style.display = 'block';
         if (pickupTimeWrap) pickupTimeWrap.style.display = 'block';
@@ -341,14 +343,14 @@
     var type = state.vehicle.type || 'slingshot';
     var hours = state.hours;
     var hourlyTotal = hours * p.hourlyRate;
-    var ninehrRate = p.ninehrRate[type] || p.ninehrRate.slingshot;
+    var tenhrRate = p.tenhrRate[type] || p.tenhrRate.slingshot;
 
-    if (hourlyTotal >= ninehrRate) {
-      nudge.innerHTML = '<strong>Tip:</strong> A 9-hour day is only <strong>$' + ninehrRate + '</strong> — you\'d save <strong>$' + (hourlyTotal - ninehrRate) + '</strong> by upgrading!';
+    if (hourlyTotal >= tenhrRate) {
+      nudge.innerHTML = '<strong>Tip:</strong> A 10-hour day is only <strong>$' + tenhrRate + '</strong> — you\'d save <strong>$' + (hourlyTotal - tenhrRate) + '</strong> by upgrading!';
       nudge.style.display = 'block';
     } else if (hours >= 5) {
-      var diff = ninehrRate - hourlyTotal;
-      nudge.innerHTML = '<strong>Tip:</strong> For just <strong>$' + diff + ' more</strong>, you could get a full 9-hour day ($' + ninehrRate + ')!';
+      var diff = tenhrRate - hourlyTotal;
+      nudge.innerHTML = '<strong>Tip:</strong> For just <strong>$' + diff + ' more</strong>, you could get a full 10-hour day ($' + tenhrRate + ')!';
       nudge.style.display = 'block';
     } else {
       nudge.style.display = 'none';
@@ -388,7 +390,8 @@
     $('bm-summary-rate').textContent = price.label;
     $('bm-summary-rental-type').textContent = {
       hourly: 'Hourly',
-      '9hr': '9-Hour Day',
+      '10hr': '10-Hour Day',
+      '9hr': '10-Hour Day', // backward compatibility
       '24hr': '24-Hour Rental',
       multi: 'Multi-Day'
     }[state.durationType] || '—';
@@ -411,7 +414,8 @@
     var durationText = '—';
     switch (state.durationType) {
       case 'hourly': durationText = state.hours + ' hour' + (state.hours !== 1 ? 's' : ''); break;
-      case '9hr':    durationText = '9 hours'; break;
+      case '10hr':
+      case '9hr':    durationText = '10 hours'; break;
       case '24hr':   durationText = '24 hours'; break;
       case 'multi':
         var days = calcMultiDayDays();
@@ -525,7 +529,9 @@
       var cp = window.SITE_CONFIG.pricing;
       if (cp.hourlyRate)  PRICING.hourlyRate  = cp.hourlyRate;
       if (cp.hourlyMin)   PRICING.hourlyMin   = cp.hourlyMin;
-      if (cp.ninehrRate)  PRICING.ninehrRate   = cp.ninehrRate;
+      // Support both new (tenhrRate) and legacy (ninehrRate) field names
+      if (cp.tenhrRate)   PRICING.tenhrRate   = cp.tenhrRate;
+      else if (cp.ninehrRate) PRICING.tenhrRate = cp.ninehrRate;
       if (cp.dailyRate)   PRICING.dailyRate    = cp.dailyRate;
       if (cp.multiDay)    PRICING.multiDay     = cp.multiDay;
       if (cp.delivery)    PRICING.delivery     = cp.delivery;
@@ -594,7 +600,7 @@
         state.startTime = ($('bm-hourly-start') || {}).value || '09:00';
         state.hours = parseInt(($('bm-hourly-hours') || {}).value, 10) || 3;
 
-      } else if (state.durationType === '9hr' || state.durationType === '24hr') {
+      } else if (state.durationType === '10hr' || state.durationType === '9hr' || state.durationType === '24hr') {
         var startVal = ($('bm-start-date') || {}).value;
         if (!startVal) {
           alert('Please select a pickup date.');
@@ -602,9 +608,9 @@
         }
         state.startDate = startVal;
         state.endDate = startVal;
-        if (state.durationType === '9hr') {
+        if (state.durationType === '10hr' || state.durationType === '9hr') {
           state.startTime = '09:00';
-          state.endTime = '18:00';
+          state.endTime = '19:00'; // 10 hours from 9am
         } else {
           state.startTime = '09:00';
           state.endTime = '09:00';
@@ -626,7 +632,7 @@
         }
         var days = calcMultiDayDays();
         if (days < 2) {
-          alert('Multi-day rentals require at least 2 days. For a single day, choose 9-hour or 24-hour rental.');
+          alert('Multi-day rentals require at least 2 days. For a single day, choose 10-hour or 24-hour rental.');
           return;
         }
         state.startDate = ms;
