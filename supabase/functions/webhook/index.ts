@@ -1,5 +1,14 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { Resend } from 'https://esm.sh/resend@2';
+import * as Sentry from 'https://deno.land/x/sentry/index.mjs';
+
+Sentry.init({
+  dsn: "https://127229b369d63b36820bcbf33816bad0@o4511654459801600.ingest.us.sentry.io/4511654476251136",
+  environment: "production",
+  tracesSampleRate: 0.2,
+  sendDefaultPii: false,
+  release: Deno.env.get('RELEASE_VERSION') || 'unknown'
+});
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
@@ -54,10 +63,11 @@ function baseEmail(content: string) {
 }
 
 Deno.serve(async (req) => {
-  const body = await req.text();
-  const sig = req.headers.get('stripe-signature') || '';
-  const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
-  const stripeKey = Deno.env.get('STRIPE_SECRET_KEY')!;
+  try {
+    const body = await req.text();
+    const sig = req.headers.get('stripe-signature') || '';
+    const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
+    const stripeKey = Deno.env.get('STRIPE_SECRET_KEY')!;
 
   // Verify Stripe webhook signature
   if (webhookSecret) {
@@ -169,4 +179,12 @@ Deno.serve(async (req) => {
   }
 
   return new Response(JSON.stringify({ received: true }), { headers: { 'Content-Type': 'application/json' } });
+  } catch (error) {
+    Sentry.captureException(error);
+    await Sentry.flush(2000);
+    return new Response(JSON.stringify({ error: 'Webhook processing failed' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
 });

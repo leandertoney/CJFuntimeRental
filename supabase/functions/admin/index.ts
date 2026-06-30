@@ -1,5 +1,14 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { Resend } from 'https://esm.sh/resend@2';
+import * as Sentry from 'https://deno.land/x/sentry/index.mjs';
+
+Sentry.init({
+  dsn: "https://127229b369d63b36820bcbf33816bad0@o4511654459801600.ingest.us.sentry.io/4511654476251136",
+  environment: "production",
+  tracesSampleRate: 0.2,
+  sendDefaultPii: false,
+  release: Deno.env.get('RELEASE_VERSION') || 'unknown'
+});
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -214,10 +223,11 @@ async function executeToolCall(name: string, input: Record<string, unknown>) {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
+  try {
+    if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
 
-  const url = new URL(req.url);
-  const path = url.pathname.replace(/^\/admin/, '');
+    const url = new URL(req.url);
+    const path = url.pathname.replace(/^\/admin/, '');
 
   // ── Login (public) ─────────────────────────────────────────────────────────
   if (path === '/login' && req.method === 'POST') {
@@ -385,4 +395,9 @@ Deno.serve(async (req) => {
   }
 
   return json({ error: 'Not found' }, 404);
+  } catch (error) {
+    Sentry.captureException(error);
+    await Sentry.flush(2000);
+    return json({ error: 'Internal server error' }, 500);
+  }
 });

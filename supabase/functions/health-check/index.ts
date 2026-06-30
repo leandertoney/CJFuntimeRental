@@ -12,6 +12,15 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import * as Sentry from 'https://deno.land/x/sentry/index.mjs';
+
+Sentry.init({
+  dsn: "https://127229b369d63b36820bcbf33816bad0@o4511654459801600.ingest.us.sentry.io/4511654476251136",
+  environment: "production",
+  tracesSampleRate: 0.2,
+  sendDefaultPii: false,
+  release: Deno.env.get('RELEASE_VERSION') || 'unknown'
+});
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -204,6 +213,8 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Health check error:', error);
+    Sentry.captureException(error);
+    await Sentry.flush(2000);
 
     const criticalStatus: HealthStatus = {
       timestamp: new Date().toISOString(),

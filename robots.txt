@@ -3,4 +3,15 @@ Allow: /
 Disallow: /admin
 Disallow: /api/
 
+# Block legacy spam/hack paths (these URLs no longer exist)
+Disallow: /news/
+Disallow: /blog3/
+Disallow: /*index.php
+Disallow: /2014/
+Disallow: /2015/
+Disallow: /2016/
+Disallow: /2019/
+Disallow: /2020/
+Disallow: /2022/
+
 Sitemap: https://cjfuntimerentals.com/sitemap.xml

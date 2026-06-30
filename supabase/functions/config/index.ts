@@ -1,4 +1,13 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import * as Sentry from 'https://deno.land/x/sentry/index.mjs';
+
+Sentry.init({
+  dsn: "https://127229b369d63b36820bcbf33816bad0@o4511654459801600.ingest.us.sentry.io/4511654476251136",
+  environment: "production",
+  tracesSampleRate: 0.2,
+  sendDefaultPii: false,
+  release: Deno.env.get('RELEASE_VERSION') || 'unknown'
+});
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
@@ -69,6 +78,8 @@ Deno.serve(async (req) => {
       }
     });
   } catch (err) {
+    Sentry.captureException(err);
+    await Sentry.flush(2000);
     return new Response('window.SITE_CONFIG = null;', {
       headers: { ...CORS, 'Content-Type': 'application/javascript' }
     });
