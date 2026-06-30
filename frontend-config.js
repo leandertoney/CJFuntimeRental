@@ -52,7 +52,7 @@
       // Helper: get the display "from" price for a vehicle
       function getFromPrice(v) {
         var type = v.type || 'slingshot';
-        if (pricing.ninehrRate && pricing.ninehrRate[type]) return pricing.ninehrRate[type];
+        if (pricing.tenhrRate && pricing.tenhrRate[type]) return pricing.tenhrRate[type];
         return v.ratePerDay || 175;
       }
 
@@ -73,7 +73,7 @@
             + '<p class="fleet-card-specs">' + escHtml(v.specs || '') + '</p>'
             + '</div>'
             + '<div class="fleet-card-bottom">'
-            + '<div class="fleet-card-price">from $' + fromPrice + '<span>/ 9hrs</span></div>'
+            + '<div class="fleet-card-price">from $' + fromPrice + '<span>/ 10hrs</span></div>'
             + '<div style="display:flex;gap:8px;width:100%;">'
             + '<button class="fleet-card-book" data-vehicle-book="' + escHtml(key) + '" style="flex:1">Book Now</button>'
             + '<button class="fleet-card-book" data-vehicle-detail="' + escHtml(key) + '" style="flex:1;background:transparent;border:1px solid var(--border)">Details</button>'
