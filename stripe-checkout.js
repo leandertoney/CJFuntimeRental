@@ -103,7 +103,30 @@
       }
     }
 
-    // Check blocked dates
+    // Check per-vehicle blocks
+    var vehicleBlocks = (window.SITE_CONFIG && window.SITE_CONFIG.vehicleBlocks) || [];
+    if (vehicleBlocks.length > 0) {
+      for (var i = 0; i < vehicleBlocks.length; i++) {
+        var block = vehicleBlocks[i];
+
+        // Only check blocks for this specific vehicle
+        if (block.vehicle_key !== vehicleKey && !vehicleKey.includes(block.vehicle_key)) continue;
+
+        var blockStart = new Date(block.start_date + 'T00:00:00');
+        var blockEnd = new Date(block.end_date + 'T23:59:59');
+
+        // Check for overlap
+        if (reqStart <= blockEnd && reqEnd >= blockStart) {
+          var reasonMsg = block.reason ? ' (' + block.reason + ')' : '';
+          return {
+            available: false,
+            message: 'This vehicle is unavailable from ' + formatDate(block.start_date) + ' to ' + formatDate(block.end_date) + reasonMsg + '. Please choose different dates or try another vehicle.'
+          };
+        }
+      }
+    }
+
+    // Check global blocked dates (fleet-wide holidays, closures)
     var blocked = (window.SITE_CONFIG && window.SITE_CONFIG.blockedDates) || [];
     if (blocked.length > 0) {
       for (var d = new Date(reqStart); d <= reqEnd; d.setDate(d.getDate() + 1)) {

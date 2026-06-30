@@ -988,6 +988,10 @@
 
   // ── Calendar panel ───────────────────────────────────────────
   function renderCalendarPanel() {
+    // Initialize per-vehicle blocks section
+    renderVehicleBlocksPanel();
+
+    // Initialize fleet-wide calendar
     renderCalendar();
     renderBlockedList();
     document.getElementById('cal-prev').onclick = function () {
@@ -1000,6 +1004,150 @@
       if (calMonth > 11) { calMonth = 0; calYear++; }
       renderCalendar();
     };
+  }
+
+  // ── Per-Vehicle Blocking ─────────────────────────────────────────────────
+  var vehicleBlocks = [];
+
+  function renderVehicleBlocksPanel() {
+    // Populate vehicle dropdown
+    var vehSelect = document.getElementById('vblock-vehicle');
+    var html = '<option value="">Select vehicle...</option>';
+    Object.keys(cfg.vehicles || {}).forEach(function (key) {
+      var v = cfg.vehicles[key];
+      html += '<option value="' + key + '">' + (v.name || key) + '</option>';
+    });
+    vehSelect.innerHTML = html;
+
+    // Load existing blocks
+    loadVehicleBlocks();
+
+    // Bind add button
+    document.getElementById('vblock-add-btn').onclick = function () {
+      var vehicle = document.getElementById('vblock-vehicle').value;
+      var start = document.getElementById('vblock-start').value;
+      var end = document.getElementById('vblock-end').value;
+      var reason = document.getElementById('vblock-reason').value;
+
+      if (!vehicle || !start || !end) {
+        alert('Please select a vehicle and enter start/end dates');
+        return;
+      }
+
+      if (start > end) {
+        alert('End date must be after start date');
+        return;
+      }
+
+      addVehicleBlock(vehicle, start, end, reason);
+    };
+  }
+
+  function loadVehicleBlocks() {
+    apiFetch(ADMIN_API + '/vehicle-blocks')
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        vehicleBlocks = data.blocks || [];
+        renderVehicleBlocksList();
+      })
+      .catch(function (err) {
+        console.error('Failed to load vehicle blocks:', err);
+      });
+  }
+
+  function renderVehicleBlocksList() {
+    var container = document.getElementById('vehicle-blocks-list');
+
+    if (!vehicleBlocks.length) {
+      container.innerHTML = '<p style="color:#999;font-size:14px">No per-vehicle blocks yet. Add one above to block a specific vehicle while leaving others bookable.</p>';
+      return;
+    }
+
+    // Group by vehicle
+    var grouped = {};
+    vehicleBlocks.forEach(function (block) {
+      if (!grouped[block.vehicle_key]) grouped[block.vehicle_key] = [];
+      grouped[block.vehicle_key].push(block);
+    });
+
+    var html = '';
+    Object.keys(grouped).forEach(function (vkey) {
+      var vname = (cfg.vehicles && cfg.vehicles[vkey] && cfg.vehicles[vkey].name) || vkey;
+      html += '<div style="margin-bottom:24px">';
+      html += '<h4 style="font-weight:600;font-size:14px;margin-bottom:12px;color:#333">' + vname + '</h4>';
+      html += '<div style="display:flex;flex-direction:column;gap:8px">';
+
+      grouped[vkey].forEach(function (block) {
+        var reasonText = block.reason ? ' — ' + block.reason : '';
+        html += '<div style="display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid #ddd;border-radius:6px;padding:12px 16px">';
+        html += '<div style="font-size:13px">';
+        html += '<strong>' + block.start_date + '</strong> to <strong>' + block.end_date + '</strong>';
+        html += '<span style="color:#666">' + reasonText + '</span>';
+        html += '</div>';
+        html += '<button class="vblock-delete" data-id="' + block.id + '" style="background:#dc3545;color:#fff;border:none;border-radius:4px;padding:6px 12px;font-size:12px;cursor:pointer;font-weight:600">Remove</button>';
+        html += '</div>';
+      });
+
+      html += '</div></div>';
+    });
+
+    container.innerHTML = html;
+
+    // Bind delete buttons
+    container.querySelectorAll('.vblock-delete').forEach(function (btn) {
+      btn.onclick = function () {
+        var id = this.getAttribute('data-id');
+        if (confirm('Remove this block?')) {
+          deleteVehicleBlock(id);
+        }
+      };
+    });
+  }
+
+  function addVehicleBlock(vehicleKey, startDate, endDate, reason) {
+    apiFetch(ADMIN_API + '/vehicle-blocks', {
+      method: 'POST',
+      body: JSON.stringify({
+        vehicle_key: vehicleKey,
+        start_date: startDate,
+        end_date: endDate,
+        reason: reason || null
+      })
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      if (data.ok) {
+        // Clear form
+        document.getElementById('vblock-vehicle').value = '';
+        document.getElementById('vblock-start').value = '';
+        document.getElementById('vblock-end').value = '';
+        document.getElementById('vblock-reason').value = '';
+        // Reload list
+        loadVehicleBlocks();
+      } else {
+        alert('Failed to add block: ' + (data.error || 'Unknown error'));
+      }
+    })
+    .catch(function (err) {
+      alert('Failed to add block: ' + err.message);
+    });
+  }
+
+  function deleteVehicleBlock(id) {
+    apiFetch(ADMIN_API + '/vehicle-blocks/' + id, {
+      method: 'DELETE'
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      if (data.ok) {
+        loadVehicleBlocks();
+      } else {
+        alert('Failed to delete block: ' + (data.error || 'Unknown error'));
+      }
+    })
+    .catch(function (err) {
+      alert('Failed to delete block: ' + err.message);
+    });
   }
 
   function renderCalendar() {

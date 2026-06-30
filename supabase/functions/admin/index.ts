@@ -394,6 +394,59 @@ Deno.serve(async (req) => {
     return json({ reply, suggestions });
   }
 
+  // ── GET /vehicle-blocks — Fetch all per-vehicle blocks ──────────────────
+  if (path === '/vehicle-blocks' && req.method === 'GET') {
+    const { data, error } = await supabase
+      .from('vehicle_blocks')
+      .select('*')
+      .order('start_date', { ascending: true });
+
+    if (error) return json({ error: error.message }, 500);
+    return json({ blocks: data || [] });
+  }
+
+  // ── POST /vehicle-blocks — Create new vehicle block ─────────────────────
+  if (path === '/vehicle-blocks' && req.method === 'POST') {
+    const body = await req.json();
+    const { vehicle_key, start_date, end_date, reason } = body;
+
+    if (!vehicle_key || !start_date || !end_date) {
+      return json({ error: 'vehicle_key, start_date, and end_date are required' }, 400);
+    }
+
+    const user = await verifyAuth(req);
+    const created_by = user?.email || 'unknown';
+
+    const { data, error } = await supabase
+      .from('vehicle_blocks')
+      .insert({
+        vehicle_key,
+        start_date,
+        end_date,
+        reason: reason || null,
+        created_by
+      })
+      .select()
+      .single();
+
+    if (error) return json({ error: error.message }, 500);
+    return json({ ok: true, block: data });
+  }
+
+  // ── DELETE /vehicle-blocks/:id — Remove vehicle block ───────────────────
+  if (path.startsWith('/vehicle-blocks/') && req.method === 'DELETE') {
+    const id = path.split('/')[2];
+    if (!id) return json({ error: 'Block ID required' }, 400);
+
+    const { error } = await supabase
+      .from('vehicle_blocks')
+      .delete()
+      .eq('id', id);
+
+    if (error) return json({ error: error.message }, 500);
+    return json({ ok: true });
+  }
+
   return json({ error: 'Not found' }, 404);
   } catch (error) {
     Sentry.captureException(error);

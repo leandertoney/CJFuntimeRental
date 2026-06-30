@@ -56,6 +56,17 @@ Deno.serve(async (req) => {
       if (bookings && bookings.length > 0) upcomingBookings = bookings;
     } catch { /* no bookings */ }
 
+    // Fetch vehicle blocks for per-vehicle availability
+    let vehicleBlocks: unknown[] = [];
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const { data: blocks } = await supabase
+        .from('vehicle_blocks')
+        .select('vehicle_key, start_date, end_date, reason')
+        .gte('end_date', today);
+      if (blocks && blocks.length > 0) vehicleBlocks = blocks;
+    } catch { /* no vehicle blocks yet */ }
+
     const pub = {
       sections:      cfg.sections,
       sectionOrder:  cfg.sectionOrder,
@@ -66,7 +77,8 @@ Deno.serve(async (req) => {
       discounts:     cfg.discounts,
       blockedDates:  cfg.blockedDates,
       googleReviews: googleReviews,
-      bookings:      upcomingBookings
+      bookings:      upcomingBookings,
+      vehicleBlocks: vehicleBlocks
     };
 
     const js = 'window.SITE_CONFIG = ' + JSON.stringify(pub) + ';';
