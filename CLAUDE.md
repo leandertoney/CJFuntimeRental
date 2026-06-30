@@ -1,4 +1,4 @@
-# CJ Funtime Rentals - Project State (Updated 2026-06-29)
+# CJ Funtime Rentals - Project State (Updated 2026-06-30)
 
 ## Critical Information
 
@@ -28,13 +28,18 @@ The `cron.job` table exists in the `cron` schema and is not accessible via Supab
   - `pickup_instructions` (TEXT)
 - Migration: `20260622000001_email_automation_fields.sql` applied
 
-### Pricing Configuration ✅ CONFIRMED
-Live pricing in `site_config` table matches expected values:
-- **Slingshot**: 9hr $175, 24hr $220
-- **Can-Am**: 9hr $160, 24hr $200
-- **Hourly**: $30/hr (3hr minimum)
-- **Multi-day tiers**: Configured correctly
+### Pricing Configuration ✅ CONFIRMED (Updated 2026-06-30)
+Live pricing in `site_config` table:
+- **Slingshot**: 10hr $180, 24hr $250
+- **Can-Am**: 10hr $180, 24hr $250
+- **Hourly**: $35/hr (3hr minimum)
+- **Multi-day tiers**: Tiered discounts (10-24% off depending on duration)
 - **Delivery**: $50 within 30 miles
+
+**Previous pricing** (before June 30):
+- Slingshot: 9hr $175, 24hr $220
+- Can-Am: 9hr $160, 24hr $200
+- Hourly: $30/hr
 
 ### Email Edge Functions ✅ CONFIRMED DEPLOYED
 All 3 scheduled email functions are LIVE and responding:
@@ -96,20 +101,29 @@ Items requiring manual confirmation:
 - Inline calendar deployment status unknown
 
 ### Phase 1: Email Automation
-**Status:** ✅ LIVE (Verified 2026-06-29)
+**Status:** ✅ LIVE (Deployed 2026-06-30 at 12:25pm ET)
+
+**IMPORTANT - Deployment Timeline:**
+- **June 22, 2026:** Email functions committed locally with message "pending deployment"
+- **June 22-29:** Commits remained local, NOT pushed to GitHub
+- **June 30, 12:25pm ET:** All commits pushed, GitHub Actions deployed functions
+- **Actual live date:** June 30, 2026 (NOT June 29 as previously documented)
+- **Impact:** 8-day deployment delay. No automated emails sent June 22-29.
 
 **✅ Completed:**
 - 3 email Edge Functions deployed and responding (send-pickup-reminders, send-return-instructions, send-mid-rental-checkins)
 - All 3 functions added to GitHub Actions auto-deploy workflow
 - All 3 functions added to supabase/config.toml
-- pg_cron jobs verified active via get_cron_jobs() helper function
+- pg_cron jobs created and active
 - Duplicate pickup reminder eliminated (old system unscheduled)
 - Pickup time fields deployed to database
 - Booking confirmation emails working (via webhook)
-- Migration 20260622000003_email_cron_jobs.sql confirmed applied
+- Migration 20260622000003_email_cron_jobs.sql applied
+- Sentry error monitoring added to all 8 Edge Functions (deployed June 30)
 
-**❌ Not done:**
-- No monitoring/logging for scheduled emails (no failures logged, no send confirmations)
+**✅ Now done:**
+- Monitoring via Sentry (1.0 error sample rate, 0.2 trace sample rate)
+- Health check system runs every 15 minutes
 
 ## Deployment Workflow
 
@@ -197,6 +211,61 @@ Items requiring manual confirmation:
 4. **Monitor email sends** - Add logging for scheduled emails
 5. **Follow up with James Houck** - Confirm pickup time received via email reply
 
+## Deployment Verification Protocol (MANDATORY)
+
+**CRITICAL:** A task is NOT done until code is pushed to GitHub AND verified live on the domain.
+
+### Every Code/Config Change MUST Include:
+
+1. **Commit locally** with clear, descriptive message
+2. **Push to GitHub IMMEDIATELY:** `git push origin main`
+   - Do NOT let commits pile up locally for days
+   - Do NOT wait to push multiple changes at once (unless explicitly planning a batch deploy)
+3. **Verify deployment succeeded** (wait 2-3 minutes for auto-deploy):
+   ```bash
+   # For static site changes (Netlify):
+   curl -I https://cjfuntimerentals.com/[changed-path]
+
+   # For Edge Functions (Supabase via GitHub Actions):
+   # Check GitHub Actions tab for deploy status
+   # OR list functions: supabase functions list --project-ref yzdtevrwystezhbmgcwn
+
+   # For 410 redirects:
+   curl -I https://cjfuntimerentals.com/news/test  # Should return 410
+
+   # For security headers:
+   curl -I https://cjfuntimerentals.com | grep X-Frame-Options  # Should show DENY
+
+   # For pricing changes:
+   curl -s https://cjfuntimerentals.com/config | # Check pricing in config endpoint
+   ```
+4. **Document verification** in commit message, session notes, or CLAUDE.md
+
+### "Committed Locally" ≠ "Deployed"
+
+**If commits sit unpushed, the following happens:**
+- ❌ Netlify serves old version (static site not updated)
+- ❌ GitHub Actions can't run (Edge Functions not deployed)
+- ❌ Changes don't reach production customers
+- ❌ Documentation becomes incorrect (claims things are live when they're not)
+- ❌ Deployment drift increases (harder to track what's actually live)
+
+### Red Flags - When to Push Immediately:
+
+- ⚠️ "Pending deployment" in commit messages → Push immediately OR mark task as incomplete
+- ⚠️ Multiple days between commit and push → High risk of deployment drift
+- ⚠️ No live URL verification after commit → Can't confirm changes took effect
+- ⚠️ CLAUDE.md claims something is "✅ LIVE" without curl/test verification → Likely incorrect
+
+### Recent Example of Deployment Drift (June 2026):
+
+**What happened:** Email automation functions were committed June 22 with message "pending deployment" but not pushed to GitHub until June 30 (8 days later). During that time:
+- Documentation claimed email automation was "✅ LIVE (Verified 2026-06-29)"
+- Reality: Functions only deployed June 30, 2026
+- Impact: No automated emails sent for 8 days, customers didn't receive scheduled reminders
+
+**Lesson:** Verify deployment with actual tests, not assumptions. Push to GitHub immediately after committing.
+
 ## Gotchas & Lessons Learned
 
 1. **Date Format Matters**: Database expects ISO (YYYY-MM-DD), not formatted strings
@@ -204,3 +273,5 @@ Items requiring manual confirmation:
 3. **Schema Access**: `cron.job` table not exposed via PostgREST
 4. **Connection Strings**: Supabase pooler requires specific format, direct connection attempts failed
 5. **Gating Model**: Separate READ (just do it) from WRITE (get approval) operations
+6. **Deployment Drift**: Commits left unpushed create false "live" status. Always push immediately and verify.
+7. **Config Changes**: Database pricing/config changes need audit trail. Use migrations or commit scripts, not manual dashboard edits.

@@ -12,20 +12,20 @@
     "leadCapture": { "visible": true }
   },
   "pricing": {
-    "hourlyRate": 30,
+    "hourlyRate": 35,
     "hourlyMin": 3,
-    "ninehrRate": {
-      "slingshot": 175,
-      "canam": 160
+    "tenhrRate": {
+      "slingshot": 180,
+      "canam": 180
     },
     "dailyRate": {
-      "slingshot": 220,
-      "canam": 200
+      "slingshot": 250,
+      "canam": 250
     },
     "multiDay": [
-      { "minDays": 7, "label": "Weekly rate",  "slingshot": 165, "canam": 150, "enabled": true },
-      { "minDays": 4, "label": "4–6 day rate", "slingshot": 185, "canam": 170, "enabled": true },
-      { "minDays": 2, "label": "2–3 day rate", "slingshot": 200, "canam": 185, "enabled": true }
+      { "minDays": 7, "label": "Weekly rate",  "slingshot": 190, "canam": 190, "enabled": true },
+      { "minDays": 4, "label": "4–6 day rate", "slingshot": 210, "canam": 210, "enabled": true },
+      { "minDays": 2, "label": "2–3 day rate", "slingshot": 225, "canam": 225, "enabled": true }
     ],
     "delivery": {
       "enabled": true,
@@ -69,7 +69,7 @@
     },
     "fleet": {
       "headline": "Choose<br>Your Ride",
-      "subtext":  "Three vehicles. All 3-wheel. All open-air. Hourly, 9-hour, and 24-hour rentals available."
+      "subtext":  "Three vehicles. All 3-wheel. All open-air. Hourly, 10-hour, and 24-hour rentals available."
     },
     "how": {
       "headline":   "Ready in 3 Steps",
@@ -112,7 +112,7 @@
     {
       "id":       "faq-2",
       "question": "How much does it cost to rent a Polaris Slingshot near me?",
-      "answer":   "Slingshots start at $30/hour (3-hour minimum), $175 for a 9-hour day, or $220 for a full 24-hour rental. Multi-day rentals get discounted daily rates — the longer you rent, the more you save. The Can-Am Spyder F3 starts at $160 for 9 hours. No hidden fees, book directly on this page.",
+      "answer":   "Slingshots start at $35/hour (3-hour minimum), $180 for 10 hours, or $250 for a full 24-hour rental. Multi-day rentals get discounted daily rates — the longer you rent, the more you save. The Can-Am Spyder F3 starts at $180 for 10 hours. No hidden fees, book directly on this page.",
       "visible":  true
     },
     {
