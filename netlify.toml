@@ -77,6 +77,27 @@
   to   = "/booking-success.html"
   status = 200
 
+# Vehicle detail pages (must come before year-based 410 redirects)
+[[redirects]]
+  from = "/2024-orange-slingshot-autodrive"
+  to = "/vehicles/2024-orange-slingshot-autodrive.html"
+  status = 200
+
+[[redirects]]
+  from = "/2016-red-slingshot-manual"
+  to = "/vehicles/2016-red-slingshot-manual.html"
+  status = 200
+
+[[redirects]]
+  from = "/2016-gray-slingshot-manual"
+  to = "/vehicles/2016-gray-slingshot-manual.html"
+  status = 200
+
+[[redirects]]
+  from = "/2021-canam-spyder-f3"
+  to = "/vehicles/2021-canam-spyder-f3.html"
+  status = 200
+
 # Return 410 (Gone) for legacy spam/hack URLs to signal permanent removal to search engines
 [[redirects]]
   from = "/news/*"
