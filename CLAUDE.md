@@ -125,6 +125,49 @@ Items requiring manual confirmation:
 - Monitoring via Sentry (1.0 error sample rate, 0.2 trace sample rate)
 - Health check system runs every 15 minutes
 
+### Phase 2: ID Upload + Rental Agreement (Contract)
+**Status:** ⚠️ BUILT ON BRANCH `claude/id-upload-contract-booking-j47jjo` — NOT DEPLOYED (gated: PII + live booking)
+
+Handles government-ID upload (front+back) and a rental-agreement acceptance step in
+the booking flow. Upload + store for **manual** review only — NOT automated validation.
+
+**Security model (the important part):**
+- Private Supabase Storage bucket `booking-ids` (`public = false`, 10 MB/file,
+  jpeg/png/webp/pdf). **No Storage RLS policies for anon/authenticated** → those roles
+  get zero access. Only `service_role` (server-side Edge Functions) can read/write.
+- Browser NEVER touches Storage directly. Uploads go through the `id-upload` Edge
+  Function (service role); admin views via short-lived **signed URLs** minted by the
+  admin function (admin-token gated).
+
+**Flow:** upload happens BEFORE payment (booking row doesn't exist yet). A client
+`bookingRef` (UUID) links the upload; it rides Stripe metadata; the webhook copies
+`id_ref` + agreement snapshot onto the booking and sets `requires_canam_license_check`.
+
+**Can-Am rule:** upload step states "driver's license required (state ID not accepted)"
+and flags the booking. Admin shows a **⚠️ Verify M endorsement** badge + a "confirm M
+endorsement" button. The system does NOT read the license — manual check only.
+
+**Hard gate:** `checkout` rejects any session without a completed `id_uploads` row for
+the `bookingRef` (fail-closed; also neutralizes the legacy modal path).
+
+**Files:** migration `20260701000001_id_uploads_and_contract.sql`; `functions/id-upload/`;
+`functions/_shared/rental-agreement.ts` (swap in the real contract here + bump version;
+mirror the copy in `checkout.html`); edits to `checkout`, `webhook`, `admin` functions,
+`admin/*`, `checkout.html`, `booking-widget.js/.css`, `booking-success.html`,
+`config.toml`, deploy workflow.
+
+**GO-LIVE (still gated — requires explicit approval):**
+1. Apply the migration (creates the private bucket + tables).
+2. Deploy functions (`id-upload` is added to GitHub Actions).
+3. **Deploy ordering to avoid a checkout-outage window:** ship the new `checkout.html`
+   (Netlify) and `id-upload` BEFORE the gated `checkout` function — old cached
+   `checkout.html` sends no `bookingRef` and the gated `checkout` would reject it.
+4. **Prove anon cannot read an ID:** upload a test ID, then
+   `curl -i https://yzdtevrwystezhbmgcwn.supabase.co/storage/v1/object/public/booking-ids/<ref>/front.jpg`
+   → expect 400/404; and the authenticated object path with the anon apikey → 403.
+   Then confirm the admin signed URL returns 200.
+5. Demo the Can-Am **Verify M endorsement** flag/button in admin.
+
 ## Deployment Workflow
 
 ### Edge Functions Auto-Deployed (via GitHub Actions - Updated 2026-06-29)

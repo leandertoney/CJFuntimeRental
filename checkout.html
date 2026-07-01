@@ -37,7 +37,20 @@
     .detail-label { color:var(--muted); }
     .error-message { background:rgba(255,77,0,0.1); border:1px solid rgba(255,77,0,0.3); border-radius:8px; padding:16px; margin-bottom:24px; color:#ff6b4d; }
     .loading { text-align:center; padding:48px; color:var(--muted); }
-    @media(max-width:768px) { .checkout-grid{grid-template-columns:1fr;} }
+    /* ID upload */
+    .id-help { font-size:14px; color:var(--white); line-height:1.6; margin-bottom:12px; }
+    .id-uploads { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:8px; }
+    .id-drop { display:flex; flex-direction:column; gap:8px; border:1px dashed rgba(255,255,255,0.2); border-radius:10px; padding:16px; cursor:pointer; transition:border-color 0.2s; }
+    .id-drop:hover { border-color:var(--orange); }
+    .id-drop.filled { border-style:solid; border-color:#4ade80; }
+    .id-drop-label { font-weight:600; font-size:14px; }
+    .id-drop input[type=file] { font-size:12px; color:var(--muted); }
+    .id-file-name { font-size:12px; color:var(--muted); word-break:break-all; }
+    /* Agreement */
+    .agreement-box { max-height:200px; overflow-y:auto; white-space:pre-wrap; font-size:13px; line-height:1.6; color:var(--muted); background:var(--dark); border:1px solid var(--border); border-radius:8px; padding:16px; margin-bottom:14px; }
+    .agreement-check { display:flex; align-items:flex-start; gap:10px; font-size:14px; cursor:pointer; }
+    .agreement-check input { margin-top:3px; width:18px; height:18px; flex-shrink:0; accent-color:var(--orange); }
+    @media(max-width:768px) { .checkout-grid{grid-template-columns:1fr;} .id-uploads{grid-template-columns:1fr;} }
   </style>
 </head>
 <body>
@@ -60,6 +73,34 @@
       'use strict';
 
       var SUPABASE_FUNCTIONS = 'https://yzdtevrwystezhbmgcwn.supabase.co/functions/v1';
+
+      // Rental agreement — PLACEHOLDER. Keep in sync with the authoritative copy
+      // in supabase/functions/_shared/rental-agreement.ts (that server copy is
+      // what gets stored on the booking). When the owner's real contract is
+      // ready, update both. Bump the version string in lockstep.
+      var AGREEMENT_VERSION = 'placeholder-v1';
+      var AGREEMENT_TEXT = [
+        "CJ'S FUN TIME RENTAL — RENTAL AGREEMENT (PLACEHOLDER)",
+        "",
+        "This is placeholder rental-agreement text and is not the final contract. By checking the box and completing your booking you acknowledge and agree to the following:",
+        "",
+        "1. Valid ID. You will present a valid government-issued photo ID at pickup that matches the ID uploaded with this booking. For the Can-Am Spyder you must hold a valid driver's license with a motorcycle (M) endorsement; it will be checked in person before the vehicle is released.",
+        "",
+        "2. Eligible operator. You are the person who will operate the vehicle, you are legally permitted to drive it, and you will obey all traffic laws.",
+        "",
+        "3. Condition & return. You will return the vehicle on time and in the same condition it was provided, normal wear excepted.",
+        "",
+        "4. Responsibility. You accept responsibility for damage, loss, citations, or tolls incurred during your rental period, subject to the final signed agreement provided at pickup.",
+        "",
+        "5. Final agreement. A complete rental agreement will be provided for signature at pickup. This online acknowledgment does not replace that document.",
+        "",
+        "CJ's Fun Time Rental · Lancaster, PA"
+      ].join('\n');
+
+      function esc(s) {
+        return String(s == null ? '' : s)
+          .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      }
 
       // Get booking data from sessionStorage
       var bookingData = sessionStorage.getItem('cjfr_booking_data');
@@ -134,6 +175,37 @@
         html += '</div>';
       }
 
+      // ── ID upload (required for all bookings) ───────────────────────────────
+      var isCanam = (bookingData.vehicleType === 'canam') ||
+                    (bookingData.vehicleKey || '').toLowerCase().indexOf('canam') !== -1 ||
+                    (bookingData.vehicleKey || '').toLowerCase().indexOf('spyder') !== -1;
+
+      var idRuleText = isCanam
+        ? "For the Can-Am Spyder you must upload a valid <strong>driver's license</strong> — a state ID card is <strong>not</strong> accepted. Your license must carry a motorcycle (M) endorsement, which Chris will confirm in person at pickup."
+        : "Upload any valid government <strong>photo ID</strong> — a driver's license or a state ID card. No passport needed.";
+
+      html += '<div class="details-section" id="id-upload-section">';
+      html += '<h2>Upload Your ID</h2>';
+      html += '<p class="id-help">' + idRuleText + '</p>';
+      html += '<p class="id-help" style="color:var(--muted);">Please photograph the <strong>front and back</strong>. Accepted files: JPG, PNG, WEBP, or PDF (max 10&nbsp;MB each). Your ID is stored securely for pickup verification only.</p>';
+      html += '<div class="id-uploads">';
+      html += '  <label class="id-drop"><span class="id-drop-label">Front of ID</span>'
+            + '<input type="file" id="id-front" accept="image/*,application/pdf">'
+            + '<span class="id-file-name" id="id-front-name">No file chosen</span></label>';
+      html += '  <label class="id-drop"><span class="id-drop-label">Back of ID</span>'
+            + '<input type="file" id="id-back" accept="image/*,application/pdf">'
+            + '<span class="id-file-name" id="id-back-name">No file chosen</span></label>';
+      html += '</div>';
+      html += '</div>';
+
+      // ── Rental agreement (contract) ─────────────────────────────────────────
+      html += '<div class="details-section" id="agreement-section">';
+      html += '<h2>Rental Agreement</h2>';
+      html += '<div class="agreement-box" id="agreement-box">' + esc(AGREEMENT_TEXT) + '</div>';
+      html += '<label class="agreement-check"><input type="checkbox" id="agree-check"> '
+            + 'I have read and agree to the Rental Agreement.</label>';
+      html += '</div>';
+
       html += '</div>';
 
       // Right column: Summary
@@ -153,52 +225,131 @@
 
       document.getElementById('checkout-content').innerHTML = html;
 
-      // Bind complete booking button
-      document.getElementById('complete-booking-btn').addEventListener('click', function() {
-        var btn = this;
-        btn.disabled = true;
-        btn.textContent = 'Processing...';
+      var frontInput = document.getElementById('id-front');
+      var backInput  = document.getElementById('id-back');
+      var agreeCheck = document.getElementById('agree-check');
+      var completeBtn = document.getElementById('complete-booking-btn');
+      var DEFAULT_BTN_LABEL = 'Complete Booking →';
 
-        // Calculate number of days
-        var days = 1;
-        if (bookingData.durationType === 'multi' && bookingData.days) {
-          days = bookingData.days;
-        }
+      // Gate the button until both ID images are chosen and the agreement is accepted.
+      function refreshGate() {
+        var ready = frontInput.files.length > 0 && backInput.files.length > 0 && agreeCheck.checked;
+        completeBtn.disabled = !ready;
+        completeBtn.textContent = ready ? DEFAULT_BTN_LABEL : 'Upload ID & accept agreement to continue';
+      }
 
-        // POST to checkout endpoint
-        fetch(SUPABASE_FUNCTIONS + '/checkout', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            vehicleKey: bookingData.vehicleKey,
-            durationType: bookingData.durationType,
-            hours: bookingData.hours,
-            days: days,
-            startDate: bookingData.startDate,
-            endDate: bookingData.endDate || bookingData.startDate,
-            pickupTime: bookingData.pickupTime || bookingData.startTime,
-            totalCents: Math.round(bookingData.total * 100),
-            baseCents: Math.round(bookingData.basePrice * 100),
-            deliveryDropoff: bookingData.deliveryDropoff,
-            deliveryPickup: bookingData.deliveryPickup,
-            deliveryFee: bookingData.deliveryFee ? Math.round(bookingData.deliveryFee * 100) : 0
-          })
-        })
-        .then(function(res) { return res.json(); })
-        .then(function(data) {
-          if (data.url) {
-            // Redirect to Stripe Checkout
-            window.location.href = data.url;
+      function wireFileInput(input, nameId) {
+        input.addEventListener('change', function () {
+          var label = input.closest('.id-drop');
+          if (input.files.length > 0) {
+            document.getElementById(nameId).textContent = input.files[0].name;
+            if (label) label.classList.add('filled');
           } else {
-            throw new Error(data.error || 'Failed to create checkout session');
+            document.getElementById(nameId).textContent = 'No file chosen';
+            if (label) label.classList.remove('filled');
           }
-        })
-        .catch(function(err) {
-          console.error('[Checkout] Error:', err);
-          alert('Failed to create checkout session. Please try again.');
-          btn.disabled = false;
-          btn.textContent = 'Complete Booking →';
+          refreshGate();
         });
+      }
+      wireFileInput(frontInput, 'id-front-name');
+      wireFileInput(backInput, 'id-back-name');
+      agreeCheck.addEventListener('change', refreshGate);
+      refreshGate();
+
+      function readAsDataURL(file) {
+        return new Promise(function (resolve, reject) {
+          var reader = new FileReader();
+          reader.onload = function () { resolve(reader.result); };
+          reader.onerror = function () { reject(new Error('Could not read file')); };
+          reader.readAsDataURL(file);
+        });
+      }
+
+      // Complete booking: upload ID + agreement first, THEN start Stripe checkout.
+      completeBtn.addEventListener('click', function () {
+        var btn = this;
+        if (btn.disabled) return;
+
+        var front = frontInput.files[0];
+        var back  = backInput.files[0];
+        if (!front || !back) { alert('Please upload both the front and back of your ID.'); return; }
+        if (!agreeCheck.checked) { alert('Please accept the Rental Agreement to continue.'); return; }
+
+        var MAX = 10 * 1024 * 1024;
+        if (front.size > MAX || back.size > MAX) { alert('Each ID image must be 10 MB or smaller.'); return; }
+
+        btn.disabled = true;
+        btn.textContent = 'Uploading your ID…';
+
+        // A client-generated reference links this upload to the booking that the
+        // Stripe webhook will create after payment.
+        var bookingRef = (window.crypto && crypto.randomUUID)
+          ? crypto.randomUUID()
+          : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+              var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+              return v.toString(16);
+            });
+
+        var days = 1;
+        if (bookingData.durationType === 'multi' && bookingData.days) days = bookingData.days;
+
+        Promise.all([readAsDataURL(front), readAsDataURL(back)])
+          .then(function (imgs) {
+            return fetch(SUPABASE_FUNCTIONS + '/id-upload', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                bookingRef: bookingRef,
+                vehicleKey: bookingData.vehicleKey,
+                vehicleType: bookingData.vehicleType,
+                front: imgs[0],
+                back: imgs[1],
+                frontType: front.type || 'image/jpeg',
+                backType: back.type || 'image/jpeg',
+                agreementAccepted: true,
+                agreementVersion: AGREEMENT_VERSION
+              })
+            });
+          })
+          .then(function (res) { return res.json().then(function (d) { return { ok: res.ok, data: d }; }); })
+          .then(function (r) {
+            if (!r.ok || !r.data.ok) throw new Error(r.data.error || 'ID upload failed');
+            btn.textContent = 'Starting secure checkout…';
+            return fetch(SUPABASE_FUNCTIONS + '/checkout', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                vehicleKey: bookingData.vehicleKey,
+                durationType: bookingData.durationType,
+                hours: bookingData.hours,
+                days: days,
+                startDate: bookingData.startDate,
+                endDate: bookingData.endDate || bookingData.startDate,
+                pickupTime: bookingData.pickupTime || bookingData.startTime,
+                totalCents: Math.round(bookingData.total * 100),
+                baseCents: Math.round(bookingData.basePrice * 100),
+                deliveryDropoff: bookingData.deliveryDropoff,
+                deliveryPickup: bookingData.deliveryPickup,
+                deliveryFee: bookingData.deliveryFee ? Math.round(bookingData.deliveryFee * 100) : 0,
+                bookingRef: bookingRef
+              })
+            });
+          })
+          .then(function (res) { return res.json(); })
+          .then(function (data) {
+            if (data.url) {
+              window.location.href = data.url;
+            } else {
+              throw new Error(data.error || 'Failed to create checkout session');
+            }
+          })
+          .catch(function (err) {
+            console.error('[Checkout] Error:', err);
+            alert((err && err.message) ? err.message : 'Something went wrong. Please try again.');
+            btn.disabled = false;
+            btn.textContent = DEFAULT_BTN_LABEL;
+            refreshGate();
+          });
       });
 
     })();

@@ -1359,6 +1359,14 @@
           if (b.delivery_pickup) {
             deliveryBadges += '<span class="source-badge" style="background:#fbbf24;color:#000;margin-left:4px;font-size:10px;">🚚 Pickup</span>';
           }
+          // Can-Am manual M-endorsement check badge
+          if (b.requires_canam_license_check) {
+            if (b.canam_license_verified) {
+              deliveryBadges += '<span class="source-badge" style="background:#4ade80;color:#000;margin-left:4px;font-size:10px;">✓ M verified</span>';
+            } else {
+              deliveryBadges += '<span class="source-badge" style="background:#f87171;color:#000;margin-left:4px;font-size:10px;">⚠️ Verify M endorsement</span>';
+            }
+          }
 
           html += '<tr data-booking-id="' + esc(b.id) + '">'
             + '<td class="lead-num">' + (idx + 1) + '</td>'
@@ -1786,7 +1794,104 @@
     document.getElementById('bd-error').classList.add('hidden');
     document.getElementById('bd-success').classList.add('hidden');
 
+    // Load uploaded ID + rental agreement (private storage, signed URLs)
+    loadBookingIdSection(booking);
+
     modal.classList.remove('hidden');
+  }
+
+  // Fetch and render the uploaded ID images + agreement + Can-Am check state.
+  function loadBookingIdSection(booking) {
+    var idSection    = document.getElementById('bd-id-section');
+    var canamSection = document.getElementById('bd-canam-section');
+    var imagesEl     = document.getElementById('bd-id-images');
+    var metaEl       = document.getElementById('bd-id-meta');
+    var agrMetaEl    = document.getElementById('bd-agreement-meta');
+    var agrTextEl    = document.getElementById('bd-agreement-text');
+    var canamStatus  = document.getElementById('bd-canam-status');
+
+    // Reset
+    idSection.classList.add('hidden');
+    canamSection.classList.add('hidden');
+    imagesEl.innerHTML = '';
+    metaEl.textContent = '';
+    agrMetaEl.textContent = '';
+    agrTextEl.textContent = '';
+    canamStatus.textContent = '';
+
+    apiFetch(ADMIN_API + '/bookings/' + encodeURIComponent(booking.id) + '/id')
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (!data || !data.hasUpload) {
+          metaEl.textContent = 'No ID on file for this booking.';
+          idSection.classList.remove('hidden');
+          return;
+        }
+
+        idSection.classList.remove('hidden');
+        var idTypeLabel = data.requiredIdType === 'drivers_license'
+          ? "Driver's license (required for Can-Am)"
+          : 'Government photo ID';
+        metaEl.textContent = 'On file: ' + idTypeLabel + '. Links expire in 5 minutes.';
+
+        function imgTile(label, url) {
+          if (!url) return '<div style="font-size:12px;color:#f87171;">' + label + ': unavailable</div>';
+          return '<div style="text-align:center;">'
+            + '<a href="' + esc(url) + '" target="_blank" rel="noopener">'
+            + '<img src="' + esc(url) + '" alt="' + esc(label) + '" style="width:200px;height:130px;object-fit:cover;border:1px solid #333;border-radius:6px;">'
+            + '</a><div style="font-size:11px;color:#888;margin-top:4px;">' + esc(label) + ' · click to enlarge</div></div>';
+        }
+        imagesEl.innerHTML = imgTile('Front', data.frontUrl) + imgTile('Back', data.backUrl);
+
+        // Agreement
+        if (data.agreedAt) {
+          agrMetaEl.textContent = 'Version ' + (data.agreementVersion || '—') +
+            ' · accepted ' + new Date(data.agreedAt).toLocaleString();
+        }
+        agrTextEl.textContent = data.agreementText || '(no text stored)';
+
+        // Can-Am manual check
+        if (data.requiresCanamCheck) {
+          canamSection.classList.remove('hidden');
+          if (data.canamVerified) {
+            canamStatus.innerHTML = '<span style="color:#4ade80;">✓ M endorsement confirmed'
+              + (data.canamVerifiedBy ? ' by ' + esc(data.canamVerifiedBy) : '')
+              + (data.canamVerifiedAt ? ' on ' + esc(new Date(data.canamVerifiedAt).toLocaleString()) : '')
+              + '</span>';
+            document.getElementById('bd-verify-canam').style.display = 'none';
+          } else {
+            canamStatus.innerHTML = '<span style="color:#f87171;">Not yet confirmed. Open the license image above, verify the M endorsement, then confirm below.</span>';
+            document.getElementById('bd-verify-canam').style.display = '';
+          }
+        }
+      })
+      .catch(function () {
+        metaEl.textContent = 'Could not load ID for this booking.';
+        idSection.classList.remove('hidden');
+      });
+  }
+
+  function verifyCanamEndorsement() {
+    if (!currentBooking) return;
+    var btn = document.getElementById('bd-verify-canam');
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+    apiFetch(ADMIN_API + '/bookings/' + encodeURIComponent(currentBooking.id) + '/verify-canam', {
+      method: 'POST'
+    })
+      .then(function (r) {
+        if (!r.ok) throw new Error('Failed');
+        return r.json();
+      })
+      .then(function () {
+        currentBooking.canam_license_verified = true;
+        loadBookingIdSection(currentBooking);
+      })
+      .catch(function () {
+        btn.disabled = false;
+        btn.textContent = '✓ I confirmed the M endorsement';
+        alert('Could not save the confirmation. Please try again.');
+      });
   }
 
   function closeBookingDetailModal() {
@@ -1846,6 +1951,7 @@
   // Bind modal event listeners
   document.getElementById('bd-cancel').addEventListener('click', closeBookingDetailModal);
   document.getElementById('bd-save').addEventListener('click', saveBookingDetails);
+  document.getElementById('bd-verify-canam').addEventListener('click', verifyCanamEndorsement);
   document.getElementById('booking-detail-modal').addEventListener('click', function (e) {
     if (e.target === this) closeBookingDetailModal();
   });

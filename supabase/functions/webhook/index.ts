@@ -113,6 +113,32 @@ Deno.serve(async (req) => {
       vehicleName = data?.config?.vehicles?.[meta.vehicleKey]?.name || vehicleName;
     } catch { /* use key as fallback */ }
 
+    // Look up the ID upload + rental-agreement acceptance for this booking.
+    // Uploads happen before payment and are keyed by a client-generated
+    // booking_ref carried through Stripe metadata.
+    let idFields: Record<string, unknown> = {};
+    const bookingRef = meta.bookingRef || '';
+    if (bookingRef) {
+      const { data: idUpload } = await supabase
+        .from('id_uploads')
+        .select('vehicle_type, canam_license_check_required, agreement_version, agreement_text, agreed_at')
+        .eq('booking_ref', bookingRef)
+        .maybeSingle();
+      if (idUpload) {
+        const isCanam = idUpload.vehicle_type === 'canam' ||
+          (meta.vehicleKey || '').includes('canam');
+        idFields = {
+          id_ref: bookingRef,
+          id_upload_status: 'received',
+          requires_canam_license_check: idUpload.canam_license_check_required || isCanam,
+          canam_license_verified: false,
+          agreement_version: idUpload.agreement_version || null,
+          agreement_text: idUpload.agreement_text || null,
+          agreed_at: idUpload.agreed_at || null
+        };
+      }
+    }
+
     // Save booking
     await supabase.from('bookings').upsert({
       id: obj.id as string,
@@ -126,8 +152,16 @@ Deno.serve(async (req) => {
       savings: savings ? Number(savings) : 0,
       pickup_time: meta.pickupTime || null,
       stripe_session_id: obj.id as string,
-      status: 'confirmed'
+      status: 'confirmed',
+      ...idFields
     });
+
+    // Back-fill the booking id onto the upload record so admin can join them.
+    if (bookingRef) {
+      await supabase.from('id_uploads')
+        .update({ booking_id: obj.id as string })
+        .eq('booking_ref', bookingRef);
+    }
 
     // Customer confirmation email
     const pickupTimeFormatted = formatTime(meta.pickupTime);

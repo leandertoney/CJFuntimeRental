@@ -38,11 +38,30 @@ Deno.serve(async (req) => {
       startDate, endDate, pickupTime,
       totalCents, baseCents,
       deliveryDropoff, deliveryPickup, deliveryFee,
-      promoCode
+      promoCode, bookingRef
     } = body;
 
     if (!vehicleKey || !durationType || !startDate) {
       return new Response(JSON.stringify({ error: 'Missing fields' }), { status: 400, headers: { ...CORS, 'Content-Type': 'application/json' } });
+    }
+
+    // ── Hard gate: no checkout without an uploaded ID + accepted agreement ─────
+    // Every website booking must have both ID images stored and the rental
+    // agreement accepted BEFORE we create a payment session. This is also what
+    // closes off any legacy path that would POST here without going through the
+    // ID/contract step. Fail closed: no valid upload record => no checkout.
+    if (!bookingRef) {
+      return new Response(JSON.stringify({ error: 'A photo ID and signed agreement are required before checkout.' }), { status: 400, headers: { ...CORS, 'Content-Type': 'application/json' } });
+    }
+    {
+      const { data: idUpload } = await supabase
+        .from('id_uploads')
+        .select('booking_ref, front_path, back_path, agreed_at')
+        .eq('booking_ref', bookingRef)
+        .maybeSingle();
+      if (!idUpload || !idUpload.front_path || !idUpload.back_path || !idUpload.agreed_at) {
+        return new Response(JSON.stringify({ error: 'A photo ID and signed agreement are required before checkout.' }), { status: 400, headers: { ...CORS, 'Content-Type': 'application/json' } });
+      }
     }
 
     const stripeKey = Deno.env.get('STRIPE_SECRET_KEY')!;
@@ -114,6 +133,7 @@ Deno.serve(async (req) => {
       'metadata[days]': String(days || ''),
       'metadata[deliveryDropoff]': String(!!deliveryDropoff),
       'metadata[deliveryPickup]': String(!!deliveryPickup),
+      'metadata[bookingRef]': bookingRef,
       'success_url': `https://cjfuntimerentals.com/booking-success?session_id={CHECKOUT_SESSION_ID}&vehicle=${encodeURIComponent(vehicleKey)}&date=${encodeURIComponent(startDate)}`,
       'cancel_url': 'https://cjfuntimerentals.com',
       'phone_number_collection[enabled]': 'true',

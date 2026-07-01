@@ -496,6 +496,32 @@
         <div id="bd-delivery-info" style="color:#000;font-size:14px;"></div>
       </div>
 
+      <!-- Can-Am manual M-endorsement check — shown for Can-Am bookings -->
+      <div id="bd-canam-section" class="booking-detail-section hidden" style="border:2px solid #f87171;border-radius:8px;padding:16px;margin-bottom:16px;background:rgba(248,113,113,0.08);">
+        <h4 style="margin:0 0 8px 0;color:#f87171;">⚠️ Can-Am — Manual M-Endorsement Check Required</h4>
+        <p style="font-size:13px;color:#ccc;margin:0 0 12px 0;">
+          The system does <strong>not</strong> read the license. Before releasing the vehicle,
+          open the driver's license image below and confirm it shows a motorcycle (M) endorsement.
+          A state ID card is <strong>not</strong> acceptable for the Can-Am.
+        </p>
+        <div id="bd-canam-status" style="font-size:14px;margin-bottom:12px;"></div>
+        <button id="bd-verify-canam" type="button" class="btn-primary-admin" style="background:#f87171;">
+          ✓ I confirmed the M endorsement
+        </button>
+      </div>
+
+      <!-- Uploaded government ID (private storage, signed URLs) -->
+      <div id="bd-id-section" class="booking-detail-section hidden">
+        <h4>Uploaded ID &amp; Rental Agreement</h4>
+        <div id="bd-id-meta" style="font-size:13px;color:#aaa;margin-bottom:10px;"></div>
+        <div id="bd-id-images" style="display:flex;gap:12px;flex-wrap:wrap;"></div>
+        <details style="margin-top:12px;">
+          <summary style="cursor:pointer;font-size:13px;color:#aaa;">Rental agreement accepted by customer</summary>
+          <div id="bd-agreement-meta" style="font-size:12px;color:#888;margin:8px 0;"></div>
+          <pre id="bd-agreement-text" style="white-space:pre-wrap;font-size:12px;color:#bbb;background:#111;border:1px solid #333;border-radius:6px;padding:12px;max-height:220px;overflow:auto;"></pre>
+        </details>
+      </div>
+
       <div class="booking-detail-section">
         <h4>Pickup Details</h4>
         <div class="login-field">

@@ -108,3 +108,8 @@ entrypoint = "./functions/send-mid-rental-checkins/index.ts"
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/health-check/index.ts"
+
+[functions.id-upload]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/id-upload/index.ts"

@@ -329,6 +329,85 @@ Deno.serve(async (req) => {
     return json(bookings);
   }
 
+  // ── GET /bookings/:id/id — ID images (signed) + rental agreement ───────────
+  // Returns short-lived signed URLs for the private ID images. The bucket is
+  // private, so these URLs are the ONLY way to view an ID, and only an
+  // authenticated admin can mint them.
+  if (path.match(/^\/bookings\/[^/]+\/id$/) && req.method === 'GET') {
+    const bookingId = path.split('/')[2];
+
+    const { data: booking } = await supabase
+      .from('bookings')
+      .select('id, id_ref, requires_canam_license_check, canam_license_verified, canam_verified_by, canam_verified_at, agreement_version, agreement_text, agreed_at')
+      .eq('id', bookingId)
+      .maybeSingle();
+
+    if (!booking) return json({ error: 'Booking not found' }, 404);
+    if (!booking.id_ref) return json({ hasUpload: false });
+
+    const { data: upload } = await supabase
+      .from('id_uploads')
+      .select('front_path, back_path, required_id_type, vehicle_type')
+      .eq('booking_ref', booking.id_ref)
+      .maybeSingle();
+
+    if (!upload) return json({ hasUpload: false });
+
+    const [frontSigned, backSigned] = await Promise.all([
+      supabase.storage.from('booking-ids').createSignedUrl(upload.front_path, 300),
+      supabase.storage.from('booking-ids').createSignedUrl(upload.back_path, 300)
+    ]);
+
+    return json({
+      hasUpload: true,
+      requiredIdType: upload.required_id_type,
+      vehicleType: upload.vehicle_type,
+      requiresCanamCheck: !!booking.requires_canam_license_check,
+      canamVerified: !!booking.canam_license_verified,
+      canamVerifiedBy: booking.canam_verified_by || null,
+      canamVerifiedAt: booking.canam_verified_at || null,
+      agreementVersion: booking.agreement_version || null,
+      agreementText: booking.agreement_text || null,
+      agreedAt: booking.agreed_at || null,
+      frontUrl: frontSigned.data?.signedUrl || null,
+      backUrl: backSigned.data?.signedUrl || null
+    });
+  }
+
+  // ── POST /bookings/:id/verify-canam — admin confirms the M endorsement ─────
+  // We do NOT read the license automatically. This records that an admin
+  // manually eyeballed the motorcycle (M) endorsement on the uploaded license.
+  if (path.match(/^\/bookings\/[^/]+\/verify-canam$/) && req.method === 'POST') {
+    const bookingId = path.split('/')[2];
+    const verifiedAt = new Date().toISOString();
+
+    const { data: booking, error } = await supabase
+      .from('bookings')
+      .update({
+        canam_license_verified: true,
+        canam_verified_by: authedUser.email,
+        canam_verified_at: verifiedAt
+      })
+      .eq('id', bookingId)
+      .select('id, id_ref')
+      .maybeSingle();
+
+    if (error) return json({ error: error.message }, 500);
+    if (!booking) return json({ error: 'Booking not found' }, 404);
+
+    if (booking.id_ref) {
+      await supabase.from('id_uploads')
+        .update({
+          canam_license_verified: true,
+          canam_verified_by: authedUser.email,
+          canam_verified_at: verifiedAt
+        })
+        .eq('booking_ref', booking.id_ref);
+    }
+
+    return json({ ok: true, verifiedBy: authedUser.email, verifiedAt });
+  }
+
   // ── AI Chat ─────────────────────────────────────────────────────────────────
   if (path === '/chat' && req.method === 'POST') {
     const openaiKey = Deno.env.get('OPENAI_API_KEY');

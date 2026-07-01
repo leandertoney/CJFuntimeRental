@@ -233,10 +233,17 @@
     fetchExistingBookings(vehicleKey);
 
     // Build widget HTML
+    var idRequirementNote = state.vehicleType === 'canam'
+      ? '🪪 Motorcycle (M)–endorsed driver\'s license required'
+      : '🪪 Valid photo ID required';
+
     var html = '<div class="bw-container">'
       + '<div class="bw-header">'
       + '<div class="bw-price-display" id="bw-price-display">Select rental type to see price</div>'
       + '</div>'
+
+      // Up-front ID disclosure — no surprises at pickup
+      + '<div class="bw-id-note">' + idRequirementNote + '</div>'
 
       // Duration type selector
       + '<div class="bw-section">'
