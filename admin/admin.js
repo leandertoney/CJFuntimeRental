@@ -1832,7 +1832,7 @@
         var idTypeLabel = data.requiredIdType === 'drivers_license'
           ? "Driver's license (required for Can-Am)"
           : 'Government photo ID';
-        metaEl.textContent = 'On file: ' + idTypeLabel + '. Links expire in 5 minutes.';
+        metaEl.textContent = 'On file: ' + idTypeLabel + '. Links expire in 15 minutes.';
 
         function imgTile(label, url) {
           if (!url) return '<div style="font-size:12px;color:#f87171;">' + label + ': unavailable</div>';

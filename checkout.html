@@ -265,6 +265,49 @@
         });
       }
 
+      // Shrink large phone photos before upload so uploads don't fail on big
+      // images. A license stays perfectly legible at ~1600px. PDFs and anything
+      // non-image are sent as-is. Falls back to the original on any failure.
+      function prepareFile(file) {
+        return new Promise(function (resolve, reject) {
+          if (!file.type || file.type.indexOf('image/') !== 0) {
+            readAsDataURL(file).then(function (d) {
+              resolve({ dataUrl: d, type: file.type || 'application/pdf' });
+            }, reject);
+            return;
+          }
+          var url = URL.createObjectURL(file);
+          var img = new Image();
+          img.onload = function () {
+            try {
+              var maxDim = 1600;
+              var w = img.naturalWidth, h = img.naturalHeight;
+              var scale = Math.min(1, maxDim / Math.max(w, h));
+              var cw = Math.max(1, Math.round(w * scale));
+              var ch = Math.max(1, Math.round(h * scale));
+              var canvas = document.createElement('canvas');
+              canvas.width = cw; canvas.height = ch;
+              canvas.getContext('2d').drawImage(img, 0, 0, cw, ch);
+              var dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+              URL.revokeObjectURL(url);
+              resolve({ dataUrl: dataUrl, type: 'image/jpeg' });
+            } catch (e) {
+              URL.revokeObjectURL(url);
+              readAsDataURL(file).then(function (d) {
+                resolve({ dataUrl: d, type: file.type || 'image/jpeg' });
+              }, reject);
+            }
+          };
+          img.onerror = function () {
+            URL.revokeObjectURL(url);
+            readAsDataURL(file).then(function (d) {
+              resolve({ dataUrl: d, type: file.type || 'image/jpeg' });
+            }, reject);
+          };
+          img.src = url;
+        });
+      }
+
       // Complete booking: upload ID + agreement first, THEN start Stripe checkout.
       completeBtn.addEventListener('click', function () {
         var btn = this;
@@ -275,8 +318,13 @@
         if (!front || !back) { alert('Please upload both the front and back of your ID.'); return; }
         if (!agreeCheck.checked) { alert('Please accept the Rental Agreement to continue.'); return; }
 
+        // Images get auto-shrunk below, so only guard non-image files (e.g. PDF).
         var MAX = 10 * 1024 * 1024;
-        if (front.size > MAX || back.size > MAX) { alert('Each ID image must be 10 MB or smaller.'); return; }
+        function isImage(f) { return f.type && f.type.indexOf('image/') === 0; }
+        if ((!isImage(front) && front.size > MAX) || (!isImage(back) && back.size > MAX)) {
+          alert('Each file must be 10 MB or smaller.');
+          return;
+        }
 
         btn.disabled = true;
         btn.textContent = 'Uploading your ID…';
@@ -293,8 +341,8 @@
         var days = 1;
         if (bookingData.durationType === 'multi' && bookingData.days) days = bookingData.days;
 
-        Promise.all([readAsDataURL(front), readAsDataURL(back)])
-          .then(function (imgs) {
+        Promise.all([prepareFile(front), prepareFile(back)])
+          .then(function (prepped) {
             return fetch(SUPABASE_FUNCTIONS + '/id-upload', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -302,10 +350,10 @@
                 bookingRef: bookingRef,
                 vehicleKey: bookingData.vehicleKey,
                 vehicleType: bookingData.vehicleType,
-                front: imgs[0],
-                back: imgs[1],
-                frontType: front.type || 'image/jpeg',
-                backType: back.type || 'image/jpeg',
+                front: prepped[0].dataUrl,
+                back: prepped[1].dataUrl,
+                frontType: prepped[0].type,
+                backType: prepped[1].type,
                 agreementAccepted: true,
                 agreementVersion: AGREEMENT_VERSION
               })

@@ -354,8 +354,8 @@ Deno.serve(async (req) => {
     if (!upload) return json({ hasUpload: false });
 
     const [frontSigned, backSigned] = await Promise.all([
-      supabase.storage.from('booking-ids').createSignedUrl(upload.front_path, 300),
-      supabase.storage.from('booking-ids').createSignedUrl(upload.back_path, 300)
+      supabase.storage.from('booking-ids').createSignedUrl(upload.front_path, 900),
+      supabase.storage.from('booking-ids').createSignedUrl(upload.back_path, 900)
     ]);
 
     return json({
