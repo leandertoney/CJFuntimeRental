@@ -59,12 +59,23 @@
       // Build fleet cards
       var fleetGrid = document.getElementById('fleet-grid');
       if (fleetGrid) {
+        // Vehicle key to page slug mapping
+        var vehiclePageMap = {
+          'slingshot_2022': '/vehicles/2024-orange-slingshot-autodrive.html',
+          'slingshot_2020': '/vehicles/2016-gray-slingshot-manual.html',
+          'canam_spyder': '/vehicles/2021-canam-spyder-f3.html',
+          'slingshot_2016_red': '/vehicles/2016-red-slingshot-manual.html'
+        };
+
         var fleetHtml = '';
         Object.keys(cfg.vehicles).forEach(function (key) {
           var v = cfg.vehicles[key];
           if (v.available === false) return;
           var fromPrice = getFromPrice(v);
+          var vehiclePageUrl = vehiclePageMap[key] || '/vehicles/2024-orange-slingshot-autodrive.html';
+
           fleetHtml += '<div class="fleet-card">'
+            + '<a href="' + vehiclePageUrl + '" class="fleet-card-link">'
             + '<img src="' + escHtml(v.img || '') + '" class="fleet-card-photo" alt="' + escHtml(v.name || '') + ' rental Lancaster PA" loading="lazy">'
             + '<div class="fleet-card-info">'
             + '<div class="fleet-card-text">'
@@ -75,32 +86,14 @@
             + '<div class="fleet-card-bottom">'
             + '<div class="fleet-card-price">from $' + fromPrice + '<span>/ 10hrs</span></div>'
             + '<div style="display:flex;gap:8px;width:100%;">'
-            + '<button class="fleet-card-book" data-vehicle-book="' + escHtml(key) + '" style="flex:1">Book Now</button>'
-            + '<button class="fleet-card-book" data-vehicle-detail="' + escHtml(key) + '" style="flex:1;background:transparent;border:1px solid var(--border)">Details</button>'
+            + '<span class="fleet-card-book" style="flex:1">Book Now</span>'
             + '</div>'
             + '</div>'
             + '</div>'
+            + '</a>'
             + '</div>';
         });
         fleetGrid.innerHTML = fleetHtml;
-
-        // Bind fleet card "Book Now" buttons - direct to booking modal
-        fleetGrid.querySelectorAll('[data-vehicle-book]').forEach(function (btn) {
-          btn.addEventListener('click', function (e) {
-            e.preventDefault();
-            var vkey = this.getAttribute('data-vehicle-book');
-            if (window.CJStripe) window.CJStripe.openModal(vkey);
-          });
-        });
-
-        // Bind fleet card "Details" buttons - open detail panel
-        fleetGrid.querySelectorAll('[data-vehicle-detail]').forEach(function (btn) {
-          btn.addEventListener('click', function (e) {
-            e.preventDefault();
-            var vkey = this.getAttribute('data-vehicle-detail');
-            if (window.openVehicleDetail) window.openVehicleDetail(vkey);
-          });
-        });
       }
 
       // Build booking modal vehicle buttons
