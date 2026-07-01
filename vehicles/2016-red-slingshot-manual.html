@@ -32,6 +32,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600&display=swap" onload="this.onload=null;this.rel='stylesheet'">
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600&display=swap"></noscript>
+  <link rel="stylesheet" href="/booking-widget.css">
   <style>
     :root { --black:#0A0A0A; --dark:#111111; --surface:#171717; --border:rgba(255,255,255,0.07); --orange:#FF6B00; --white:#FFFFFF; --muted:#888888; --heading:'Bebas Neue',sans-serif; --body:'Inter',sans-serif; }
     *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
@@ -79,6 +80,11 @@
     .footer-nav a:hover { color:var(--white); }
     .footer-bottom { display:flex; justify-content:space-between; padding-top:20px; flex-wrap:wrap; }
     .footer-copy { font-size:11px; color:rgba(255,255,255,0.35); }
+    /* Booking widget layout */
+    .page-layout { display:grid; grid-template-columns:1fr 420px; gap:64px; align-items:start; }
+    .page-content { min-width:0; }
+    .page-sidebar { position:relative; }
+    @media(max-width:1024px) { .page-layout{grid-template-columns:1fr;gap:32px;} }
     @media(max-width:768px) { .hero-grid{grid-template-columns:1fr;gap:32px;} .footer-inner{grid-template-columns:1fr 1fr;} .nav-links{display:none;} }
   </style>
 </head>
@@ -91,7 +97,7 @@
         <a href="/#fleet">Our Fleet</a>
         <a href="/#reviews">Reviews</a>
         <a href="/#faq">FAQ</a>
-        <a href="/#book" class="btn btn-primary" style="font-size:13px;padding:9px 20px">Book Now</a>
+        <a href="#booking-widget" class="btn btn-primary" style="font-size:13px;padding:9px 20px">Book Now</a>
       </nav>
     </div>
   </header>
@@ -108,7 +114,7 @@
             <div class="stat"><div class="stat-num">5-Speed</div><div class="stat-label">Manual Trans</div></div>
             <div class="stat"><div class="stat-num">300</div><div class="stat-label">Miles Included</div></div>
           </div>
-          <a href="/#book" class="btn btn-primary">Book This Slingshot →</a>
+          <a href="#booking-widget" class="btn btn-primary">Book This Slingshot →</a>
         </div>
         <div class="hero-img">
           <img src="/red_polaris_slingshot.png" alt="2016 Polaris Slingshot S Red Manual">
@@ -119,6 +125,8 @@
 
   <section class="section">
     <div class="container">
+      <div class="page-layout">
+        <div class="page-content">
       <h2>Why Rent the Red Manual?</h2>
       <p>This is for the driving purist. The 5-speed manual transmission gives you total control over every shift, every acceleration, every corner. Classic red finish, raw power, no computers between you and the road.</p>
       <div class="specs-grid">
@@ -182,9 +190,14 @@
         <li>Manual transmission walkthrough</li>
         <li>No hidden fees — book direct</li>
       </ul>
-      <div style="margin-top:32px;">
-        <a href="/#book" class="btn btn-primary">Check Availability & Book →</a>
-      </div>
+        </div><!-- end page-content -->
+
+        <!-- Booking Widget Sidebar -->
+        <div class="page-sidebar">
+          <div id="booking-widget" data-vehicle-key="slingshot_2016_red"></div>
+        </div>
+
+      </div><!-- end page-layout -->
     </div>
   </section>
 
@@ -223,6 +236,11 @@
       </div>
     </div>
   </footer>
+
+  <!-- Load site config first -->
+  <script src="https://yzdtevrwystezhbmgcwn.supabase.co/functions/v1/config"></script>
+  <!-- Load booking widget -->
+  <script src="/booking-widget.js"></script>
 
 </body>
 </html>
