@@ -2657,16 +2657,16 @@
   <!-- Stripe.js is loaded but only activates when STRIPE_ENABLED = true in stripe.config.js -->
   <script src="https://js.stripe.com/v3/"></script>
   <script src="stripe.config.js"></script>
-  <script src="stripe-checkout.js"></script>
+  <!-- stripe-checkout.js removed - modal booking flow deprecated -->
 
   <!-- APPLY ADMIN CONFIG TO FRONTEND -->
   <script src="/frontend-config.js"></script>
 
-  <!-- Redirect #book hash to #fleet (modal removed) -->
+  <!-- Redirect #book hash to fleet page (modal removed) -->
   <script>
     (function() {
       if (window.location.hash === '#book') {
-        window.location.hash = '#fleet';
+        window.location.href = '/fleet.html';
       }
     })();
   </script>
