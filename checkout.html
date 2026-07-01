@@ -50,6 +50,14 @@
     .agreement-box { max-height:200px; overflow-y:auto; white-space:pre-wrap; font-size:13px; line-height:1.6; color:var(--muted); background:var(--dark); border:1px solid var(--border); border-radius:8px; padding:16px; margin-bottom:14px; }
     .agreement-check { display:flex; align-items:flex-start; gap:10px; font-size:14px; cursor:pointer; }
     .agreement-check input { margin-top:3px; width:18px; height:18px; flex-shrink:0; accent-color:var(--orange); }
+    /* Modal */
+    .modal-overlay { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(4px); z-index:1000; align-items:center; justify-content:center; padding:20px; }
+    .modal-overlay.show { display:flex; }
+    .modal { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:32px; max-width:500px; width:100%; box-shadow:0 20px 60px rgba(0,0,0,0.5); }
+    .modal-title { font-family:var(--heading); font-size:1.4rem; letter-spacing:2px; margin-bottom:16px; color:var(--orange); }
+    .modal-message { line-height:1.6; margin-bottom:24px; color:var(--white); }
+    .modal-btn { background:var(--orange); color:#000; border:none; border-radius:8px; padding:14px 28px; font-weight:700; font-size:15px; cursor:pointer; transition:all 0.2s; width:100%; }
+    .modal-btn:hover { filter:brightness(1.1); transform:translateY(-1px); }
     @media(max-width:768px) { .checkout-grid{grid-template-columns:1fr;} .id-uploads{grid-template-columns:1fr;} }
   </style>
 </head>
@@ -67,6 +75,15 @@
     </div>
   </main>
 
+  <!-- Error/notification modal -->
+  <div id="modal-overlay" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-title" id="modal-title">Notice</div>
+      <div class="modal-message" id="modal-message"></div>
+      <button class="modal-btn" id="modal-close">OK</button>
+    </div>
+  </div>
+
   <script src="https://yzdtevrwystezhbmgcwn.supabase.co/functions/v1/config"></script>
   <script>
     (function() {
@@ -74,27 +91,97 @@
 
       var SUPABASE_FUNCTIONS = 'https://yzdtevrwystezhbmgcwn.supabase.co/functions/v1';
 
-      // Rental agreement — PLACEHOLDER. Keep in sync with the authoritative copy
-      // in supabase/functions/_shared/rental-agreement.ts (that server copy is
-      // what gets stored on the booking). When the owner's real contract is
-      // ready, update both. Bump the version string in lockstep.
-      var AGREEMENT_VERSION = 'placeholder-v1';
+      // In-page modal (replaces browser alerts)
+      function showModal(message, title) {
+        var overlay = document.getElementById('modal-overlay');
+        var titleEl = document.getElementById('modal-title');
+        var messageEl = document.getElementById('modal-message');
+        var closeBtn = document.getElementById('modal-close');
+
+        titleEl.textContent = title || 'Notice';
+        messageEl.textContent = message;
+        overlay.classList.add('show');
+
+        function close() {
+          overlay.classList.remove('show');
+          closeBtn.removeEventListener('click', close);
+          overlay.removeEventListener('click', overlayClick);
+        }
+
+        function overlayClick(e) {
+          if (e.target === overlay) close();
+        }
+
+        closeBtn.addEventListener('click', close);
+        overlay.addEventListener('click', overlayClick);
+      }
+
+      // Rental agreement — Keep in sync with the authoritative copy in
+      // supabase/functions/_shared/rental-agreement.ts (that server copy is
+      // what gets stored on the booking). Bump the version string in lockstep.
+      var AGREEMENT_VERSION = 'v1.0';
       var AGREEMENT_TEXT = [
-        "CJ'S FUN TIME RENTAL — RENTAL AGREEMENT (PLACEHOLDER)",
+        "CJ'S FUN TIME RENTALS — RENTAL AGREEMENT",
         "",
-        "This is placeholder rental-agreement text and is not the final contract. By checking the box and completing your booking you acknowledge and agree to the following:",
+        "This Car Rental Agreement (\"Agreement\") is made and entered into between Christopher L. Johnson (hereafter referred to as the \"Owner\") and Renter (hereafter referred to as \"Party\" in the singular and \"Parties\" in the plural). This Agreement is intended to be the binding contract between the Parties for rental of the Vehicle.",
         "",
-        "1. Valid ID. You will present a valid government-issued photo ID at pickup that matches the ID uploaded with this booking. For the Can-Am Spyder you must hold a valid driver's license with a motorcycle (M) endorsement; it will be checked in person before the vehicle is released.",
+        "RENTAL VEHICLE",
         "",
-        "2. Eligible operator. You are the person who will operate the vehicle, you are legally permitted to drive it, and you will obey all traffic laws.",
+        "Owner hereby agrees to rent to Renter the following vehicle (\"Vehicle\"):",
+        "• Vehicle details will be confirmed at booking and shown on your receipt",
+        "• Renter agrees to present valid identification matching this booking at pickup",
         "",
-        "3. Condition & return. You will return the vehicle on time and in the same condition it was provided, normal wear excepted.",
+        "RENTAL PERIOD",
         "",
-        "4. Responsibility. You accept responsibility for damage, loss, citations, or tolls incurred during your rental period, subject to the final signed agreement provided at pickup.",
+        "Owner agrees to rent Vehicle to Renter for the period specified in your booking confirmation. The Parties agree that this Agreement commences upon the start date and ends on the end date specified in your booking. Notwithstanding anything to the contrary in this Agreement, Owner and Renter may agree to extend the Rental Period of the Vehicle. If the Rental Period is terminated prior to the end date, the Parties will work together to determine whether a refund of Rental Fee is necessary.",
         "",
-        "5. Final agreement. A complete rental agreement will be provided for signature at pickup. This online acknowledgment does not replace that document.",
+        "MILEAGE LIMIT",
         "",
-        "CJ's Fun Time Rental · Lancaster, PA"
+        "Renter will be subject to mileage limits as specified at booking. Excess mileage charges may apply per mile over the limit.",
+        "",
+        "RENTAL FEES",
+        "",
+        "The Renter hereby agrees to pay the Owner for use of the Vehicle the total amount shown at checkout, as confirmed in your booking receipt.",
+        "",
+        "INDEMNITY",
+        "",
+        "Regardless of insurance coverage, Renter shall fully indemnify the Owner for any and all loss, damage, or personal injury that may occur during the use of the Vehicle due to the fault or negligence of the Renter. Renter shall indemnify Owner for any and all costs, including but not limited to damage to the Vehicle, damage to the property of others, injury to Renter, and injury to others. This indemnity shall survive the termination of this Agreement and shall be binding.",
+        "",
+        "INSURANCE",
+        "",
+        "The Owner represents to the best of his knowledge and belief that the Vehicle is in sound mechanical condition and is fully insured in accordance with the requirements of state law under normal use.",
+        "",
+        "RENTER WARRANTIES",
+        "",
+        "The Renter warrants that Renter will not (i) use the Vehicle to carry any passengers other than Renter; (ii) allow any other person to operate the Vehicle; (iii) operate the Vehicle in violation of any laws; (iv) operate the Vehicle in a negligent, abusive or reckless manner; (v) operate the Vehicle for any race or competition; (vi) operate the vehicle in a reckless manner.",
+        "",
+        "ARBITRATION",
+        "",
+        "In the event that the Parties cannot amicably resolve a dispute or damage claim resulting from the use of the Vehicle, the Parties agree to resolve the dispute via mediation and then by arbitration in accordance with the rules and procedures of the American Arbitration Association then in effect with one (1) arbitrator to be selected by mutual agreement of the Parties. If the Parties cannot reach a mutual agreement, then the American Arbitration Association shall appoint the arbitrator. The decision of the arbitrator shall be binding on the Parties and shall be enforceable in any court of the State of Pennsylvania in the United States. The laws of the State of Pennsylvania in the United States shall apply to the arbitration proceedings. The Parties agree that the arbitrator cannot modify or change this Agreement in any manner and shall only determine whether a breach of this Agreement has occurred.",
+        "",
+        "GOVERNING LAW AND JURISDICTION",
+        "",
+        "The laws of the State of Pennsylvania in the United States, without regard to any conflict of law provisions, shall govern this Agreement. In the event that litigation occurs concerning this Agreement, the prevailing party may be awarded by either Party more than one year after the cause of action has accrued.",
+        "",
+        "GENERAL",
+        "",
+        "This Agreement, including all Exhibits, constitutes the entire agreement between the Parties in connection with the Vehicle rental and supersedes all agreements, proposals, representations, and other understandings, oral or written, of the Parties hereto in connection with such rental. This Agreement may not be amended, changed, modified, or terminated, in whole or in part, except by a written agreement executed by the Parties hereto. This Agreement shall be binding upon and inure to the benefit of the Parties hereto and their respective heirs, successors, and permitted assigns. No waiver by either of the Parties hereto of any subsequent breach of any provision of this Agreement by the other Party shall be deemed to be a waiver of any preceding or subsequent breach of the same or any other provision of this Agreement.",
+        "",
+        "ACCEPTANCE",
+        "",
+        "By checking the acceptance box and completing your booking, you acknowledge that:",
+        "",
+        "1. You have read and understood this entire Agreement",
+        "2. You agree to all terms and conditions stated herein",
+        "3. You will present a valid government-issued photo ID at pickup that matches the ID uploaded with this booking",
+        "4. For Can-Am Spyder rentals: You hold a valid driver's license with a motorcycle (M) endorsement, which will be verified in person before the vehicle is released",
+        "5. You are the person who will operate the vehicle and are legally permitted to do so",
+        "6. You will return the vehicle on time and in the same condition provided",
+        "7. You accept full responsibility for damage, loss, citations, or tolls incurred during your rental period",
+        "",
+        "This online acceptance creates a binding agreement. A printed copy will be provided for your records at pickup.",
+        "",
+        "CJ's Fun Time Rentals · Lancaster, PA"
       ].join('\n');
 
       function esc(s) {
@@ -187,14 +274,14 @@
       html += '<div class="details-section" id="id-upload-section">';
       html += '<h2>Upload Your ID</h2>';
       html += '<p class="id-help">' + idRuleText + '</p>';
-      html += '<p class="id-help" style="color:var(--muted);">Please photograph the <strong>front and back</strong>. Accepted files: JPG, PNG, WEBP, or PDF (max 10&nbsp;MB each). Your ID is stored securely for pickup verification only.</p>';
+      html += '<p class="id-help" style="color:var(--muted);">Tap below to <strong>take a photo with your camera</strong> or upload existing images of the <strong>front and back</strong>. Accepted: JPG, PNG, WEBP, or PDF (max 10&nbsp;MB each). Your ID is stored securely for pickup verification only.</p>';
       html += '<div class="id-uploads">';
       html += '  <label class="id-drop"><span class="id-drop-label">Front of ID</span>'
-            + '<input type="file" id="id-front" accept="image/*,application/pdf">'
-            + '<span class="id-file-name" id="id-front-name">No file chosen</span></label>';
+            + '<input type="file" id="id-front" accept="image/*,application/pdf" capture="environment">'
+            + '<span class="id-file-name" id="id-front-name">Tap to take photo or upload</span></label>';
       html += '  <label class="id-drop"><span class="id-drop-label">Back of ID</span>'
-            + '<input type="file" id="id-back" accept="image/*,application/pdf">'
-            + '<span class="id-file-name" id="id-back-name">No file chosen</span></label>';
+            + '<input type="file" id="id-back" accept="image/*,application/pdf" capture="environment">'
+            + '<span class="id-file-name" id="id-back-name">Tap to take photo or upload</span></label>';
       html += '</div>';
       html += '</div>';
 
@@ -245,7 +332,7 @@
             document.getElementById(nameId).textContent = input.files[0].name;
             if (label) label.classList.add('filled');
           } else {
-            document.getElementById(nameId).textContent = 'No file chosen';
+            document.getElementById(nameId).textContent = 'Tap to take photo or upload';
             if (label) label.classList.remove('filled');
           }
           refreshGate();
@@ -315,14 +402,14 @@
 
         var front = frontInput.files[0];
         var back  = backInput.files[0];
-        if (!front || !back) { alert('Please upload both the front and back of your ID.'); return; }
-        if (!agreeCheck.checked) { alert('Please accept the Rental Agreement to continue.'); return; }
+        if (!front || !back) { showModal('Please upload both the front and back of your ID.'); return; }
+        if (!agreeCheck.checked) { showModal('Please accept the Rental Agreement to continue.'); return; }
 
         // Images get auto-shrunk below, so only guard non-image files (e.g. PDF).
         var MAX = 10 * 1024 * 1024;
         function isImage(f) { return f.type && f.type.indexOf('image/') === 0; }
         if ((!isImage(front) && front.size > MAX) || (!isImage(back) && back.size > MAX)) {
-          alert('Each file must be 10 MB or smaller.');
+          showModal('Each file must be 10 MB or smaller.');
           return;
         }
 
@@ -393,7 +480,7 @@
           })
           .catch(function (err) {
             console.error('[Checkout] Error:', err);
-            alert((err && err.message) ? err.message : 'Something went wrong. Please try again.');
+            showModal((err && err.message) ? err.message : 'Something went wrong. Please try again.', 'Error');
             btn.disabled = false;
             btn.textContent = DEFAULT_BTN_LABEL;
             refreshGate();
