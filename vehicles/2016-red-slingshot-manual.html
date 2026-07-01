@@ -71,17 +71,18 @@
     .nav-links a { font-size:13px; color:var(--text-muted); transition:color 0.2s; font-weight:500; }
     .nav-links a:hover { color:var(--text-primary); }
 
-    /* Hero */
-    .hero { padding:var(--space-xl) 0; border-bottom:1px solid var(--border); }
-    .hero-grid { display:grid; grid-template-columns:1fr 1fr; gap:48px; align-items:center; }
-    .hero h1 { font-family:var(--heading); font-size:clamp(2.8rem,5vw,4rem); letter-spacing:1px; line-height:1.15; margin-bottom:20px; }
-    .hero .tag { font-size:12px; letter-spacing:2px; text-transform:uppercase; color:var(--orange); margin-bottom:12px; display:block; font-weight:600; }
-    .hero p { font-size:16px; color:var(--text-secondary); line-height:1.75; margin-bottom:var(--space-md); }
-    .hero-img { border-radius:12px; overflow:hidden; border:1px solid var(--border); box-shadow:var(--shadow-md); }
-    .hero-img img { width:100%; height:auto; object-fit:cover; }
-    .stats { display:flex; gap:var(--space-lg); flex-wrap:wrap; margin:32px 0; }
-    .stat-num { font-family:var(--heading); font-size:2.5rem; letter-spacing:1px; color:var(--orange); }
-    .stat-label { font-size:12px; color:var(--text-muted); letter-spacing:1px; text-transform:uppercase; margin-top:4px; }
+    /* Hero - Airbnb Style */
+    .hero { padding:0; border:none; }
+    .hero-img { width:100%; height:500px; overflow:hidden; position:relative; }
+    .hero-img img { width:100%; height:100%; object-fit:cover; }
+    .hero-info { padding:var(--space-lg) 0 var(--space-md); border-bottom:1px solid var(--border); }
+    .hero-info h1 { font-family:var(--heading); font-size:clamp(2rem,4vw,2.8rem); letter-spacing:1px; line-height:1.2; margin-bottom:12px; }
+    .hero-meta { display:flex; align-items:center; gap:16px; flex-wrap:wrap; font-size:14px; color:var(--text-secondary); margin-bottom:var(--space-sm); }
+    .hero-meta .tag { color:var(--orange); font-weight:600; }
+    .hero-meta .divider { color:var(--text-muted); }
+    .stats { display:flex; gap:var(--space-lg); flex-wrap:wrap; margin-top:var(--space-sm); }
+    .stat-num { font-family:var(--heading); font-size:1.8rem; letter-spacing:0.5px; color:var(--text-primary); }
+    .stat-label { font-size:12px; color:var(--text-muted); letter-spacing:0.5px; margin-top:4px; }
 
     /* Sections */
     .section { padding:var(--space-2xl) 0; border-bottom:1px solid var(--border); }
@@ -152,21 +153,21 @@
   </header>
 
   <section class="hero">
+    <div class="hero-img">
+      <img src="/red_polaris_slingshot.png" alt="2016 Polaris Slingshot S Red Manual">
+    </div>
     <div class="container">
-      <div class="hero-grid">
-        <div>
+      <div class="hero-info">
+        <h1>2016 Polaris Slingshot S</h1>
+        <div class="hero-meta">
           <span class="tag">Classic Manual · Driver's Machine</span>
-          <h1>2016 Polaris<br>Slingshot S<br><span style="color:var(--orange);">Red</span></h1>
-          <p>Pure manual driving experience. Five-speed transmission puts you in complete control. For drivers who love the feel of shifting gears and commanding the road.</p>
-          <div class="stats">
-            <div class="stat"><div class="stat-num">$180</div><div class="stat-label">From / 10 Hours</div></div>
-            <div class="stat"><div class="stat-num">5-Speed</div><div class="stat-label">Manual Trans</div></div>
-            <div class="stat"><div class="stat-num">300</div><div class="stat-label">Miles Included</div></div>
-          </div>
-          <a href="#booking-widget" class="btn btn-primary">Book This Slingshot →</a>
+          <span class="divider">·</span>
+          <span>Lancaster, PA</span>
         </div>
-        <div class="hero-img">
-          <img src="/red_polaris_slingshot.png" alt="2016 Polaris Slingshot S Red Manual">
+        <div class="stats">
+          <div class="stat"><div class="stat-num">$180</div><div class="stat-label">From / 10 Hours</div></div>
+          <div class="stat"><div class="stat-num">5-Speed</div><div class="stat-label">Manual Trans</div></div>
+          <div class="stat"><div class="stat-num">300</div><div class="stat-label">Miles Included</div></div>
         </div>
       </div>
     </div>
@@ -186,7 +187,7 @@
 
           <!-- Overview Tab -->
           <div class="tab-content active" id="overview-tab">
-            <h2>Why Rent the Red Manual?</h2>
+            <h2>Why Rent the 2016 Polaris Slingshot S?</h2>
             <p>This is for the driving purist. The 5-speed manual transmission gives you total control over every shift, every acceleration, every corner. Classic red finish, raw power, no computers between you and the road.</p>
 
             <p style="margin-top:24px;"><strong>Perfect for:</strong> Drivers who love manual transmissions, enthusiasts seeking an engaging experience, anyone who wants to feel connected to the machine.</p>
@@ -283,7 +284,7 @@
           <nav class="footer-nav">
             <a href="/">Polaris Slingshot</a>
             <a href="/pages/can-am-spyder-rental-pa.html">Can-Am Spyder</a>
-            <a href="/#book">Book Now</a>
+            <a href="#booking-widget">Book Now</a>
           </nav>
         </div>
         <div>
