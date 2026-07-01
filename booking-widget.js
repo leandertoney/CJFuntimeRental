@@ -235,7 +235,7 @@
     // Build widget HTML
     var html = '<div class="bw-container">'
       + '<div class="bw-header">'
-      + '<div class="bw-price-display" id="bw-price-display">Select dates to see price</div>'
+      + '<div class="bw-price-display" id="bw-price-display">Select rental type to see price</div>'
       + '</div>'
 
       // Duration type selector

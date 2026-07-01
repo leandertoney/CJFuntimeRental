@@ -12,7 +12,93 @@
 
   function apiFetch(url, opts) {
     return fetch(url, Object.assign({}, opts || {},
-      { headers: adminHeaders((opts || {}).headers) }));
+      { headers: adminHeaders((opts || {}).headers) }))
+      .then(function(response) {
+        // Handle 401 authentication errors professionally
+        if (response.status === 401) {
+          showToast('error', 'Session Expired', 'Please log in again to continue.');
+          setTimeout(function() {
+            localStorage.removeItem('admin_token');
+            window.location.reload();
+          }, 2000);
+          throw new Error('Authentication required');
+        }
+        return response;
+      });
+  }
+
+  // Toast Notification System (Airbnb/Turo Style)
+  var toastContainer = null;
+
+  function ensureToastContainer() {
+    if (!toastContainer) {
+      toastContainer = document.createElement('div');
+      toastContainer.className = 'toast-container';
+      document.body.appendChild(toastContainer);
+    }
+    return toastContainer;
+  }
+
+  function showToast(type, title, message) {
+    var container = ensureToastContainer();
+    var toast = document.createElement('div');
+    toast.className = 'toast ' + type;
+
+    var icons = {
+      success: '✓',
+      error: '✕',
+      warning: '!',
+      info: 'i'
+    };
+
+    toast.innerHTML = '<div class="toast-icon">' + (icons[type] || 'i') + '</div>' +
+      '<div class="toast-content">' +
+      '<div class="toast-title">' + title + '</div>' +
+      (message ? '<div class="toast-message">' + message + '</div>' : '') +
+      '</div>' +
+      '<button class="toast-close" aria-label="Close">×</button>';
+
+    container.appendChild(toast);
+
+    var closeBtn = toast.querySelector('.toast-close');
+    closeBtn.addEventListener('click', function() {
+      removeToast(toast);
+    });
+
+    // Auto-remove after 5 seconds
+    setTimeout(function() {
+      if (toast.parentElement) {
+        removeToast(toast);
+      }
+    }, 5000);
+  }
+
+  function removeToast(toast) {
+    toast.classList.add('exiting');
+    setTimeout(function() {
+      if (toast.parentElement) {
+        toast.parentElement.removeChild(toast);
+      }
+    }, 300);
+  }
+
+  // Loading Overlay
+  var loadingOverlay = null;
+
+  function showLoading() {
+    if (!loadingOverlay) {
+      loadingOverlay = document.createElement('div');
+      loadingOverlay.className = 'loading-overlay';
+      loadingOverlay.innerHTML = '<div class="loading-spinner"></div>';
+      document.body.appendChild(loadingOverlay);
+    }
+  }
+
+  function hideLoading() {
+    if (loadingOverlay && loadingOverlay.parentElement) {
+      loadingOverlay.parentElement.removeChild(loadingOverlay);
+      loadingOverlay = null;
+    }
   }
 
   var cfg = null;
@@ -1184,7 +1270,7 @@
 
       if (cellDate < today)   classes += ' past';
       if (cellDate.getTime() === today.getTime()) classes += ' today';
-      if (cfg.blockedDates.indexOf(dateStr) !== -1) classes += ' blocked';
+      if (cfg && cfg.blockedDates && cfg.blockedDates.indexOf(dateStr) !== -1) classes += ' blocked';
 
       html += '<div class="' + classes + '" data-date="' + dateStr + '">' + d + '</div>';
     }
@@ -1194,6 +1280,7 @@
     // Bind click handlers (skip past days)
     grid.querySelectorAll('.cal-day:not(.empty):not(.past)').forEach(function (cell) {
       cell.addEventListener('click', function () {
+        if (!cfg || !cfg.blockedDates) return;
         var date = this.getAttribute('data-date');
         var idx  = cfg.blockedDates.indexOf(date);
         if (idx === -1) {
