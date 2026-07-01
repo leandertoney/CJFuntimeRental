@@ -20,12 +20,12 @@
     .header-inner { display:flex; align-items:center; justify-content:space-between; }
     .header-logo img { height:40px; width:auto; }
     .main { flex:1; padding:64px 0; }
-    .checkout-grid { display:grid; grid-template-columns:1.4fr 1fr; gap:48px; align-items:start; }
+    .checkout-grid { display:grid; grid-template-columns:1.2fr 1fr; gap:48px; align-items:start; }
     .checkout-summary { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:32px; position:sticky; top:100px; }
     h1 { font-family:var(--heading); font-size:clamp(2rem,4vw,2.8rem); letter-spacing:3px; margin-bottom:24px; }
     h2 { font-family:var(--heading); font-size:1.6rem; letter-spacing:2px; margin-bottom:16px; }
     .summary-row { display:flex; justify-content:space-between; padding:12px 0; border-bottom:1px solid var(--border); }
-    .summary-row:last-child { border:none; font-weight:600; font-size:1.2rem; color:var(--amber); }
+    .summary-row:last-child { border:none; }
     .summary-label { color:var(--muted); }
     .summary-value { font-weight:600; }
     .btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; font-family:var(--body); font-weight:700; font-size:16px; border-radius:8px; padding:16px 32px; cursor:pointer; border:none; transition:all 0.2s; width:100%; margin-top:24px; }
@@ -237,6 +237,55 @@
         return '';
       }
 
+      // Calculate drop-off time
+      function calculateDropoffTime() {
+        var pickupTime = bookingData.pickupTime || bookingData.startTime || '09:00';
+        var durationHours = 0;
+
+        if (bookingData.durationType === 'hourly') {
+          durationHours = bookingData.hours || 3;
+        } else if (bookingData.durationType === '10hr') {
+          durationHours = 10;
+        } else if (bookingData.durationType === '24hr') {
+          durationHours = 24;
+        } else if (bookingData.durationType === 'multi') {
+          // For multi-day, return date is separate, so we just show same time
+          return pickupTime;
+        }
+
+        // Parse pickup time (format: "HH:MM" or "HH:MM AM/PM")
+        var timeParts = pickupTime.replace(/\s*(AM|PM)\s*/gi, '').split(':');
+        var hours = parseInt(timeParts[0], 10);
+        var minutes = parseInt(timeParts[1], 10) || 0;
+
+        // Handle 12-hour format
+        if (pickupTime.match(/PM/i) && hours !== 12) {
+          hours += 12;
+        } else if (pickupTime.match(/AM/i) && hours === 12) {
+          hours = 0;
+        }
+
+        // Add duration
+        hours += durationHours;
+
+        // Handle day overflow
+        var daysAdded = Math.floor(hours / 24);
+        hours = hours % 24;
+
+        // Format back to readable time
+        var ampm = hours >= 12 ? 'PM' : 'AM';
+        var displayHours = hours % 12;
+        if (displayHours === 0) displayHours = 12;
+
+        var result = displayHours + ':' + (minutes < 10 ? '0' : '') + minutes + ' ' + ampm;
+
+        if (daysAdded > 0) {
+          result += ' (next day)';
+        }
+
+        return result;
+      }
+
       // Render checkout page
       var html = '<h1>Review & Complete Booking</h1>';
       html += '<div class="checkout-grid">';
@@ -244,21 +293,47 @@
       // Left column: Details
       html += '<div>';
       html += '<div class="details-section">';
-      html += '<h2>Trip Details</h2>';
-      html += '<div class="detail-row"><span class="detail-label">Vehicle</span><span>' + (vehicleInfo ? vehicleInfo.name : bookingData.vehicleKey) + '</span></div>';
-      html += '<div class="detail-row"><span class="detail-label">Duration</span><span>' + getDurationLabel() + '</span></div>';
-      html += '<div class="detail-row"><span class="detail-label">Pickup Date</span><span>' + formatDate(bookingData.startDate) + '</span></div>';
+      html += '<h2>📋 Trip Details</h2>';
+      html += '<div class="detail-row"><span class="detail-label">Vehicle</span><span style="font-weight:600;color:var(--white);">' + (vehicleInfo ? vehicleInfo.name : bookingData.vehicleKey) + '</span></div>';
+      html += '<div class="detail-row"><span class="detail-label">Duration</span><span style="font-weight:600;color:var(--white);">' + getDurationLabel() + '</span></div>';
+      html += '<div class="detail-row"><span class="detail-label">Pickup Date</span><span style="font-weight:600;color:var(--white);">' + formatDate(bookingData.startDate) + '</span></div>';
+      html += '<div class="detail-row"><span class="detail-label">Pickup Time</span><span style="font-weight:600;color:var(--white);">' + (bookingData.pickupTime || bookingData.startTime || '9:00 AM') + '</span></div>';
+
+      // Show return date and time
       if (bookingData.durationType === 'multi') {
-        html += '<div class="detail-row"><span class="detail-label">Return Date</span><span>' + formatDate(bookingData.endDate) + '</span></div>';
+        html += '<div class="detail-row"><span class="detail-label">Return Date</span><span style="font-weight:600;color:var(--white);">' + formatDate(bookingData.endDate) + '</span></div>';
+        html += '<div class="detail-row"><span class="detail-label">Return Time</span><span style="font-weight:600;color:var(--white);">' + calculateDropoffTime() + '</span></div>';
+      } else {
+        // For hourly/10hr/24hr, show drop-off time on same or next day
+        html += '<div class="detail-row"><span class="detail-label">Drop-off Time</span><span style="font-weight:600;color:var(--white);">' + calculateDropoffTime() + '</span></div>';
       }
-      html += '<div class="detail-row"><span class="detail-label">Pickup Time</span><span>' + (bookingData.pickupTime || bookingData.startTime || '9:00 AM') + '</span></div>';
+
       html += '</div>';
+
+      // Motorcycle license requirement for Can-Am/Spyder
+      var requiresMotorcycleLicense = bookingData.vehicleType === 'canam' ||
+                                      bookingData.vehicleKey.toLowerCase().includes('canam') ||
+                                      bookingData.vehicleKey.toLowerCase().includes('spyder');
+
+      if (requiresMotorcycleLicense) {
+        html += '<div class="details-section">';
+        html += '<div style="background:rgba(255,183,0,0.1);border:1px solid rgba(255,183,0,0.3);border-radius:8px;padding:16px;margin-bottom:16px;">';
+        html += '<div style="display:flex;align-items:start;gap:12px;">';
+        html += '<div style="font-size:24px;">🏍️</div>';
+        html += '<div>';
+        html += '<div style="font-weight:600;color:var(--amber);margin-bottom:6px;">Motorcycle License Required</div>';
+        html += '<div style="font-size:14px;color:rgba(255,255,255,0.8);line-height:1.5;">This vehicle requires a valid motorcycle license. Please bring your license to pickup. You will be asked to verify your license before departure.</div>';
+        html += '</div>';
+        html += '</div>';
+        html += '</div>';
+        html += '</div>';
+      }
 
       if (bookingData.deliveryDropoff || bookingData.deliveryPickup) {
         html += '<div class="details-section">';
         html += '<h2>Delivery Options</h2>';
-        if (bookingData.deliveryDropoff) html += '<div class="detail-row"><span class="detail-label">Drop-off at my location</span><span>$50</span></div>';
-        if (bookingData.deliveryPickup) html += '<div class="detail-row"><span class="detail-label">Pick up from my location</span><span>$50</span></div>';
+        if (bookingData.deliveryDropoff) html += '<div class="detail-row"><span class="detail-label">Drop-off at my location</span><span style="font-weight:600;color:var(--white);">$50</span></div>';
+        if (bookingData.deliveryPickup) html += '<div class="detail-row"><span class="detail-label">Pick up from my location</span><span style="font-weight:600;color:var(--white);">$50</span></div>';
         html += '</div>';
       }
 
@@ -272,22 +347,30 @@
         : "Upload any valid government <strong>photo ID</strong> — a driver's license or a state ID card. No passport needed.";
 
       html += '<div class="details-section" id="id-upload-section">';
-      html += '<h2>Upload Your ID</h2>';
+      // Adaptive instructions based on device type (mobile vs desktop)
+      var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                     (navigator.maxTouchPoints && navigator.maxTouchPoints > 1);
+      var uploadInstructions = isMobile
+        ? 'Tap below to <strong>take a photo with your camera</strong> or upload existing images of the <strong>front and back</strong>. Accepted: JPG, PNG, WEBP, or PDF (max 10&nbsp;MB each). Your ID is stored securely for pickup verification only.'
+        : 'Click below to <strong>upload images</strong> of the <strong>front and back</strong>. Accepted: JPG, PNG, WEBP, or PDF (max 10&nbsp;MB each). Your ID is stored securely for pickup verification only.';
+      var uploadPrompt = isMobile ? 'Tap to take photo or upload' : 'Click to upload from your computer';
+
+      html += '<h2>🪪 Upload Your ID</h2>';
       html += '<p class="id-help">' + idRuleText + '</p>';
-      html += '<p class="id-help" style="color:var(--muted);">Tap below to <strong>take a photo with your camera</strong> or upload existing images of the <strong>front and back</strong>. Accepted: JPG, PNG, WEBP, or PDF (max 10&nbsp;MB each). Your ID is stored securely for pickup verification only.</p>';
+      html += '<p class="id-help" style="color:var(--muted);font-size:14px;">' + uploadInstructions + '</p>';
       html += '<div class="id-uploads">';
       html += '  <label class="id-drop"><span class="id-drop-label">Front of ID</span>'
             + '<input type="file" id="id-front" accept="image/*,application/pdf" capture="environment">'
-            + '<span class="id-file-name" id="id-front-name">Tap to take photo or upload</span></label>';
+            + '<span class="id-file-name" id="id-front-name">' + uploadPrompt + '</span></label>';
       html += '  <label class="id-drop"><span class="id-drop-label">Back of ID</span>'
             + '<input type="file" id="id-back" accept="image/*,application/pdf" capture="environment">'
-            + '<span class="id-file-name" id="id-back-name">Tap to take photo or upload</span></label>';
+            + '<span class="id-file-name" id="id-back-name">' + uploadPrompt + '</span></label>';
       html += '</div>';
       html += '</div>';
 
       // ── Rental agreement (contract) ─────────────────────────────────────────
       html += '<div class="details-section" id="agreement-section">';
-      html += '<h2>Rental Agreement</h2>';
+      html += '<h2>📄 Rental Agreement</h2>';
       html += '<div class="agreement-box" id="agreement-box">' + esc(AGREEMENT_TEXT) + '</div>';
       html += '<label class="agreement-check"><input type="checkbox" id="agree-check"> '
             + 'I have read and agree to the Rental Agreement.</label>';
@@ -299,12 +382,19 @@
       html += '<div>';
       html += '<div class="checkout-summary">';
       html += '<h2>Order Summary</h2>';
-      html += '<div class="summary-row"><span class="summary-label">Base Price</span><span class="summary-value">' + formatCurrency(bookingData.basePrice * 100) + '</span></div>';
+      html += '<div class="summary-row"><span class="summary-label">Base Price</span><span class="summary-value" style="font-weight:600;color:var(--white);">' + formatCurrency(bookingData.basePrice * 100) + '</span></div>';
       if (bookingData.deliveryFee > 0) {
-        html += '<div class="summary-row"><span class="summary-label">Delivery</span><span class="summary-value">' + formatCurrency(bookingData.deliveryFee * 100) + '</span></div>';
+        html += '<div class="summary-row"><span class="summary-label">Delivery</span><span class="summary-value" style="font-weight:600;color:var(--white);">' + formatCurrency(bookingData.deliveryFee * 100) + '</span></div>';
       }
-      html += '<div class="summary-row"><span class="summary-label">Total</span><span class="summary-value">' + formatCurrency(bookingData.total * 100) + '</span></div>';
-      html += '<button class="btn btn-primary" id="complete-booking-btn">Complete Booking →</button>';
+      html += '<div class="summary-row" style="margin-top:16px;padding-top:20px;"><span class="summary-label" style="color:var(--white);font-weight:600;">Total</span><span class="summary-value" style="font-size:1.5rem;font-weight:700;color:var(--orange);">' + formatCurrency(bookingData.total * 100) + '</span></div>';
+
+      // Stripe checkout notice
+      html += '<div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:14px;margin-top:20px;font-size:13px;line-height:1.5;color:rgba(255,255,255,0.7);text-align:center;">';
+      html += '<div style="margin-bottom:6px;">🔒 <strong style="color:#fff;">Secure Checkout</strong></div>';
+      html += 'You\'ll be redirected to Stripe to complete your booking and provide additional information.';
+      html += '</div>';
+
+      html += '<button class="btn btn-primary" id="complete-booking-btn">Continue to Secure Checkout →</button>';
       html += '</div>';
       html += '</div>';
 
@@ -322,8 +412,21 @@
       function refreshGate() {
         var ready = frontInput.files.length > 0 && backInput.files.length > 0 && agreeCheck.checked;
         completeBtn.disabled = !ready;
-        completeBtn.textContent = ready ? DEFAULT_BTN_LABEL : 'Upload ID & accept agreement to continue';
+        completeBtn.textContent = ready ? DEFAULT_BTN_LABEL : 'Continue →';
+        // Visual disabled state styling
+        if (!ready) {
+          completeBtn.style.opacity = '0.4';
+          completeBtn.style.cursor = 'not-allowed';
+        } else {
+          completeBtn.style.opacity = '1';
+          completeBtn.style.cursor = 'pointer';
+        }
       }
+
+      // Use same mobile detection for consistency
+      var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                     (navigator.maxTouchPoints && navigator.maxTouchPoints > 1);
+      var uploadPromptText = isMobile ? 'Tap to take photo or upload' : 'Click to upload from your computer';
 
       function wireFileInput(input, nameId) {
         input.addEventListener('change', function () {
@@ -332,7 +435,7 @@
             document.getElementById(nameId).textContent = input.files[0].name;
             if (label) label.classList.add('filled');
           } else {
-            document.getElementById(nameId).textContent = 'Tap to take photo or upload';
+            document.getElementById(nameId).textContent = uploadPromptText;
             if (label) label.classList.remove('filled');
           }
           refreshGate();

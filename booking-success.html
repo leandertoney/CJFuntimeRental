@@ -444,6 +444,14 @@
 (function () {
   'use strict';
 
+  // Clear booking data from sessionStorage - booking is complete
+  try {
+    sessionStorage.removeItem('cjfr_booking_data');
+    console.log('[BookingSuccess] Cleared booking data from sessionStorage');
+  } catch (e) {
+    console.error('[BookingSuccess] Failed to clear sessionStorage:', e);
+  }
+
   // ── Confetti burst ────────────────────────────────────────────
   var canvas = document.getElementById('confetti');
   var ctx = canvas.getContext('2d');

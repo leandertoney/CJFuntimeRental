@@ -4,20 +4,21 @@
  */
 
 .bw-container {
-  background: #1a1a1a;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.12);
   border-radius: 12px;
   padding: 24px;
   position: sticky;
   top: 100px;
   max-width: 400px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.12);
 }
 
 /* Header with live pricing */
 .bw-header {
   margin-bottom: 24px;
   padding-bottom: 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 /* Up-front ID requirement disclosure */
@@ -36,10 +37,10 @@
 
 .bw-price-display {
   font-family: var(--heading, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--amber, #ffb700);
-  letter-spacing: 0.5px;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #222;
+  letter-spacing: 0.3px;
 }
 
 /* Section spacing */
@@ -49,11 +50,41 @@
 
 .bw-label {
   display: block;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
+  color: #222;
   margin-bottom: 8px;
-  letter-spacing: 0.3px;
+  letter-spacing: 0;
+}
+
+/* Date inputs */
+.bw-date-input {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 16px;
+  font-family: inherit;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  color: #222;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.bw-date-input:hover {
+  border-color: #bbb;
+}
+
+.bw-date-input:focus {
+  outline: none;
+  border-color: #FF6B00;
+  box-shadow: 0 0 0 3px rgba(255,107,0,0.1);
+}
+
+.bw-hint {
+  font-size: 12px;
+  color: #717171;
+  margin-top: 6px;
 }
 
 /* Duration type buttons */
@@ -64,8 +95,8 @@
 }
 
 .bw-duration-btn {
-  background: #242424;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #fff;
+  border: 1px solid #ddd;
   border-radius: 8px;
   padding: 14px 12px;
   cursor: pointer;
@@ -77,13 +108,13 @@
 }
 
 .bw-duration-btn:hover {
-  background: #2a2a2a;
-  border-color: rgba(255, 255, 255, 0.2);
+  background: #f7f7f7;
+  border-color: #bbb;
 }
 
 .bw-duration-btn.selected {
-  background: var(--orange, #ff4d00);
-  border-color: var(--orange, #ff4d00);
+  background: #222;
+  border-color: #222;
 }
 
 .bw-duration-btn.selected .bw-btn-label,
@@ -94,14 +125,14 @@
 .bw-btn-label {
   font-size: 14px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.95);
-  letter-spacing: 0.3px;
+  color: #222;
+  letter-spacing: 0;
 }
 
 .bw-btn-sub {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.5);
-  letter-spacing: 0.2px;
+  font-size: 12px;
+  color: #717171;
+  letter-spacing: 0;
 }
 
 /* Input fields */

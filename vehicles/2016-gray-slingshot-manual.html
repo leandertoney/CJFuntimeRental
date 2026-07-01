@@ -82,13 +82,13 @@
     @keyframes fadeIn { from{opacity:0;transform:translateY(8px);} to{opacity:1;transform:translateY(0);} }
 
     /* Specs Grid */
-    .specs-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:var(--space-lg); margin-top:var(--space-lg); }
-    .spec-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:var(--space-lg) var(--space-md); box-shadow:var(--shadow-sm); transition:all 0.2s ease; }
+    .specs-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:var(--space-lg); margin-top:var(--space-lg); }
+    .spec-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:32px 28px; box-shadow:var(--shadow-sm); transition:all 0.2s ease; }
     .spec-card:hover { border-color:rgba(255,255,255,0.2); transform:translateY(-2px); box-shadow:var(--shadow-md); }
-    .spec-card h4 { font-family:var(--heading); font-size:1rem; letter-spacing:0.5px; margin-bottom:var(--space-sm); color:var(--text-primary); }
-    .spec-list { list-style:none; display:flex; flex-direction:column; gap:10px; }
-    .spec-list li { font-size:14px; color:var(--text-secondary); padding-left:20px; position:relative; line-height:1.6; }
-    .spec-list li::before { content:'✓'; color:var(--orange); position:absolute; left:0; font-weight:700; }
+    .spec-card h4 { font-family:var(--heading); font-size:1.2rem; letter-spacing:0.5px; margin-bottom:20px; color:var(--text-primary); display:flex; align-items:center; gap:10px; }
+    .spec-list { list-style:none; display:flex; flex-direction:column; gap:12px; }
+    .spec-list li { font-size:15px; color:var(--text-secondary); padding-left:24px; position:relative; line-height:1.7; }
+    .spec-list li::before { content:'✓'; color:var(--orange); position:absolute; left:0; font-weight:700; font-size:16px; }
 
     /* Page Layout with Sticky Sidebar */
     .page-layout { display:grid; grid-template-columns:1fr 420px; gap:var(--space-xl); align-items:start; }
@@ -110,14 +110,13 @@
     @media(max-width:1024px) {
       .page-layout{grid-template-columns:1fr;gap:var(--space-lg);}
       .page-sidebar{position:relative;top:0;max-height:none;}
-      .specs-grid{grid-template-columns:repeat(2,1fr);}
     }
     @media(max-width:768px) {
       .hero-grid{grid-template-columns:1fr;gap:var(--space-lg);}
       .footer-inner{grid-template-columns:1fr 1fr;}
       .nav-links{display:none;}
+      .specs-grid{grid-template-columns:1fr;}
     }
-    @media(max-width:640px) { .specs-grid{grid-template-columns:1fr;} }
   </style>
 </head>
 <body>
