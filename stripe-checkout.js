@@ -182,45 +182,60 @@
   function calcPrice() {
     if (!state.vehicle || !state.durationType) return { total: 0, base: 0, delivery: 0, savings: 0, label: '', perUnit: 0 };
     var p = getPricing();
-    var type = state.vehicle.type || 'slingshot';
     var base = 0;
     var label = '';
     var perUnit = 0;
     var savings = 0;
-    var fullDayRate = 0;
 
     switch (state.durationType) {
       case 'hourly':
-        perUnit = p.hourlyRate;
-        base = perUnit * state.hours;
-        label = state.hours + ' hour' + (state.hours !== 1 ? 's' : '') + ' × $' + perUnit + '/hr';
-        // Calculate what 10hr rate would be for savings comparison
-        fullDayRate = p.tenhrRate[type] || p.tenhrRate.slingshot;
+        perUnit = p.hourlyRate || 30;
+        var hours = state.hours || 3;
+
+        // Apply $180 cap for 3-10 hours
+        if (hours >= 3 && hours <= 10) {
+          base = Math.min(hours * perUnit, p.hourlyCap || 180);
+          if (base === (p.hourlyCap || 180) && hours * perUnit > base) {
+            label = hours + ' hours (capped at $' + base + ')';
+          } else {
+            label = hours + ' hour' + (hours !== 1 ? 's' : '') + ' × $' + perUnit + '/hr';
+          }
+        } else if (hours > 10) {
+          // Over 10 hours = daily rate
+          base = p.dailyRate || 250;
+          label = '24-hour rental (over 10 hours)';
+        } else {
+          // Less than 3 hours (shouldn't happen with 3hr minimum)
+          base = hours * perUnit;
+          label = hours + ' hour' + (hours !== 1 ? 's' : '') + ' × $' + perUnit + '/hr';
+        }
         break;
+
       case '10hr':
       case '9hr': // backward compatibility
-        base = p.tenhrRate[type] || p.tenhrRate.slingshot;
+        base = p.hourlyCap || 180;
         perUnit = base;
         label = '10-hour rental';
         break;
+
       case '24hr':
-        base = p.dailyRate[type] || p.dailyRate.slingshot;
+        base = p.dailyRate || 250;
         perUnit = base;
         label = '24-hour rental';
         break;
+
       case 'multi':
         var days = calcMultiDayDays();
         if (days > 0) {
-          var tier = getMultiDayRate(type, days);
-          perUnit = tier.perDay;
+          perUnit = p.multiDayRate || 220;
           base = perUnit * days;
           label = days + ' day' + (days !== 1 ? 's' : '') + ' × $' + perUnit + '/day';
-          // Savings vs standard 24hr rate
-          var standardDaily = p.dailyRate[type] || p.dailyRate.slingshot;
+
+          // Calculate savings vs single 24hr rate
+          var standardDaily = p.dailyRate || 250;
           if (perUnit < standardDaily) {
             savings = (standardDaily - perUnit) * days;
           }
-          if (tier.label) label += ' (' + tier.label + ')';
         }
         break;
     }
@@ -231,7 +246,7 @@
       if (state.deliveryPickup)  delivery += p.delivery.fee;
     }
 
-    return { total: base + delivery, base: base, delivery: delivery, savings: savings, label: label, perUnit: perUnit };
+    return { total: Math.round(base + delivery), base: Math.round(base), delivery: delivery, savings: Math.round(savings), label: label, perUnit: perUnit };
   }
 
   // ── Modal open / close ─────────────────────────────────────────────────────

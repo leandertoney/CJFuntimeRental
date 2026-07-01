@@ -12,21 +12,11 @@
     "leadCapture": { "visible": true }
   },
   "pricing": {
-    "hourlyRate": 35,
+    "hourlyRate": 30,
     "hourlyMin": 3,
-    "tenhrRate": {
-      "slingshot": 180,
-      "canam": 180
-    },
-    "dailyRate": {
-      "slingshot": 250,
-      "canam": 250
-    },
-    "multiDay": [
-      { "minDays": 7, "label": "Weekly rate",  "slingshot": 190, "canam": 190, "enabled": true },
-      { "minDays": 4, "label": "4–6 day rate", "slingshot": 210, "canam": 210, "enabled": true },
-      { "minDays": 2, "label": "2–3 day rate", "slingshot": 225, "canam": 225, "enabled": true }
-    ],
+    "hourlyCap": 180,
+    "dailyRate": 250,
+    "multiDayRate": 220,
     "delivery": {
       "enabled": true,
       "fee": 50,
@@ -69,7 +59,7 @@
     },
     "fleet": {
       "headline": "Choose<br>Your Ride",
-      "subtext":  "Three vehicles. All 3-wheel. All open-air. Starting at $180 for 10 hours."
+      "subtext":  ""
     },
     "how": {
       "headline":   "Ready in 3 Steps",

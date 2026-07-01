@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pricing Verification Test</title>
+  <style>
+    body { font-family: 'Inter', sans-serif; background: #111; color: #fff; padding: 40px; max-width: 800px; margin: 0 auto; }
+    h1 { color: #FF6B00; }
+    .test { background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 20px; margin: 20px 0; }
+    .test h3 { margin: 0 0 16px; color: #FF6B00; }
+    .result { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #333; }
+    .result:last-child { border-bottom: none; }
+    .pass { color: #10b981; }
+    .fail { color: #ef4444; }
+    .expected { color: #888; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <h1>🧪 Pricing Calculation Verification</h1>
+  <p>Testing new pricing structure: $30/hr (3hr min), $180 cap (3-10hrs), $250 (24hr), $220/day (multi-day)</p>
+
+  <div id="results"></div>
+
+  <script>
+    // Simulate the pricing config
+    const pricing = {
+      hourlyRate: 30,
+      hourlyMin: 3,
+      hourlyCap: 180,
+      dailyRate: 250,
+      multiDayRate: 220
+    };
+
+    function calculatePrice(hours, days) {
+      if (days && days > 1) {
+        // Multi-day
+        return { total: pricing.multiDayRate * days, label: `${days} days × $${pricing.multiDayRate}/day` };
+      }
+
+      if (hours) {
+        if (hours >= 3 && hours <= 10) {
+          // Apply cap
+          const uncapped = hours * pricing.hourlyRate;
+          const total = Math.min(uncapped, pricing.hourlyCap);
+          const capped = total < uncapped;
+          return {
+            total,
+            label: capped ? `${hours} hours (capped at $${total})` : `${hours} hours × $${pricing.hourlyRate}/hr`
+          };
+        } else if (hours > 10) {
+          // Over 10 hours = daily rate
+          return { total: pricing.dailyRate, label: '24-hour rental (over 10 hours)' };
+        }
+      }
+
+      return { total: 0, label: 'Invalid' };
+    }
+
+    const tests = [
+      { input: { hours: 3 }, expected: 90, desc: '3 hours' },
+      { input: { hours: 4 }, expected: 120, desc: '4 hours' },
+      { input: { hours: 5 }, expected: 150, desc: '5 hours' },
+      { input: { hours: 6 }, expected: 180, desc: '6 hours (cap)' },
+      { input: { hours: 7 }, expected: 180, desc: '7 hours (cap)' },
+      { input: { hours: 8 }, expected: 180, desc: '8 hours (cap)' },
+      { input: { hours: 9 }, expected: 180, desc: '9 hours (cap)' },
+      { input: { hours: 10 }, expected: 180, desc: '10 hours (cap)' },
+      { input: { hours: 11 }, expected: 250, desc: '11 hours (daily rate)' },
+      { input: { hours: 24 }, expected: 250, desc: '24 hours' },
+      { input: { days: 2 }, expected: 440, desc: '2 days' },
+      { input: { days: 3 }, expected: 660, desc: '3 days' },
+      { input: { days: 7 }, expected: 1540, desc: '7 days' }
+    ];
+
+    let html = '';
+    let allPassed = true;
+
+    tests.forEach(test => {
+      const result = calculatePrice(test.input.hours, test.input.days);
+      const passed = result.total === test.expected;
+      if (!passed) allPassed = false;
+
+      html += `
+        <div class="test">
+          <h3>${test.desc}</h3>
+          <div class="result">
+            <span>Calculated:</span>
+            <strong class="${passed ? 'pass' : 'fail'}">${result.total}</strong>
+          </div>
+          <div class="result">
+            <span>Expected:</span>
+            <strong class="expected">${test.expected}</strong>
+          </div>
+          <div class="result">
+            <span>Status:</span>
+            <strong class="${passed ? 'pass' : 'fail'}">${passed ? '✓ PASS' : '✗ FAIL'}</strong>
+          </div>
+          <div class="result">
+            <span>Label:</span>
+            <span>${result.label}</span>
+          </div>
+        </div>
+      `;
+    });
+
+    html = `<div class="test" style="background: ${allPassed ? '#0a3d2a' : '#3d0a0a'};">
+      <h3>${allPassed ? '✓ All Tests Passed!' : '✗ Some Tests Failed'}</h3>
+    </div>` + html;
+
+    document.getElementById('results').innerHTML = html;
+  </script>
+</body>
+</html>
