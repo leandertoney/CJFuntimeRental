@@ -1638,7 +1638,7 @@
     ───────────────────────────────────────── */
     /* ── Booking Modal ───────────────────────── */
     .booking-modal {
-      display: none;
+      display: none !important; /* DISABLED - Using vehicle detail pages instead */
       position: fixed;
       inset: 0;
       z-index: 1100;
@@ -1985,7 +1985,7 @@
         <a href="#reviews">Reviews</a>
         <a href="#faq">FAQ</a>
         <a href="#win" class="btn btn-outline-orange" style="font-size:13px;padding:8px 18px">Get 10% Off</a>
-        <a href="#book" class="btn btn-primary">Book Now</a>
+        <a href="#fleet" class="btn btn-primary">Book Now</a>
       </nav>
       <button class="hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
     </div>
@@ -2015,7 +2015,7 @@
         <h1><span style="color:var(--orange)">Polaris Slingshot</span><br>Rental Lancaster, PA</h1>
         <p>No motorcycle license needed. Just show up and ride.</p>
         <div class="hero-ctas">
-          <a href="#book" class="btn btn-primary">Book Your Ride &rarr;</a>
+          <a href="#fleet" class="btn btn-primary">Book Your Ride &rarr;</a>
           <a href="#win" class="btn btn-outline-orange">Get 10% Off &rarr;</a>
         </div>
       </div>
@@ -2073,7 +2073,7 @@
     <div class="container">
       <div class="fleet-header">
         <h2>Choose<br>Your Ride</h2>
-        <p>Three vehicles. All 3-wheel. All open-air. Starting at $180.</p>
+        <p>Four vehicles. All 3-wheel. All open-air. Starting at $180.</p>
       </div>
       <div class="fleet-grid" id="fleet-grid">
         <!-- Rendered dynamically from SITE_CONFIG -->
@@ -2286,7 +2286,7 @@
         <div class="lead-success-icon">&#127881;</div>
         <h3>Check Your Email!</h3>
         <p>Your 10% off code is on its way. Ready to book? Check availability now.</p>
-        <a href="#book" class="btn btn-primary" style="margin-top:8px">Book Your Ride &rarr;</a>
+        <a href="#fleet" class="btn btn-primary" style="margin-top:8px">Book Your Ride &rarr;</a>
       </div>
     </div>
   </section>
@@ -2357,7 +2357,7 @@
             <a href="/#how">How It Works</a>
             <a href="/#reviews">Reviews</a>
             <a href="/#faq">FAQ</a>
-            <a href="/#book">Book Now</a>
+            <a href="/#fleet">Book Now</a>
             <a href="/admin" style="opacity:0.35;font-size:11px;">Admin</a>
           </nav>
         </div>
@@ -2926,6 +2926,15 @@
 
   <!-- APPLY ADMIN CONFIG TO FRONTEND -->
   <script src="/frontend-config.js"></script>
+
+  <!-- Redirect #book hash to #fleet (modal removed) -->
+  <script>
+    (function() {
+      if (window.location.hash === '#book') {
+        window.location.hash = '#fleet';
+      }
+    })();
+  </script>
 
 </body>
 </html>
