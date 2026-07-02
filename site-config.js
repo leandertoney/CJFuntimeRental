@@ -20,7 +20,8 @@ window.SITE_CONFIG = {
       "tag": "Most Popular · No Moto License",
       "specs": "3-Wheel Autocycle · 2 Seats · AutoDrive · Open-Air",
       "type": "slingshot",
-      "ratePerDay": 180
+      "ratePerDay": 180,
+      "img": "cj_orange_sling.jpg"
     },
     "slingshot_2020": {
       "available": true,
@@ -28,7 +29,8 @@ window.SITE_CONFIG = {
       "tag": "Great Value · Manual",
       "specs": "3-Wheel Autocycle · 2 Seats · 5-Speed Manual",
       "type": "slingshot",
-      "ratePerDay": 180
+      "ratePerDay": 180,
+      "img": "gray_polaris_front.png"
     },
     "canam_spyder": {
       "available": true,
@@ -36,7 +38,8 @@ window.SITE_CONFIG = {
       "tag": "Premium Touring",
       "specs": "3-Wheel Stability · 2 Seats · F3 Limited · Heated Grips",
       "type": "canam",
-      "ratePerDay": 180
+      "ratePerDay": 180,
+      "img": "Can_Am_Spyder_F3_Limited.png"
     }
   },
   "copy": {
