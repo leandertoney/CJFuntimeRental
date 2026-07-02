@@ -384,6 +384,13 @@
           <p>Check your inbox for your booking summary and receipt.</p>
         </div>
       </div>
+      <div class="step-item done">
+        <div class="step-num">&#10003;</div>
+        <div class="step-text">
+          <h3>ID &amp; Agreement On File</h3>
+          <p>Your photo ID and signed rental agreement were received. Bring the same physical ID to pickup.</p>
+        </div>
+      </div>
       <div class="step-item">
         <div class="step-num">2</div>
         <div class="step-text">
@@ -395,7 +402,7 @@
         <div class="step-num">3</div>
         <div class="step-text">
           <h3>Show Up &amp; Ride</h3>
-          <p>Chris walks you through the vehicle, and you're off. Just bring your driver's license.</p>
+          <p>Chris confirms your ID at pickup, walks you through the vehicle, and you're off.</p>
         </div>
       </div>
     </div>
@@ -436,6 +443,14 @@
 <script>
 (function () {
   'use strict';
+
+  // Clear booking data from sessionStorage - booking is complete
+  try {
+    sessionStorage.removeItem('cjfr_booking_data');
+    console.log('[BookingSuccess] Cleared booking data from sessionStorage');
+  } catch (e) {
+    console.error('[BookingSuccess] Failed to clear sessionStorage:', e);
+  }
 
   // ── Confetti burst ────────────────────────────────────────────
   var canvas = document.getElementById('confetti');

@@ -1980,12 +1980,12 @@
         <img src="cj_funtime_logo.png" alt="CJ's Fun Time Rental">
       </a>
       <nav class="nav-links" id="nav-links">
-        <a href="#fleet">Our Fleet</a>
+        <a href="/fleet.html">Our Fleet</a>
         <a href="#how-book">How It Works</a>
         <a href="#reviews">Reviews</a>
         <a href="#faq">FAQ</a>
         <a href="#win" class="btn btn-outline-orange" style="font-size:13px;padding:8px 18px">Get 10% Off</a>
-        <a href="#fleet" class="btn btn-primary">Book Now</a>
+        <a href="/fleet.html" class="btn btn-primary">Book Now</a>
       </nav>
       <button class="hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
     </div>
@@ -2015,7 +2015,7 @@
         <h1><span style="color:var(--orange)">Polaris Slingshot</span><br>Rental Lancaster, PA</h1>
         <p>No motorcycle license needed. Just show up and ride.</p>
         <div class="hero-ctas">
-          <a href="#fleet" class="btn btn-primary">Book Your Ride &rarr;</a>
+          <a href="/fleet.html" class="btn btn-primary">Book Your Ride &rarr;</a>
           <a href="#win" class="btn btn-outline-orange">Get 10% Off &rarr;</a>
         </div>
       </div>
@@ -2035,7 +2035,7 @@
           <span class="how-step-eyebrow">Step 01</span>
           <h2>Book in Minutes</h2>
           <p>Choose your vehicle, pick your date, and pay securely online in minutes. Weekends fill fast — lock in your spot before someone else does.</p>
-          <div><button class="btn btn-primary" data-stripe-book>Reserve Your Ride &rarr;</button></div>
+          <div><a href="/fleet.html" class="btn btn-primary">Reserve Your Ride &rarr;</a></div>
         </div>
       </div>
     </div>
@@ -2062,7 +2062,7 @@
           <span class="how-step-eyebrow">Step 03</span>
           <h2>No Motorcycle License Required</h2>
           <p>Explore Central PA on three wheels. No motorcycle experience needed — just a valid driver's license and a sense of adventure.</p>
-          <div><button class="btn btn-primary" data-stripe-book>Book Your Ride &rarr;</button></div>
+          <div><a href="/fleet.html" class="btn btn-primary">Book Your Ride &rarr;</a></div>
         </div>
       </div>
     </div>
@@ -2079,8 +2079,7 @@
         <!-- Rendered dynamically from SITE_CONFIG -->
       </div>
       <div class="fleet-ctas">
-        <button class="btn btn-primary" data-stripe-book>Book Now &rarr;</button>
-        <button class="btn btn-outline fleet-view-all-btn" style="display:none;">View All Vehicles</button>
+        <button class="btn btn-outline fleet-view-all-btn">View All Vehicles</button>
       </div>
     </div>
   </section>
@@ -2261,12 +2260,12 @@
 
   <!-- FAQ -->
   <!-- FINAL CTA -->
-  <section class="cta-section" id="book">
+  <section class="cta-section">
     <div class="container">
       <h2 class="reveal">Book Your<br>Ride Today</h2>
       <p class="reveal">Weekends fill up fast — reserve your ride in minutes.</p>
       <div class="cta-actions reveal">
-        <button class="btn btn-primary" data-stripe-book>Book Your Ride &rarr;</button>
+        <a href="/fleet.html" class="btn btn-primary">Book Your Ride &rarr;</a>
       </div>
     </div>
   </section>
@@ -2286,7 +2285,7 @@
         <div class="lead-success-icon">&#127881;</div>
         <h3>Check Your Email!</h3>
         <p>Your 10% off code is on its way. Ready to book? Check availability now.</p>
-        <a href="#fleet" class="btn btn-primary" style="margin-top:8px">Book Your Ride &rarr;</a>
+        <a href="/fleet.html" class="btn btn-primary" style="margin-top:8px">Book Your Ride &rarr;</a>
       </div>
     </div>
   </section>
@@ -2298,7 +2297,7 @@
         <div class="faq-left reveal">
           <h2>Common<br>Questions</h2>
           <p>Everything you need to know before you book.</p>
-          <button class="btn btn-ghost" data-stripe-book>Book Now &rarr;</button>
+          <a href="/fleet.html" class="btn btn-ghost">Book Now &rarr;</a>
         </div>
         <div class="faq-list reveal" style="transition-delay:0.1s">
           <div class="faq-item">
@@ -2353,11 +2352,11 @@
         <div class="footer-col">
           <span class="footer-col-label">Site</span>
           <nav class="footer-nav">
-            <a href="/#fleet">Our Fleet</a>
+            <a href="/fleet.html">Our Fleet</a>
             <a href="/#how">How It Works</a>
             <a href="/#reviews">Reviews</a>
             <a href="/#faq">FAQ</a>
-            <a href="/#fleet">Book Now</a>
+            <a href="/fleet.html">Book Now</a>
             <a href="/admin" style="opacity:0.35;font-size:11px;">Admin</a>
           </nav>
         </div>
@@ -2391,7 +2390,7 @@
 
   <!-- MOBILE STICKY -->
   <div class="mobile-sticky">
-    <button class="btn btn-primary" data-stripe-book style="width:100%;justify-content:center">Book Now &rarr;</button>
+    <a href="/fleet.html" class="btn btn-primary" style="width:100%;justify-content:center">Book Now &rarr;</a>
   </div>
 
   <button class="back-to-top" id="back-to-top" aria-label="Back to top">&uarr;</button>
@@ -2646,292 +2645,27 @@
     </div>
   </div>
 
-  <!-- BOOKING MODAL -->
-  <div id="booking-modal" class="booking-modal" aria-hidden="true" role="dialog" aria-modal="true">
-    <div class="booking-modal-inner">
-      <button class="booking-modal-close" id="bm-close" aria-label="Close">&times;</button>
-
-      <!-- Step tabs — pinned at top -->
-      <div class="bm-steps">
-        <div class="bm-step-tab active" data-step="1">1. Your Ride</div>
-        <div class="bm-step-tab" data-step="2">2. Trip Details</div>
-        <div class="bm-step-tab" data-step="3">3. Review &amp; Pay</div>
-      </div>
-
-      <!-- Scrollable panel area -->
-      <div class="bm-panel-scroll">
-
-        <!-- Step 1: Vehicle -->
-        <div class="bm-panel active" id="bm-panel-1">
-          <h3>Choose Your Ride</h3>
-          <p>Select the vehicle you'd like to book.</p>
-          <div class="bm-vehicles" id="bm-vehicles">
-            <button class="bm-vehicle-btn" data-vehicle="slingshot_2022" data-rate="220" data-label="2022 Polaris Slingshot">
-              <div class="bv-info">
-                <span class="bv-name">2022 Polaris Slingshot</span>
-                <span class="bv-tag">Most Popular &nbsp;·&nbsp; No Moto License</span>
-              </div>
-              <span class="bv-price">from $180</span>
-            </button>
-            <button class="bm-vehicle-btn" data-vehicle="slingshot_2020" data-rate="220" data-label="2020 Polaris Slingshot">
-              <div class="bv-info">
-                <span class="bv-name">2020 Polaris Slingshot</span>
-                <span class="bv-tag">Great Value &nbsp;·&nbsp; Manual</span>
-              </div>
-              <span class="bv-price">from $180</span>
-            </button>
-            <button class="bm-vehicle-btn" data-vehicle="canam_spyder" data-rate="200" data-label="2021 Can-Am Spyder F3 Limited">
-              <div class="bv-info">
-                <span class="bv-name">2021 Can-Am Spyder F3 Limited</span>
-                <span class="bv-tag">Premium Touring</span>
-              </div>
-              <span class="bv-price">from $180</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Step 2: Trip Details -->
-        <div class="bm-panel" id="bm-panel-2">
-          <h3>Trip Details</h3>
-          <p>Choose your rental type and pickup date.</p>
-
-          <!-- Duration presets -->
-          <div class="bm-field" style="margin-bottom:20px;">
-            <label>Rental Type</label>
-            <div class="bm-duration-btns" id="bm-duration-btns">
-              <button type="button" class="bm-duration-btn" data-duration="hourly">
-                <span class="bmd-label">Hourly</span>
-                <span class="bmd-sub">3-hour minimum · $35/hr</span>
-              </button>
-              <button type="button" class="bm-duration-btn" data-duration="10hr">
-                <span class="bmd-label">10 Hours</span>
-                <span class="bmd-sub">Full day · from $180</span>
-              </button>
-              <button type="button" class="bm-duration-btn" data-duration="24hr">
-                <span class="bmd-label">24 Hours</span>
-                <span class="bmd-sub">Overnight · from $250</span>
-              </button>
-              <button type="button" class="bm-duration-btn" data-duration="multi">
-                <span class="bmd-label">Multi-Day</span>
-                <span class="bmd-sub">2+ days · discounted rates</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Hourly: hours selector -->
-          <div id="bm-hourly-wrap" style="display:none; margin-bottom:20px;">
-            <div class="bm-row">
-              <div class="bm-field">
-                <label>Pickup Date</label>
-                <input type="date" id="bm-hourly-date">
-              </div>
-              <div class="bm-field">
-                <label>Start Time</label>
-                <input type="time" id="bm-hourly-start" value="09:00">
-              </div>
-            </div>
-            <div class="bm-field" style="margin-top:14px;">
-              <label>Number of Hours</label>
-              <select id="bm-hourly-hours">
-                <option value="3">3 hours — $90</option>
-                <option value="4">4 hours — $120</option>
-                <option value="5">5 hours — $150</option>
-                <option value="6">6 hours — $180</option>
-                <option value="7">7 hours — $210</option>
-                <option value="8">8 hours — $240</option>
-              </select>
-            </div>
-            <!-- Upsell nudge — shown dynamically by JS -->
-            <div id="bm-upsell-nudge" class="bm-upsell-nudge" style="display:none;"></div>
-          </div>
-
-          <!-- 9hr / 24hr: single date picker -->
-          <div id="bm-single-date-wrap" class="bm-field" style="display:none; margin-bottom:20px;">
-            <label>Pickup Date</label>
-            <input type="date" id="bm-start-date">
-            <input type="hidden" id="bm-end-date">
-            <input type="hidden" id="bm-start-time" value="09:00">
-            <input type="hidden" id="bm-end-time" value="18:00">
-          </div>
-
-          <!-- Multi-day date pickers -->
-          <div id="bm-multi-date-wrap" style="display:none;">
-            <div class="bm-row">
-              <div class="bm-field">
-                <label>Start Date</label>
-                <input type="date" id="bm-multi-start-date">
-              </div>
-              <div class="bm-field">
-                <label>End Date</label>
-                <input type="date" id="bm-multi-end-date">
-              </div>
-            </div>
-            <div id="bm-multi-rate-info" class="bm-rate-info" style="display:none;"></div>
-          </div>
-
-          <!-- Delivery / Drop-off option -->
-          <div class="bm-delivery-section" id="bm-delivery-section">
-            <div class="bm-delivery-header">
-              <span class="bm-delivery-icon">&#128666;</span>
-              <div>
-                <span class="bm-delivery-title">Drop-off &amp; Pickup Service</span>
-                <span class="bm-delivery-subtitle">Available within 30 miles of Lancaster, PA</span>
-              </div>
-            </div>
-            <div class="bm-delivery-options">
-              <label class="bm-delivery-option">
-                <input type="checkbox" id="bm-delivery-dropoff" value="dropoff">
-                <span>Deliver vehicle to me <strong>+$50</strong></span>
-              </label>
-              <label class="bm-delivery-option">
-                <input type="checkbox" id="bm-delivery-pickup" value="pickup">
-                <span>Pick up vehicle from me <strong>+$50</strong></span>
-              </label>
-            </div>
-          </div>
-
-          <!-- Pickup Time Selector -->
-          <div class="bm-field" id="bm-pickup-time-wrap" style="display:none; margin-bottom:20px;">
-            <label>Preferred Pickup Time</label>
-            <select id="bm-pickup-time">
-              <option value="">Select time...</option>
-              <option value="08:00">8:00 AM</option>
-              <option value="08:30">8:30 AM</option>
-              <option value="09:00" selected>9:00 AM</option>
-              <option value="09:30">9:30 AM</option>
-              <option value="10:00">10:00 AM</option>
-              <option value="10:30">10:30 AM</option>
-              <option value="11:00">11:00 AM</option>
-              <option value="11:30">11:30 AM</option>
-              <option value="12:00">12:00 PM</option>
-              <option value="12:30">12:30 PM</option>
-              <option value="13:00">1:00 PM</option>
-              <option value="13:30">1:30 PM</option>
-              <option value="14:00">2:00 PM</option>
-              <option value="14:30">2:30 PM</option>
-              <option value="15:00">3:00 PM</option>
-              <option value="15:30">3:30 PM</option>
-              <option value="16:00">4:00 PM</option>
-              <option value="16:30">4:30 PM</option>
-              <option value="17:00">5:00 PM</option>
-              <option value="17:30">5:30 PM</option>
-              <option value="18:00">6:00 PM</option>
-            </select>
-            <small style="display:block;margin-top:6px;color:var(--muted);font-size:12px;">We'll do our best to accommodate your preferred time</small>
-          </div>
-
-          <!-- Pickup location — static info -->
-          <div class="bm-location-info">
-            <span class="bm-location-pin">&#128205;</span>
-            <div>
-              <span class="bm-location-name">Lancaster, PA</span>
-              <span class="bm-location-detail">Chris will confirm your exact pickup spot after booking</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Step 3: Review & Pay -->
-        <div class="bm-panel" id="bm-panel-3">
-          <h3>Review &amp; Pay</h3>
-          <p>Confirm your trip details before checkout.</p>
-          <div class="bm-summary-vehicle">
-            <span id="bm-summary-vehicle-name">—</span>
-            <span id="bm-summary-rate">—</span>
-          </div>
-          <div class="bm-summary-rows">
-            <div class="bm-summary-row">
-              <span class="label">Pickup &amp; Return</span>
-              <span class="value">Lancaster, PA</span>
-            </div>
-            <div class="bm-summary-row">
-              <span class="label">Rental Type</span>
-              <span class="value" id="bm-summary-rental-type">—</span>
-            </div>
-            <div class="bm-summary-row">
-              <span class="label">Date</span>
-              <span class="value" id="bm-summary-start">—</span>
-            </div>
-            <div class="bm-summary-row" id="bm-summary-end-row" style="display:none">
-              <span class="label">Return</span>
-              <span class="value" id="bm-summary-end">—</span>
-            </div>
-            <div class="bm-summary-row">
-              <span class="label">Duration</span>
-              <span class="value" id="bm-summary-days">—</span>
-            </div>
-            <div class="bm-summary-row" id="bm-summary-base-row">
-              <span class="label">Rental</span>
-              <span class="value" id="bm-summary-base">—</span>
-            </div>
-            <div class="bm-summary-row saving" id="bm-savings-row" style="display:none">
-              <span class="label">Multi-Day Savings</span>
-              <span class="value" id="bm-summary-savings">—</span>
-            </div>
-            <div class="bm-summary-row" id="bm-delivery-row" style="display:none">
-              <span class="label" id="bm-delivery-label">Delivery</span>
-              <span class="value" id="bm-summary-delivery">—</span>
-            </div>
-          </div>
-          <hr class="bm-divider">
-          <div class="bm-summary-total">
-            <span>Estimated Total</span>
-            <span class="total-price" id="bm-summary-total">—</span>
-          </div>
-          <hr class="bm-divider">
-          <div class="bm-inclusions">
-            <div class="bm-inclusion-item">Insurance &amp; protection included</div>
-            <div class="bm-inclusion-item">300 miles included per trip</div>
-            <div class="bm-inclusion-item">Pickup &amp; return in Lancaster, PA</div>
-          </div>
-          <!-- Promo code -->
-          <div class="bm-promo-wrap">
-            <div class="bm-promo-toggle" id="bm-promo-toggle">Have a discount code? <span>Apply &rarr;</span></div>
-            <div class="bm-promo-field" id="bm-promo-field" style="display:none;">
-              <input type="text" id="bm-promo-code" placeholder="Enter code e.g. FIRST10-AB12CD34" autocomplete="off" spellcheck="false" style="text-transform:uppercase;">
-              <p class="bm-promo-note">Code will be applied automatically at checkout.</p>
-            </div>
-          </div>
-          <p class="bm-note">&#128274; Secure checkout powered by Stripe. You won't be charged until the next step.</p>
-        </div>
-
-      </div><!-- /bm-panel-scroll -->
-
-      <!-- Nav buttons — pinned at bottom, always visible -->
-      <div class="bm-nav" id="bm-nav-1">
-        <button class="btn btn-primary bm-nav-next" id="bm-step1-next" disabled>Continue to Trip Details &rarr;</button>
-      </div>
-      <div class="bm-nav" id="bm-nav-2" style="display:none">
-        <button class="btn-back" id="bm-step2-back">&larr; Back</button>
-        <button class="btn btn-primary" id="bm-step2-next">Review Your Trip &rarr;</button>
-      </div>
-      <div class="bm-nav" id="bm-nav-3" style="display:none">
-        <button class="btn-back" id="bm-step3-back">&larr; Back</button>
-        <button class="btn btn-primary" id="bm-checkout-btn">Book &amp; Pay Securely &rarr;</button>
-      </div>
-
-    </div>
-  </div>
 
   <!-- VEHICLE DETAIL PANEL -->
   <script src="vehicle-detail.js"></script>
 
   <!-- ADMIN CONFIG — loaded from Supabase so live changes reflect immediately -->
-  <script src="https://yzdtevrwystezhbmgcwn.supabase.co/functions/v1/config"></script>
+  <script async src="https://yzdtevrwystezhbmgcwn.supabase.co/functions/v1/config"></script>
 
   <!-- STRIPE PAYMENT INTEGRATION -->
   <!-- Stripe.js is loaded but only activates when STRIPE_ENABLED = true in stripe.config.js -->
   <script src="https://js.stripe.com/v3/"></script>
   <script src="stripe.config.js"></script>
-  <script src="stripe-checkout.js"></script>
+  <!-- stripe-checkout.js removed - modal booking flow deprecated -->
 
   <!-- APPLY ADMIN CONFIG TO FRONTEND -->
   <script src="/frontend-config.js"></script>
 
-  <!-- Redirect #book hash to #fleet (modal removed) -->
+  <!-- Redirect #book hash to fleet page (modal removed) -->
   <script>
     (function() {
       if (window.location.hash === '#book') {
-        window.location.hash = '#fleet';
+        window.location.href = '/fleet.html';
       }
     })();
   </script>

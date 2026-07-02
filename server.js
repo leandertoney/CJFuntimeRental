@@ -874,10 +874,12 @@ app.use(express.static(__dirname, {
   setHeaders: (res, filePath) => {
     const isHtml = filePath.endsWith('.html');
     const isData = filePath.includes('/data/');
-    if (isHtml || isData) {
-      res.setHeader('Cache-Control', 'no-cache, no-store');
+    const isJs = filePath.endsWith('.js');
+    if (isHtml || isData || isJs) {
+      // No cache for HTML, data, and JS files in development
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     } else {
-      // Images, JS, CSS, fonts — cache for 1 week
+      // Images, CSS, fonts — cache for 1 week
       res.setHeader('Cache-Control', 'public, max-age=604800, stale-while-revalidate=86400');
     }
   }

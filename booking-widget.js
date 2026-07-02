@@ -68,6 +68,15 @@
     return 'slingshot';
   }
 
+  // Get today's date in ISO format (YYYY-MM-DD)
+  function getTodayISO() {
+    var today = new Date();
+    var year = today.getFullYear();
+    var month = ('0' + (today.getMonth() + 1)).slice(-2);
+    var day = ('0' + today.getDate()).slice(-2);
+    return year + '-' + month + '-' + day;
+  }
+
   // ── Availability Checking ────────────────────────────────────────────────
 
   function fetchExistingBookings(vehicleKey) {
@@ -233,29 +242,48 @@
     fetchExistingBookings(vehicleKey);
 
     // Build widget HTML
+    var idRequirementNote = state.vehicleType === 'canam'
+      ? '🪪 Motorcycle (M)–endorsed driver\'s license required'
+      : '🪪 Valid photo ID required';
+
     var html = '<div class="bw-container">'
       + '<div class="bw-header">'
-      + '<div class="bw-price-display" id="bw-price-display">Select rental type to see price</div>'
+      + '<div class="bw-price-display" id="bw-price-display">Pick your dates to see availability</div>'
       + '</div>'
 
-      // Duration type selector
+      // Up-front ID disclosure — no surprises at pickup
+      + '<div class="bw-id-note">' + idRequirementNote + '</div>'
+
+      // Date selection first
       + '<div class="bw-section">'
-      + '<label class="bw-label">Rental Type</label>'
+      + '<label class="bw-label">Pickup Date</label>'
+      + '<input type="date" class="bw-date-input" id="bw-pickup-date" min="' + getTodayISO() + '">'
+      + '</div>'
+
+      + '<div class="bw-section">'
+      + '<label class="bw-label">Drop-off Date <span style="color:#888;font-weight:400;">(Optional)</span></label>'
+      + '<input type="date" class="bw-date-input" id="bw-dropoff-date" min="' + getTodayISO() + '">'
+      + '<div class="bw-hint">Leave blank for same-day rental</div>'
+      + '</div>'
+
+      // Duration type selector (shown after dates)
+      + '<div class="bw-section" id="bw-duration-section" style="display:none;">'
+      + '<label class="bw-label">How long do you need it?</label>'
       + '<div class="bw-duration-btns" id="bw-duration-btns">'
       + '<button type="button" class="bw-duration-btn" data-duration="hourly">'
-      + '<span class="bw-btn-label">Hourly</span>'
-      + '<span class="bw-btn-sub">$35/hr · 3hr min</span>'
+      + '<span class="bw-btn-label">⏱️ Hourly</span>'
+      + '<span class="bw-btn-sub">$30/hr · 3hr min</span>'
       + '</button>'
       + '<button type="button" class="bw-duration-btn" data-duration="10hr">'
-      + '<span class="bw-btn-label">10 Hours</span>'
+      + '<span class="bw-btn-label">☀️ ≤ 10 Hours</span>'
       + '<span class="bw-btn-sub">$180 full day</span>'
       + '</button>'
       + '<button type="button" class="bw-duration-btn" data-duration="24hr">'
-      + '<span class="bw-btn-label">24 Hours</span>'
+      + '<span class="bw-btn-label">🌙 ≤ 24 Hours</span>'
       + '<span class="bw-btn-sub">$250 overnight</span>'
       + '</button>'
       + '<button type="button" class="bw-duration-btn" data-duration="multi">'
-      + '<span class="bw-btn-label">Multi-Day</span>'
+      + '<span class="bw-btn-label">📅 Multi-Day</span>'
       + '<span class="bw-btn-sub">Discounted rates</span>'
       + '</button>'
       + '</div>'
@@ -289,6 +317,115 @@
 
     // Bind event listeners
     bindEvents();
+
+    // Restore previous booking state if exists
+    restoreBookingState();
+  }
+
+  function restoreBookingState() {
+    var savedData = sessionStorage.getItem('cjfr_booking_data');
+    if (!savedData) return;
+
+    try {
+      var data = JSON.parse(savedData);
+
+      // Check if data is for current vehicle
+      if (data.vehicleKey !== state.vehicleKey) return;
+
+      // Check if data is stale (older than 24 hours)
+      if (data.createdAt) {
+        var age = Date.now() - data.createdAt;
+        var maxAge = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+        if (age > maxAge) {
+          // Data is stale, clear it
+          sessionStorage.removeItem('cjfr_booking_data');
+          return;
+        }
+      }
+
+      console.log('[BookingWidget] Restoring previous booking state');
+
+      // Restore pickup date
+      var pickupDateInput = $('bw-pickup-date');
+      if (pickupDateInput && data.startDate) {
+        pickupDateInput.value = data.startDate;
+        state.startDate = data.startDate;
+      }
+
+      // Restore drop-off date (for multi-day)
+      var dropoffDateInput = $('bw-dropoff-date');
+      if (dropoffDateInput && data.endDate && data.endDate !== data.startDate) {
+        dropoffDateInput.value = data.endDate;
+        state.endDate = data.endDate;
+      }
+
+      // Show duration section if date is set
+      var durationSection = $('bw-duration-section');
+      if (pickupDateInput && pickupDateInput.value && durationSection) {
+        durationSection.style.display = 'block';
+      }
+
+      // Restore duration selection
+      if (data.durationType) {
+        state.durationType = data.durationType;
+
+        // Highlight the selected duration button
+        var durationBtns = document.querySelectorAll('.bw-duration-btn');
+        durationBtns.forEach(function(btn) {
+          if (btn.getAttribute('data-duration') === data.durationType) {
+            btn.classList.add('selected');
+          }
+        });
+
+        // Show appropriate date/time fields
+        showDateFields(data.durationType);
+
+        // Restore time/hours based on duration type
+        if (data.durationType === 'hourly') {
+          if (data.hours) {
+            state.hours = data.hours;
+            var hoursSelect = $('bw-hourly-hours');
+            if (hoursSelect) hoursSelect.value = data.hours;
+          }
+          if (data.startTime) {
+            state.startTime = data.startTime;
+            var startTimeInput = $('bw-hourly-start');
+            if (startTimeInput) startTimeInput.value = data.startTime;
+          }
+        } else if (data.durationType === '10hr' || data.durationType === '24hr') {
+          if (data.pickupTime) {
+            state.pickupTime = data.pickupTime;
+            var pickupTimeSelect = $('bw-pickup-time');
+            if (pickupTimeSelect) pickupTimeSelect.value = data.pickupTime;
+          }
+        } else if (data.durationType === 'multi') {
+          if (data.pickupTime) {
+            state.pickupTime = data.pickupTime;
+            var pickupTimeSelect = $('bw-pickup-time');
+            if (pickupTimeSelect) pickupTimeSelect.value = data.pickupTime;
+          }
+        }
+
+        // Restore delivery options
+        if (data.deliveryDropoff) {
+          state.deliveryDropoff = true;
+          var ddCheck = $('bw-delivery-dropoff');
+          if (ddCheck) ddCheck.checked = true;
+        }
+        if (data.deliveryPickup) {
+          state.deliveryPickup = true;
+          var dpCheck = $('bw-delivery-pickup');
+          if (dpCheck) dpCheck.checked = true;
+        }
+
+        // Update pricing display
+        updatePricing();
+      }
+
+    } catch (e) {
+      console.error('[BookingWidget] Failed to restore booking state:', e);
+      sessionStorage.removeItem('cjfr_booking_data');
+    }
   }
 
   function bindEvents() {
@@ -302,6 +439,29 @@
         updatePricing();
       });
     });
+
+    // Date inputs - show duration section when pickup date is selected
+    var pickupDateInput = $('bw-pickup-date');
+    var dropoffDateInput = $('bw-dropoff-date');
+    var durationSection = $('bw-duration-section');
+
+    if (pickupDateInput) {
+      pickupDateInput.addEventListener('change', function() {
+        if (this.value) {
+          // Show duration section when date is picked
+          if (durationSection) durationSection.style.display = 'block';
+          updatePricing();
+        } else {
+          if (durationSection) durationSection.style.display = 'none';
+        }
+      });
+    }
+
+    if (dropoffDateInput) {
+      dropoffDateInput.addEventListener('change', function() {
+        updatePricing();
+      });
+    }
 
     // Delivery checkboxes
     var ddCheck = $('bw-delivery-dropoff');
@@ -331,11 +491,8 @@
     var html = '';
 
     if (durationType === 'hourly') {
-      html = '<div class="bw-section">'
-        + '<label class="bw-label">Pickup Date</label>'
-        + '<input type="date" class="bw-input" id="bw-hourly-date">'
-        + '</div>'
-        + '<div class="bw-row">'
+      // Only show time and hours - dates already selected at top
+      html = '<div class="bw-row">'
         + '<div class="bw-field">'
         + '<label class="bw-label">Start Time</label>'
         + '<input type="time" class="bw-input" id="bw-hourly-start" value="09:00">'
@@ -343,22 +500,21 @@
         + '<div class="bw-field">'
         + '<label class="bw-label">Hours</label>'
         + '<select class="bw-input" id="bw-hourly-hours">'
-        + '<option value="3">3 hours — $105</option>'
-        + '<option value="4">4 hours — $140</option>'
-        + '<option value="5">5 hours — $175</option>'
-        + '<option value="6">6 hours — $210</option>'
-        + '<option value="7">7 hours — $245</option>'
-        + '<option value="8">8 hours — $280</option>'
+        + '<option value="3">3 hours — $90</option>'
+        + '<option value="4">4 hours — $120</option>'
+        + '<option value="5">5 hours — $150</option>'
+        + '<option value="6">6 hours — $180</option>'
+        + '<option value="7">7 hours — $180</option>'
+        + '<option value="8">8 hours — $180</option>'
+        + '<option value="9">9 hours — $180</option>'
+        + '<option value="10">10 hours — $180</option>'
         + '</select>'
         + '</div>'
         + '</div>';
 
     } else if (durationType === '10hr' || durationType === '24hr') {
+      // Only show pickup time - date already selected at top
       html = '<div class="bw-section">'
-        + '<label class="bw-label">Pickup Date</label>'
-        + '<input type="date" class="bw-input" id="bw-single-date">'
-        + '</div>'
-        + '<div class="bw-section">'
         + '<label class="bw-label">Preferred Pickup Time</label>'
         + '<select class="bw-input" id="bw-pickup-time">'
         + '<option value="08:00">8:00 AM</option>'
@@ -374,17 +530,8 @@
         + '</div>';
 
     } else if (durationType === 'multi') {
-      html = '<div class="bw-row">'
-        + '<div class="bw-field">'
-        + '<label class="bw-label">Start Date</label>'
-        + '<input type="date" class="bw-input" id="bw-multi-start">'
-        + '</div>'
-        + '<div class="bw-field">'
-        + '<label class="bw-label">End Date</label>'
-        + '<input type="date" class="bw-input" id="bw-multi-end">'
-        + '</div>'
-        + '</div>'
-        + '<div class="bw-section">'
+      // Only show pickup time - dates already selected at top
+      html = '<div class="bw-section">'
         + '<label class="bw-label">Preferred Pickup Time</label>'
         + '<select class="bw-input" id="bw-pickup-time">'
         + '<option value="08:00">8:00 AM</option>'
@@ -398,16 +545,32 @@
 
     container.innerHTML = html;
 
-    // Bind date change events
+    // Read dates from top inputs
+    var topPickupDate = $('bw-pickup-date');
+    var topDropoffDate = $('bw-dropoff-date');
+
+    // Set state dates from top inputs
+    if (topPickupDate && topPickupDate.value) {
+      state.startDate = topPickupDate.value;
+
+      // For single-day rentals, use same date for start and end
+      if (durationType === 'hourly' || durationType === '10hr' || durationType === '24hr') {
+        state.endDate = topPickupDate.value;
+      }
+      // For multi-day, use dropoff date if provided
+      else if (durationType === 'multi') {
+        state.endDate = (topDropoffDate && topDropoffDate.value) ? topDropoffDate.value : topPickupDate.value;
+      }
+
+      // Update pricing immediately with the dates from top inputs
+      updatePricing();
+    }
+
+    // Bind time/hours change events
     if (durationType === 'hourly') {
-      var hourlyDate = $('bw-hourly-date');
       var hourlyHours = $('bw-hourly-hours');
       var hourlyStart = $('bw-hourly-start');
-      if (hourlyDate) hourlyDate.addEventListener('change', function() {
-        state.startDate = this.value;
-        state.endDate = this.value;
-        updatePricing();
-      });
+
       if (hourlyHours) hourlyHours.addEventListener('change', function() {
         state.hours = parseInt(this.value, 10);
         updatePricing();
@@ -417,29 +580,15 @@
       });
 
     } else if (durationType === '10hr' || durationType === '24hr') {
-      var singleDate = $('bw-single-date');
       var pickupTime = $('bw-pickup-time');
-      if (singleDate) singleDate.addEventListener('change', function() {
-        state.startDate = this.value;
-        state.endDate = this.value;
-        updatePricing();
-      });
+
       if (pickupTime) pickupTime.addEventListener('change', function() {
         state.pickupTime = this.value;
       });
 
     } else if (durationType === 'multi') {
-      var multiStart = $('bw-multi-start');
-      var multiEnd = $('bw-multi-end');
       var pickupTime = $('bw-pickup-time');
-      if (multiStart) multiStart.addEventListener('change', function() {
-        state.startDate = this.value;
-        updatePricing();
-      });
-      if (multiEnd) multiEnd.addEventListener('change', function() {
-        state.endDate = this.value;
-        updatePricing();
-      });
+
       if (pickupTime) pickupTime.addEventListener('change', function() {
         state.pickupTime = this.value;
       });
@@ -455,11 +604,24 @@
     var ctaBtn = $('bw-cta');
     var errorDiv = $('bw-error');
 
-    if (!state.durationType) {
-      if (priceDisplay) priceDisplay.textContent = 'Select rental type to see price';
+    // Check if dates are selected
+    var pickupInput = $('bw-pickup-date');
+    var hasPickupDate = pickupInput && pickupInput.value;
+
+    if (!hasPickupDate) {
+      if (priceDisplay) priceDisplay.textContent = 'Pick your dates to see availability';
       if (ctaBtn) {
         ctaBtn.disabled = true;
-        ctaBtn.textContent = 'Select rental type to continue';
+        ctaBtn.textContent = 'Select dates to continue';
+      }
+      return;
+    }
+
+    if (!state.durationType) {
+      if (priceDisplay) priceDisplay.textContent = 'Select how long you need it';
+      if (ctaBtn) {
+        ctaBtn.disabled = true;
+        ctaBtn.textContent = 'Select duration to continue';
       }
       return;
     }
@@ -537,7 +699,8 @@
       basePrice: pricing.basePrice,
       deliveryFee: pricing.deliveryFee,
       total: pricing.total,
-      days: pricing.days
+      days: pricing.days,
+      createdAt: Date.now()  // Add timestamp for staleness detection
     };
 
     // Store in sessionStorage

@@ -20,12 +20,12 @@
     .header-inner { display:flex; align-items:center; justify-content:space-between; }
     .header-logo img { height:40px; width:auto; }
     .main { flex:1; padding:64px 0; }
-    .checkout-grid { display:grid; grid-template-columns:1.4fr 1fr; gap:48px; align-items:start; }
+    .checkout-grid { display:grid; grid-template-columns:1.2fr 1fr; gap:48px; align-items:start; }
     .checkout-summary { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:32px; position:sticky; top:100px; }
     h1 { font-family:var(--heading); font-size:clamp(2rem,4vw,2.8rem); letter-spacing:3px; margin-bottom:24px; }
     h2 { font-family:var(--heading); font-size:1.6rem; letter-spacing:2px; margin-bottom:16px; }
     .summary-row { display:flex; justify-content:space-between; padding:12px 0; border-bottom:1px solid var(--border); }
-    .summary-row:last-child { border:none; font-weight:600; font-size:1.2rem; color:var(--amber); }
+    .summary-row:last-child { border:none; }
     .summary-label { color:var(--muted); }
     .summary-value { font-weight:600; }
     .btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; font-family:var(--body); font-weight:700; font-size:16px; border-radius:8px; padding:16px 32px; cursor:pointer; border:none; transition:all 0.2s; width:100%; margin-top:24px; }
@@ -37,7 +37,28 @@
     .detail-label { color:var(--muted); }
     .error-message { background:rgba(255,77,0,0.1); border:1px solid rgba(255,77,0,0.3); border-radius:8px; padding:16px; margin-bottom:24px; color:#ff6b4d; }
     .loading { text-align:center; padding:48px; color:var(--muted); }
-    @media(max-width:768px) { .checkout-grid{grid-template-columns:1fr;} }
+    /* ID upload */
+    .id-help { font-size:14px; color:var(--white); line-height:1.6; margin-bottom:12px; }
+    .id-uploads { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:8px; }
+    .id-drop { display:flex; flex-direction:column; gap:8px; border:1px dashed rgba(255,255,255,0.2); border-radius:10px; padding:16px; cursor:pointer; transition:border-color 0.2s; }
+    .id-drop:hover { border-color:var(--orange); }
+    .id-drop.filled { border-style:solid; border-color:#4ade80; }
+    .id-drop-label { font-weight:600; font-size:14px; }
+    .id-drop input[type=file] { font-size:12px; color:var(--muted); }
+    .id-file-name { font-size:12px; color:var(--muted); word-break:break-all; }
+    /* Agreement */
+    .agreement-box { max-height:200px; overflow-y:auto; white-space:pre-wrap; font-size:13px; line-height:1.6; color:var(--muted); background:var(--dark); border:1px solid var(--border); border-radius:8px; padding:16px; margin-bottom:14px; }
+    .agreement-check { display:flex; align-items:flex-start; gap:10px; font-size:14px; cursor:pointer; }
+    .agreement-check input { margin-top:3px; width:18px; height:18px; flex-shrink:0; accent-color:var(--orange); }
+    /* Modal */
+    .modal-overlay { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(4px); z-index:1000; align-items:center; justify-content:center; padding:20px; }
+    .modal-overlay.show { display:flex; }
+    .modal { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:32px; max-width:500px; width:100%; box-shadow:0 20px 60px rgba(0,0,0,0.5); }
+    .modal-title { font-family:var(--heading); font-size:1.4rem; letter-spacing:2px; margin-bottom:16px; color:var(--orange); }
+    .modal-message { line-height:1.6; margin-bottom:24px; color:var(--white); }
+    .modal-btn { background:var(--orange); color:#000; border:none; border-radius:8px; padding:14px 28px; font-weight:700; font-size:15px; cursor:pointer; transition:all 0.2s; width:100%; }
+    .modal-btn:hover { filter:brightness(1.1); transform:translateY(-1px); }
+    @media(max-width:768px) { .checkout-grid{grid-template-columns:1fr;} .id-uploads{grid-template-columns:1fr;} }
   </style>
 </head>
 <body>
@@ -54,12 +75,119 @@
     </div>
   </main>
 
+  <!-- Error/notification modal -->
+  <div id="modal-overlay" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-title" id="modal-title">Notice</div>
+      <div class="modal-message" id="modal-message"></div>
+      <button class="modal-btn" id="modal-close">OK</button>
+    </div>
+  </div>
+
   <script src="https://yzdtevrwystezhbmgcwn.supabase.co/functions/v1/config"></script>
   <script>
     (function() {
       'use strict';
 
       var SUPABASE_FUNCTIONS = 'https://yzdtevrwystezhbmgcwn.supabase.co/functions/v1';
+
+      // In-page modal (replaces browser alerts)
+      function showModal(message, title) {
+        var overlay = document.getElementById('modal-overlay');
+        var titleEl = document.getElementById('modal-title');
+        var messageEl = document.getElementById('modal-message');
+        var closeBtn = document.getElementById('modal-close');
+
+        titleEl.textContent = title || 'Notice';
+        messageEl.textContent = message;
+        overlay.classList.add('show');
+
+        function close() {
+          overlay.classList.remove('show');
+          closeBtn.removeEventListener('click', close);
+          overlay.removeEventListener('click', overlayClick);
+        }
+
+        function overlayClick(e) {
+          if (e.target === overlay) close();
+        }
+
+        closeBtn.addEventListener('click', close);
+        overlay.addEventListener('click', overlayClick);
+      }
+
+      // Rental agreement — Keep in sync with the authoritative copy in
+      // supabase/functions/_shared/rental-agreement.ts (that server copy is
+      // what gets stored on the booking). Bump the version string in lockstep.
+      var AGREEMENT_VERSION = 'v1.0';
+      var AGREEMENT_TEXT = [
+        "CJ'S FUN TIME RENTALS — RENTAL AGREEMENT",
+        "",
+        "This Car Rental Agreement (\"Agreement\") is made and entered into between Christopher L. Johnson (hereafter referred to as the \"Owner\") and Renter (hereafter referred to as \"Party\" in the singular and \"Parties\" in the plural). This Agreement is intended to be the binding contract between the Parties for rental of the Vehicle.",
+        "",
+        "RENTAL VEHICLE",
+        "",
+        "Owner hereby agrees to rent to Renter the following vehicle (\"Vehicle\"):",
+        "• Vehicle details will be confirmed at booking and shown on your receipt",
+        "• Renter agrees to present valid identification matching this booking at pickup",
+        "",
+        "RENTAL PERIOD",
+        "",
+        "Owner agrees to rent Vehicle to Renter for the period specified in your booking confirmation. The Parties agree that this Agreement commences upon the start date and ends on the end date specified in your booking. Notwithstanding anything to the contrary in this Agreement, Owner and Renter may agree to extend the Rental Period of the Vehicle. If the Rental Period is terminated prior to the end date, the Parties will work together to determine whether a refund of Rental Fee is necessary.",
+        "",
+        "MILEAGE LIMIT",
+        "",
+        "Renter will be subject to mileage limits as specified at booking. Excess mileage charges may apply per mile over the limit.",
+        "",
+        "RENTAL FEES",
+        "",
+        "The Renter hereby agrees to pay the Owner for use of the Vehicle the total amount shown at checkout, as confirmed in your booking receipt.",
+        "",
+        "INDEMNITY",
+        "",
+        "Regardless of insurance coverage, Renter shall fully indemnify the Owner for any and all loss, damage, or personal injury that may occur during the use of the Vehicle due to the fault or negligence of the Renter. Renter shall indemnify Owner for any and all costs, including but not limited to damage to the Vehicle, damage to the property of others, injury to Renter, and injury to others. This indemnity shall survive the termination of this Agreement and shall be binding.",
+        "",
+        "INSURANCE",
+        "",
+        "The Owner represents to the best of his knowledge and belief that the Vehicle is in sound mechanical condition and is fully insured in accordance with the requirements of state law under normal use.",
+        "",
+        "RENTER WARRANTIES",
+        "",
+        "The Renter warrants that Renter will not (i) use the Vehicle to carry any passengers other than Renter; (ii) allow any other person to operate the Vehicle; (iii) operate the Vehicle in violation of any laws; (iv) operate the Vehicle in a negligent, abusive or reckless manner; (v) operate the Vehicle for any race or competition; (vi) operate the vehicle in a reckless manner.",
+        "",
+        "ARBITRATION",
+        "",
+        "In the event that the Parties cannot amicably resolve a dispute or damage claim resulting from the use of the Vehicle, the Parties agree to resolve the dispute via mediation and then by arbitration in accordance with the rules and procedures of the American Arbitration Association then in effect with one (1) arbitrator to be selected by mutual agreement of the Parties. If the Parties cannot reach a mutual agreement, then the American Arbitration Association shall appoint the arbitrator. The decision of the arbitrator shall be binding on the Parties and shall be enforceable in any court of the State of Pennsylvania in the United States. The laws of the State of Pennsylvania in the United States shall apply to the arbitration proceedings. The Parties agree that the arbitrator cannot modify or change this Agreement in any manner and shall only determine whether a breach of this Agreement has occurred.",
+        "",
+        "GOVERNING LAW AND JURISDICTION",
+        "",
+        "The laws of the State of Pennsylvania in the United States, without regard to any conflict of law provisions, shall govern this Agreement. In the event that litigation occurs concerning this Agreement, the prevailing party may be awarded by either Party more than one year after the cause of action has accrued.",
+        "",
+        "GENERAL",
+        "",
+        "This Agreement, including all Exhibits, constitutes the entire agreement between the Parties in connection with the Vehicle rental and supersedes all agreements, proposals, representations, and other understandings, oral or written, of the Parties hereto in connection with such rental. This Agreement may not be amended, changed, modified, or terminated, in whole or in part, except by a written agreement executed by the Parties hereto. This Agreement shall be binding upon and inure to the benefit of the Parties hereto and their respective heirs, successors, and permitted assigns. No waiver by either of the Parties hereto of any subsequent breach of any provision of this Agreement by the other Party shall be deemed to be a waiver of any preceding or subsequent breach of the same or any other provision of this Agreement.",
+        "",
+        "ACCEPTANCE",
+        "",
+        "By checking the acceptance box and completing your booking, you acknowledge that:",
+        "",
+        "1. You have read and understood this entire Agreement",
+        "2. You agree to all terms and conditions stated herein",
+        "3. You will present a valid government-issued photo ID at pickup that matches the ID uploaded with this booking",
+        "4. For Can-Am Spyder rentals: You hold a valid driver's license with a motorcycle (M) endorsement, which will be verified in person before the vehicle is released",
+        "5. You are the person who will operate the vehicle and are legally permitted to do so",
+        "6. You will return the vehicle on time and in the same condition provided",
+        "7. You accept full responsibility for damage, loss, citations, or tolls incurred during your rental period",
+        "",
+        "This online acceptance creates a binding agreement. A printed copy will be provided for your records at pickup.",
+        "",
+        "CJ's Fun Time Rentals · Lancaster, PA"
+      ].join('\n');
+
+      function esc(s) {
+        return String(s == null ? '' : s)
+          .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      }
 
       // Get booking data from sessionStorage
       var bookingData = sessionStorage.getItem('cjfr_booking_data');
@@ -109,6 +237,55 @@
         return '';
       }
 
+      // Calculate drop-off time
+      function calculateDropoffTime() {
+        var pickupTime = bookingData.pickupTime || bookingData.startTime || '09:00';
+        var durationHours = 0;
+
+        if (bookingData.durationType === 'hourly') {
+          durationHours = bookingData.hours || 3;
+        } else if (bookingData.durationType === '10hr') {
+          durationHours = 10;
+        } else if (bookingData.durationType === '24hr') {
+          durationHours = 24;
+        } else if (bookingData.durationType === 'multi') {
+          // For multi-day, return date is separate, so we just show same time
+          return pickupTime;
+        }
+
+        // Parse pickup time (format: "HH:MM" or "HH:MM AM/PM")
+        var timeParts = pickupTime.replace(/\s*(AM|PM)\s*/gi, '').split(':');
+        var hours = parseInt(timeParts[0], 10);
+        var minutes = parseInt(timeParts[1], 10) || 0;
+
+        // Handle 12-hour format
+        if (pickupTime.match(/PM/i) && hours !== 12) {
+          hours += 12;
+        } else if (pickupTime.match(/AM/i) && hours === 12) {
+          hours = 0;
+        }
+
+        // Add duration
+        hours += durationHours;
+
+        // Handle day overflow
+        var daysAdded = Math.floor(hours / 24);
+        hours = hours % 24;
+
+        // Format back to readable time
+        var ampm = hours >= 12 ? 'PM' : 'AM';
+        var displayHours = hours % 12;
+        if (displayHours === 0) displayHours = 12;
+
+        var result = displayHours + ':' + (minutes < 10 ? '0' : '') + minutes + ' ' + ampm;
+
+        if (daysAdded > 0) {
+          result += ' (next day)';
+        }
+
+        return result;
+      }
+
       // Render checkout page
       var html = '<h1>Review & Complete Booking</h1>';
       html += '<div class="checkout-grid">';
@@ -116,23 +293,88 @@
       // Left column: Details
       html += '<div>';
       html += '<div class="details-section">';
-      html += '<h2>Trip Details</h2>';
-      html += '<div class="detail-row"><span class="detail-label">Vehicle</span><span>' + (vehicleInfo ? vehicleInfo.name : bookingData.vehicleKey) + '</span></div>';
-      html += '<div class="detail-row"><span class="detail-label">Duration</span><span>' + getDurationLabel() + '</span></div>';
-      html += '<div class="detail-row"><span class="detail-label">Pickup Date</span><span>' + formatDate(bookingData.startDate) + '</span></div>';
+      html += '<h2>📋 Trip Details</h2>';
+      html += '<div class="detail-row"><span class="detail-label">Vehicle</span><span style="font-weight:600;color:var(--white);">' + (vehicleInfo ? vehicleInfo.name : bookingData.vehicleKey) + '</span></div>';
+      html += '<div class="detail-row"><span class="detail-label">Duration</span><span style="font-weight:600;color:var(--white);">' + getDurationLabel() + '</span></div>';
+      html += '<div class="detail-row"><span class="detail-label">Pickup Date</span><span style="font-weight:600;color:var(--white);">' + formatDate(bookingData.startDate) + '</span></div>';
+      html += '<div class="detail-row"><span class="detail-label">Pickup Time</span><span style="font-weight:600;color:var(--white);">' + (bookingData.pickupTime || bookingData.startTime || '9:00 AM') + '</span></div>';
+
+      // Show return date and time
       if (bookingData.durationType === 'multi') {
-        html += '<div class="detail-row"><span class="detail-label">Return Date</span><span>' + formatDate(bookingData.endDate) + '</span></div>';
+        html += '<div class="detail-row"><span class="detail-label">Return Date</span><span style="font-weight:600;color:var(--white);">' + formatDate(bookingData.endDate) + '</span></div>';
+        html += '<div class="detail-row"><span class="detail-label">Return Time</span><span style="font-weight:600;color:var(--white);">' + calculateDropoffTime() + '</span></div>';
+      } else {
+        // For hourly/10hr/24hr, show drop-off time on same or next day
+        html += '<div class="detail-row"><span class="detail-label">Drop-off Time</span><span style="font-weight:600;color:var(--white);">' + calculateDropoffTime() + '</span></div>';
       }
-      html += '<div class="detail-row"><span class="detail-label">Pickup Time</span><span>' + (bookingData.pickupTime || bookingData.startTime || '9:00 AM') + '</span></div>';
+
       html += '</div>';
+
+      // Motorcycle license requirement for Can-Am/Spyder
+      var requiresMotorcycleLicense = bookingData.vehicleType === 'canam' ||
+                                      bookingData.vehicleKey.toLowerCase().includes('canam') ||
+                                      bookingData.vehicleKey.toLowerCase().includes('spyder');
+
+      if (requiresMotorcycleLicense) {
+        html += '<div class="details-section">';
+        html += '<div style="background:rgba(255,183,0,0.1);border:1px solid rgba(255,183,0,0.3);border-radius:8px;padding:16px;margin-bottom:16px;">';
+        html += '<div style="display:flex;align-items:start;gap:12px;">';
+        html += '<div style="font-size:24px;">🏍️</div>';
+        html += '<div>';
+        html += '<div style="font-weight:600;color:var(--amber);margin-bottom:6px;">Motorcycle License Required</div>';
+        html += '<div style="font-size:14px;color:rgba(255,255,255,0.8);line-height:1.5;">This vehicle requires a valid motorcycle license. Please bring your license to pickup. You will be asked to verify your license before departure.</div>';
+        html += '</div>';
+        html += '</div>';
+        html += '</div>';
+        html += '</div>';
+      }
 
       if (bookingData.deliveryDropoff || bookingData.deliveryPickup) {
         html += '<div class="details-section">';
         html += '<h2>Delivery Options</h2>';
-        if (bookingData.deliveryDropoff) html += '<div class="detail-row"><span class="detail-label">Drop-off at my location</span><span>$50</span></div>';
-        if (bookingData.deliveryPickup) html += '<div class="detail-row"><span class="detail-label">Pick up from my location</span><span>$50</span></div>';
+        if (bookingData.deliveryDropoff) html += '<div class="detail-row"><span class="detail-label">Drop-off at my location</span><span style="font-weight:600;color:var(--white);">$50</span></div>';
+        if (bookingData.deliveryPickup) html += '<div class="detail-row"><span class="detail-label">Pick up from my location</span><span style="font-weight:600;color:var(--white);">$50</span></div>';
         html += '</div>';
       }
+
+      // ── ID upload (required for all bookings) ───────────────────────────────
+      var isCanam = (bookingData.vehicleType === 'canam') ||
+                    (bookingData.vehicleKey || '').toLowerCase().indexOf('canam') !== -1 ||
+                    (bookingData.vehicleKey || '').toLowerCase().indexOf('spyder') !== -1;
+
+      var idRuleText = isCanam
+        ? "For the Can-Am Spyder you must upload a valid <strong>driver's license</strong> — a state ID card is <strong>not</strong> accepted. Your license must carry a motorcycle (M) endorsement, which Chris will confirm in person at pickup."
+        : "Upload any valid government <strong>photo ID</strong> — a driver's license or a state ID card. No passport needed.";
+
+      html += '<div class="details-section" id="id-upload-section">';
+      // Adaptive instructions based on device type (mobile vs desktop)
+      var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                     (navigator.maxTouchPoints && navigator.maxTouchPoints > 1);
+      var uploadInstructions = isMobile
+        ? 'Tap below to <strong>take a photo with your camera</strong> or upload existing images of the <strong>front and back</strong>. Accepted: JPG, PNG, WEBP, or PDF (max 10&nbsp;MB each). Your ID is stored securely for pickup verification only.'
+        : 'Click below to <strong>upload images</strong> of the <strong>front and back</strong>. Accepted: JPG, PNG, WEBP, or PDF (max 10&nbsp;MB each). Your ID is stored securely for pickup verification only.';
+      var uploadPrompt = isMobile ? 'Tap to take photo or upload' : 'Click to upload from your computer';
+
+      html += '<h2>🪪 Upload Your ID</h2>';
+      html += '<p class="id-help">' + idRuleText + '</p>';
+      html += '<p class="id-help" style="color:var(--muted);font-size:14px;">' + uploadInstructions + '</p>';
+      html += '<div class="id-uploads">';
+      html += '  <label class="id-drop"><span class="id-drop-label">Front of ID</span>'
+            + '<input type="file" id="id-front" accept="image/*,application/pdf" capture="environment">'
+            + '<span class="id-file-name" id="id-front-name">' + uploadPrompt + '</span></label>';
+      html += '  <label class="id-drop"><span class="id-drop-label">Back of ID</span>'
+            + '<input type="file" id="id-back" accept="image/*,application/pdf" capture="environment">'
+            + '<span class="id-file-name" id="id-back-name">' + uploadPrompt + '</span></label>';
+      html += '</div>';
+      html += '</div>';
+
+      // ── Rental agreement (contract) ─────────────────────────────────────────
+      html += '<div class="details-section" id="agreement-section">';
+      html += '<h2>📄 Rental Agreement</h2>';
+      html += '<div class="agreement-box" id="agreement-box">' + esc(AGREEMENT_TEXT) + '</div>';
+      html += '<label class="agreement-check"><input type="checkbox" id="agree-check"> '
+            + 'I have read and agree to the Rental Agreement.</label>';
+      html += '</div>';
 
       html += '</div>';
 
@@ -140,12 +382,19 @@
       html += '<div>';
       html += '<div class="checkout-summary">';
       html += '<h2>Order Summary</h2>';
-      html += '<div class="summary-row"><span class="summary-label">Base Price</span><span class="summary-value">' + formatCurrency(bookingData.basePrice * 100) + '</span></div>';
+      html += '<div class="summary-row"><span class="summary-label">Base Price</span><span class="summary-value" style="font-weight:600;color:var(--white);">' + formatCurrency(bookingData.basePrice * 100) + '</span></div>';
       if (bookingData.deliveryFee > 0) {
-        html += '<div class="summary-row"><span class="summary-label">Delivery</span><span class="summary-value">' + formatCurrency(bookingData.deliveryFee * 100) + '</span></div>';
+        html += '<div class="summary-row"><span class="summary-label">Delivery</span><span class="summary-value" style="font-weight:600;color:var(--white);">' + formatCurrency(bookingData.deliveryFee * 100) + '</span></div>';
       }
-      html += '<div class="summary-row"><span class="summary-label">Total</span><span class="summary-value">' + formatCurrency(bookingData.total * 100) + '</span></div>';
-      html += '<button class="btn btn-primary" id="complete-booking-btn">Complete Booking →</button>';
+      html += '<div class="summary-row" style="margin-top:16px;padding-top:20px;"><span class="summary-label" style="color:var(--white);font-weight:600;">Total</span><span class="summary-value" style="font-size:1.5rem;font-weight:700;color:var(--orange);">' + formatCurrency(bookingData.total * 100) + '</span></div>';
+
+      // Stripe checkout notice
+      html += '<div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:14px;margin-top:20px;font-size:13px;line-height:1.5;color:rgba(255,255,255,0.7);text-align:center;">';
+      html += '<div style="margin-bottom:6px;">🔒 <strong style="color:#fff;">Secure Checkout</strong></div>';
+      html += 'You\'ll be redirected to Stripe to complete your booking and provide additional information.';
+      html += '</div>';
+
+      html += '<button class="btn btn-primary" id="complete-booking-btn">Continue to Secure Checkout →</button>';
       html += '</div>';
       html += '</div>';
 
@@ -153,52 +402,192 @@
 
       document.getElementById('checkout-content').innerHTML = html;
 
-      // Bind complete booking button
-      document.getElementById('complete-booking-btn').addEventListener('click', function() {
-        var btn = this;
-        btn.disabled = true;
-        btn.textContent = 'Processing...';
+      var frontInput = document.getElementById('id-front');
+      var backInput  = document.getElementById('id-back');
+      var agreeCheck = document.getElementById('agree-check');
+      var completeBtn = document.getElementById('complete-booking-btn');
+      var DEFAULT_BTN_LABEL = 'Complete Booking →';
 
-        // Calculate number of days
-        var days = 1;
-        if (bookingData.durationType === 'multi' && bookingData.days) {
-          days = bookingData.days;
+      // Gate the button until both ID images are chosen and the agreement is accepted.
+      function refreshGate() {
+        var ready = frontInput.files.length > 0 && backInput.files.length > 0 && agreeCheck.checked;
+        completeBtn.disabled = !ready;
+        completeBtn.textContent = ready ? DEFAULT_BTN_LABEL : 'Continue →';
+        // Visual disabled state styling
+        if (!ready) {
+          completeBtn.style.opacity = '0.4';
+          completeBtn.style.cursor = 'not-allowed';
+        } else {
+          completeBtn.style.opacity = '1';
+          completeBtn.style.cursor = 'pointer';
+        }
+      }
+
+      // Use same mobile detection for consistency
+      var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                     (navigator.maxTouchPoints && navigator.maxTouchPoints > 1);
+      var uploadPromptText = isMobile ? 'Tap to take photo or upload' : 'Click to upload from your computer';
+
+      function wireFileInput(input, nameId) {
+        input.addEventListener('change', function () {
+          var label = input.closest('.id-drop');
+          if (input.files.length > 0) {
+            document.getElementById(nameId).textContent = input.files[0].name;
+            if (label) label.classList.add('filled');
+          } else {
+            document.getElementById(nameId).textContent = uploadPromptText;
+            if (label) label.classList.remove('filled');
+          }
+          refreshGate();
+        });
+      }
+      wireFileInput(frontInput, 'id-front-name');
+      wireFileInput(backInput, 'id-back-name');
+      agreeCheck.addEventListener('change', refreshGate);
+      refreshGate();
+
+      function readAsDataURL(file) {
+        return new Promise(function (resolve, reject) {
+          var reader = new FileReader();
+          reader.onload = function () { resolve(reader.result); };
+          reader.onerror = function () { reject(new Error('Could not read file')); };
+          reader.readAsDataURL(file);
+        });
+      }
+
+      // Shrink large phone photos before upload so uploads don't fail on big
+      // images. A license stays perfectly legible at ~1600px. PDFs and anything
+      // non-image are sent as-is. Falls back to the original on any failure.
+      function prepareFile(file) {
+        return new Promise(function (resolve, reject) {
+          if (!file.type || file.type.indexOf('image/') !== 0) {
+            readAsDataURL(file).then(function (d) {
+              resolve({ dataUrl: d, type: file.type || 'application/pdf' });
+            }, reject);
+            return;
+          }
+          var url = URL.createObjectURL(file);
+          var img = new Image();
+          img.onload = function () {
+            try {
+              var maxDim = 1600;
+              var w = img.naturalWidth, h = img.naturalHeight;
+              var scale = Math.min(1, maxDim / Math.max(w, h));
+              var cw = Math.max(1, Math.round(w * scale));
+              var ch = Math.max(1, Math.round(h * scale));
+              var canvas = document.createElement('canvas');
+              canvas.width = cw; canvas.height = ch;
+              canvas.getContext('2d').drawImage(img, 0, 0, cw, ch);
+              var dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+              URL.revokeObjectURL(url);
+              resolve({ dataUrl: dataUrl, type: 'image/jpeg' });
+            } catch (e) {
+              URL.revokeObjectURL(url);
+              readAsDataURL(file).then(function (d) {
+                resolve({ dataUrl: d, type: file.type || 'image/jpeg' });
+              }, reject);
+            }
+          };
+          img.onerror = function () {
+            URL.revokeObjectURL(url);
+            readAsDataURL(file).then(function (d) {
+              resolve({ dataUrl: d, type: file.type || 'image/jpeg' });
+            }, reject);
+          };
+          img.src = url;
+        });
+      }
+
+      // Complete booking: upload ID + agreement first, THEN start Stripe checkout.
+      completeBtn.addEventListener('click', function () {
+        var btn = this;
+        if (btn.disabled) return;
+
+        var front = frontInput.files[0];
+        var back  = backInput.files[0];
+        if (!front || !back) { showModal('Please upload both the front and back of your ID.'); return; }
+        if (!agreeCheck.checked) { showModal('Please accept the Rental Agreement to continue.'); return; }
+
+        // Images get auto-shrunk below, so only guard non-image files (e.g. PDF).
+        var MAX = 10 * 1024 * 1024;
+        function isImage(f) { return f.type && f.type.indexOf('image/') === 0; }
+        if ((!isImage(front) && front.size > MAX) || (!isImage(back) && back.size > MAX)) {
+          showModal('Each file must be 10 MB or smaller.');
+          return;
         }
 
-        // POST to checkout endpoint
-        fetch(SUPABASE_FUNCTIONS + '/checkout', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            vehicleKey: bookingData.vehicleKey,
-            durationType: bookingData.durationType,
-            hours: bookingData.hours,
-            days: days,
-            startDate: bookingData.startDate,
-            endDate: bookingData.endDate || bookingData.startDate,
-            pickupTime: bookingData.pickupTime || bookingData.startTime,
-            totalCents: Math.round(bookingData.total * 100),
-            baseCents: Math.round(bookingData.basePrice * 100),
-            deliveryDropoff: bookingData.deliveryDropoff,
-            deliveryPickup: bookingData.deliveryPickup,
-            deliveryFee: bookingData.deliveryFee ? Math.round(bookingData.deliveryFee * 100) : 0
+        btn.disabled = true;
+        btn.textContent = 'Uploading your ID…';
+
+        // A client-generated reference links this upload to the booking that the
+        // Stripe webhook will create after payment.
+        var bookingRef = (window.crypto && crypto.randomUUID)
+          ? crypto.randomUUID()
+          : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+              var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+              return v.toString(16);
+            });
+
+        var days = 1;
+        if (bookingData.durationType === 'multi' && bookingData.days) days = bookingData.days;
+
+        Promise.all([prepareFile(front), prepareFile(back)])
+          .then(function (prepped) {
+            return fetch(SUPABASE_FUNCTIONS + '/id-upload', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                bookingRef: bookingRef,
+                vehicleKey: bookingData.vehicleKey,
+                vehicleType: bookingData.vehicleType,
+                front: prepped[0].dataUrl,
+                back: prepped[1].dataUrl,
+                frontType: prepped[0].type,
+                backType: prepped[1].type,
+                agreementAccepted: true,
+                agreementVersion: AGREEMENT_VERSION
+              })
+            });
           })
-        })
-        .then(function(res) { return res.json(); })
-        .then(function(data) {
-          if (data.url) {
-            // Redirect to Stripe Checkout
-            window.location.href = data.url;
-          } else {
-            throw new Error(data.error || 'Failed to create checkout session');
-          }
-        })
-        .catch(function(err) {
-          console.error('[Checkout] Error:', err);
-          alert('Failed to create checkout session. Please try again.');
-          btn.disabled = false;
-          btn.textContent = 'Complete Booking →';
-        });
+          .then(function (res) { return res.json().then(function (d) { return { ok: res.ok, data: d }; }); })
+          .then(function (r) {
+            if (!r.ok || !r.data.ok) throw new Error(r.data.error || 'ID upload failed');
+            btn.textContent = 'Starting secure checkout…';
+            return fetch(SUPABASE_FUNCTIONS + '/checkout', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                vehicleKey: bookingData.vehicleKey,
+                durationType: bookingData.durationType,
+                hours: bookingData.hours,
+                days: days,
+                startDate: bookingData.startDate,
+                endDate: bookingData.endDate || bookingData.startDate,
+                pickupTime: bookingData.pickupTime || bookingData.startTime,
+                totalCents: Math.round(bookingData.total * 100),
+                baseCents: Math.round(bookingData.basePrice * 100),
+                deliveryDropoff: bookingData.deliveryDropoff,
+                deliveryPickup: bookingData.deliveryPickup,
+                deliveryFee: bookingData.deliveryFee ? Math.round(bookingData.deliveryFee * 100) : 0,
+                bookingRef: bookingRef
+              })
+            });
+          })
+          .then(function (res) { return res.json(); })
+          .then(function (data) {
+            if (data.url) {
+              window.location.href = data.url;
+            } else {
+              throw new Error(data.error || 'Failed to create checkout session');
+            }
+          })
+          .catch(function (err) {
+            console.error('[Checkout] Error:', err);
+            showModal((err && err.message) ? err.message : 'Something went wrong. Please try again.', 'Error');
+            btn.disabled = false;
+            btn.textContent = DEFAULT_BTN_LABEL;
+            refreshGate();
+          });
       });
 
     })();

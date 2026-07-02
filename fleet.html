@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Our Fleet | Polaris Slingshot & Can-Am Spyder Rentals | Lancaster, PA</title>
+  <meta name="description" content="Browse our complete fleet of Polaris Slingshot and Can-Am Spyder rentals in Lancaster, PA. Choose from automatic or manual transmissions. Starting at $180 for 10 hours.">
+  <meta name="keywords" content="polaris slingshot rental, slingshot rental fleet, can-am spyder rental, automatic slingshot, manual slingshot, 3 wheel rental lancaster pa">
+  <meta property="og:title" content="Our Fleet | CJ's Fun Time Rental">
+  <meta property="og:description" content="Browse our complete fleet of Polaris Slingshot and Can-Am Spyder rentals. Automatic and manual options available.">
+  <meta property="og:image" content="https://cjfuntimerentals.com/cj_orange_sling.jpg">
+  <meta property="og:url" content="https://cjfuntimerentals.com/fleet">
+  <meta property="og:type" content="website">
+  <link rel="canonical" href="https://cjfuntimerentals.com/fleet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap"></noscript>
+  <style>
+    :root { --black:#0A0A0A; --dark:#111111; --surface:#171717; --border:rgba(255,255,255,0.07); --orange:#FF6B00; --amber:#ffb700; --white:#FFFFFF; --muted:#888888; --heading:'Bebas Neue',sans-serif; --body:'Inter',sans-serif; }
+    *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+    html { scroll-behavior:smooth; }
+    body { font-family:var(--body); background:var(--dark); color:var(--white); line-height:1.6; overflow-x:hidden; -webkit-font-smoothing:antialiased; min-height:100vh; display:flex; flex-direction:column; }
+    a { color:inherit; text-decoration:none; }
+
+    /* HEADER */
+    .site-header { position:sticky; top:0; z-index:100; background:rgba(17,17,17,0.95); backdrop-filter:blur(12px); border-bottom:1px solid var(--border); padding:16px 0; }
+    .header-inner { max-width:1400px; margin:0 auto; padding:0 28px; display:flex; align-items:center; justify-content:space-between; }
+    .header-logo img { height:48px; width:auto; }
+    .nav-links { display:flex; align-items:center; gap:32px; }
+    .nav-links a { font-size:15px; font-weight:500; transition:color 0.2s; }
+    .nav-links a:hover { color:var(--orange); }
+    .btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; font-family:var(--body); font-weight:700; font-size:14px; border-radius:8px; padding:12px 24px; cursor:pointer; border:none; transition:all 0.2s; }
+    .btn-primary { background:var(--orange); color:#000; }
+    .btn-primary:hover { filter:brightness(1.1); transform:translateY(-1px); }
+    .btn-outline-orange { border:2px solid var(--orange); color:var(--orange); background:transparent; }
+    .btn-outline-orange:hover { background:var(--orange); color:#000; }
+    .hamburger { display:none; background:none; border:none; flex-direction:column; gap:4px; cursor:pointer; width:28px; height:28px; padding:0; }
+    .hamburger span { display:block; width:24px; height:2px; background:var(--white); transition:all 0.3s; }
+
+    /* PAGE HEADER */
+    .page-header { padding:40px 0 24px; background:linear-gradient(135deg, var(--black) 0%, var(--dark) 100%); border-bottom:1px solid var(--border); }
+    .page-header h1 { font-family:var(--heading); font-size:clamp(2rem,5vw,3rem); letter-spacing:4px; margin-bottom:12px; }
+    .page-header p { font-size:1rem; color:var(--muted); max-width:600px; }
+    .container { max-width:1400px; margin:0 auto; padding:0 28px; }
+
+    /* FLEET LAYOUT */
+    .fleet-layout { display:grid; grid-template-columns:280px 1fr; gap:48px; padding:60px 0; min-height:calc(100vh - 400px); }
+
+    /* FILTERS */
+    .filters { position:sticky; top:120px; height:fit-content; }
+    .filter-header { font-family:var(--heading); font-size:1.4rem; letter-spacing:2px; margin-bottom:24px; }
+    .filter-section { margin-bottom:32px; }
+    .filter-section-title { font-weight:600; font-size:14px; text-transform:uppercase; letter-spacing:1px; margin-bottom:12px; color:var(--muted); }
+    .filter-option { display:flex; align-items:center; gap:10px; padding:10px 0; cursor:pointer; transition:color 0.2s; }
+    .filter-option:hover { color:var(--orange); }
+    .filter-option input[type="checkbox"] { width:18px; height:18px; accent-color:var(--orange); cursor:pointer; }
+    .filter-option input[type="radio"] { width:18px; height:18px; accent-color:var(--orange); cursor:pointer; }
+    .filter-option label { cursor:pointer; flex:1; font-size:15px; }
+    .filter-count { font-size:13px; color:var(--muted); }
+    .filter-clear { margin-top:20px; font-size:14px; color:var(--orange); text-decoration:underline; cursor:pointer; }
+    .filter-clear:hover { color:var(--amber); }
+
+    /* FLEET GRID */
+    .fleet-content { flex:1; }
+    .fleet-results-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:32px; padding-bottom:16px; border-bottom:1px solid var(--border); }
+    .results-count { font-size:15px; color:var(--muted); }
+    .sort-select { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:10px 16px; color:var(--white); font-size:14px; cursor:pointer; }
+    .fleet-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:32px; }
+    .no-results { text-align:center; padding:80px 20px; color:var(--muted); }
+    .no-results h3 { font-size:1.5rem; margin-bottom:12px; }
+
+    /* FLEET CARDS */
+    .fleet-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; overflow:hidden; transition:all 0.3s; height:100%; }
+    .fleet-card:hover { transform:translateY(-4px); box-shadow:0 12px 40px rgba(255,107,0,0.15); border-color:rgba(255,107,0,0.3); }
+    .fleet-card-link { display:flex; flex-direction:column; height:100%; color:inherit; text-decoration:none; }
+    .fleet-card-photo { width:100%; aspect-ratio:16/10; object-fit:cover; }
+    .fleet-card-info { padding:24px; display:flex; flex-direction:column; flex:1; }
+    .fleet-card-text { flex:1; margin-bottom:20px; }
+    .fleet-card-tag { font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:1px; color:var(--orange); margin-bottom:8px; display:block; }
+    .fleet-card-name { font-family:var(--heading); font-size:1.6rem; letter-spacing:2px; margin-bottom:8px; }
+    .fleet-card-specs { font-size:14px; color:var(--muted); line-height:1.6; }
+    .fleet-card-bottom { display:flex; flex-direction:column; gap:12px; }
+    .fleet-card-price { font-size:1.4rem; font-weight:700; color:var(--white); }
+    .fleet-card-price span { font-size:0.8rem; font-weight:400; color:var(--muted); margin-left:4px; }
+    .fleet-card-book { background:var(--orange); color:#000; font-weight:700; font-size:14px; padding:14px 24px; border-radius:8px; text-align:center; transition:all 0.2s; }
+    .fleet-card:hover .fleet-card-book { filter:brightness(1.1); transform:translateY(-1px); }
+
+    /* MOBILE */
+    @media(max-width:768px) {
+      .hamburger { display:flex; }
+      .nav-links { display:none; }
+      .fleet-layout { grid-template-columns:1fr; gap:32px; }
+      .filters { position:relative; top:0; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px; }
+      .filter-header { font-size:1.2rem; }
+      .fleet-grid { grid-template-columns:1fr; }
+      .page-header { padding:32px 0 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="/" class="header-logo">
+        <img src="/cj_funtime_logo.png" alt="CJ's Fun Time Rental">
+      </a>
+      <nav class="nav-links">
+        <a href="/fleet.html">Our Fleet</a>
+        <a href="/#how-book">How It Works</a>
+        <a href="/#reviews">Reviews</a>
+        <a href="/#faq">FAQ</a>
+        <a href="/#win" class="btn btn-outline-orange" style="font-size:13px;padding:8px 18px">Get 10% Off</a>
+        <a href="/fleet.html" class="btn btn-primary">Book Now</a>
+      </nav>
+      <button class="hamburger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- PAGE HEADER -->
+  <section class="page-header">
+    <div class="container">
+      <h1>Our <span style="color:var(--orange)">Complete Fleet</span></h1>
+      <p>Choose from our selection of Polaris Slingshots and Can-Am Spyder rentals. All vehicles maintained to the highest standards.</p>
+    </div>
+  </section>
+
+  <!-- FLEET LAYOUT -->
+  <div class="container">
+    <div class="fleet-layout">
+
+      <!-- FILTERS SIDEBAR -->
+      <aside class="filters">
+        <div class="filter-header">Filter Vehicles</div>
+
+        <!-- Vehicle Type -->
+        <div class="filter-section">
+          <div class="filter-section-title">Vehicle Type</div>
+          <label class="filter-option">
+            <input type="checkbox" name="type" value="slingshot" checked>
+            <span>Polaris Slingshot</span>
+            <span class="filter-count" data-type-count="slingshot">0</span>
+          </label>
+          <label class="filter-option">
+            <input type="checkbox" name="type" value="canam" checked>
+            <span>Can-Am Spyder</span>
+            <span class="filter-count" data-type-count="canam">0</span>
+          </label>
+        </div>
+
+        <!-- Transmission -->
+        <div class="filter-section">
+          <div class="filter-section-title">Transmission</div>
+          <label class="filter-option">
+            <input type="checkbox" name="transmission" value="automatic" checked>
+            <span>Automatic</span>
+            <span class="filter-count" data-trans-count="automatic">0</span>
+          </label>
+          <label class="filter-option">
+            <input type="checkbox" name="transmission" value="manual" checked>
+            <span>Manual</span>
+            <span class="filter-count" data-trans-count="manual">0</span>
+          </label>
+        </div>
+
+        <!-- Seats -->
+        <div class="filter-section">
+          <div class="filter-section-title">Seating</div>
+          <label class="filter-option">
+            <input type="checkbox" name="seats" value="2" checked>
+            <span>2 Seats</span>
+            <span class="filter-count" data-seats-count="2">0</span>
+          </label>
+          <label class="filter-option">
+            <input type="checkbox" name="seats" value="1" checked>
+            <span>1 Seat</span>
+            <span class="filter-count" data-seats-count="1">0</span>
+          </label>
+        </div>
+
+        <!-- Price Range -->
+        <div class="filter-section">
+          <div class="filter-section-title">Price Range (10hr)</div>
+          <label class="filter-option">
+            <input type="radio" name="price" value="all" checked>
+            <span>All Prices</span>
+          </label>
+          <label class="filter-option">
+            <input type="radio" name="price" value="under200">
+            <span>Under $200</span>
+          </label>
+          <label class="filter-option">
+            <input type="radio" name="price" value="200plus">
+            <span>$200+</span>
+          </label>
+        </div>
+
+        <div class="filter-clear" id="clear-filters">Clear All Filters</div>
+      </aside>
+
+      <!-- FLEET CONTENT -->
+      <div class="fleet-content">
+        <div class="fleet-results-header">
+          <div class="results-count" id="results-count">Loading vehicles...</div>
+          <select class="sort-select" id="sort-select">
+            <option value="default">Sort: Featured</option>
+            <option value="price-low">Price: Low to High</option>
+            <option value="price-high">Price: High to Low</option>
+            <option value="name">Name: A-Z</option>
+          </select>
+        </div>
+
+        <div class="fleet-grid" id="fleet-grid">
+          <!-- Rendered dynamically -->
+        </div>
+
+        <div class="no-results" id="no-results" style="display:none;">
+          <h3>No vehicles match your filters</h3>
+          <p>Try adjusting your filter selections to see more options.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SCRIPTS -->
+  <script async src="https://yzdtevrwystezhbmgcwn.supabase.co/functions/v1/config"></script>
+  <script>
+    (function() {
+      'use strict';
+
+      var allVehicles = [];
+      var filteredVehicles = [];
+
+      // Vehicle key to page mapping
+      var vehiclePageMap = {
+        'slingshot_2022': '/vehicles/2024-orange-slingshot-autodrive.html',
+        'slingshot_2020': '/vehicles/2016-gray-slingshot-manual.html',
+        'canam_spyder': '/vehicles/2021-canam-spyder-f3.html',
+        'slingshot_2016_red': '/vehicles/2016-red-slingshot-manual.html'
+      };
+
+      // HTML escape
+      function escHtml(str) {
+        var div = document.createElement('div');
+        div.textContent = str || '';
+        return div.innerHTML;
+      }
+
+      // Get price for vehicle
+      function getFromPrice(v) {
+        var cfg = window.SITE_CONFIG || {};
+        var pricing = cfg.pricing || {};
+        var type = v.type || 'slingshot';
+        if (pricing.tenhrRate && pricing.tenhrRate[type]) return pricing.tenhrRate[type];
+        return v.ratePerDay || 175;
+      }
+
+      // Extract filter metadata from vehicle
+      function getVehicleFilters(v) {
+        var transmission = 'automatic';
+        if (v.specs && (v.specs.toLowerCase().includes('manual') || v.specs.toLowerCase().includes('5-speed'))) {
+          transmission = 'manual';
+        }
+
+        var seats = 2;
+        if (v.specs && v.specs.toLowerCase().includes('1 seat')) {
+          seats = 1;
+        }
+
+        var type = v.type || 'slingshot';
+        if (type.includes('canam') || v.name.toLowerCase().includes('can-am')) {
+          type = 'canam';
+        } else {
+          type = 'slingshot';
+        }
+
+        return { type: type, transmission: transmission, seats: seats };
+      }
+
+      // Initialize vehicles from config
+      function initVehicles() {
+        var cfg = window.SITE_CONFIG || {};
+        var vehicles = cfg.vehicles || {};
+
+        allVehicles = [];
+        Object.keys(vehicles).forEach(function(key) {
+          var v = vehicles[key];
+          if (v.available === false) return;
+
+          var filters = getVehicleFilters(v);
+          var price = getFromPrice(v);
+
+          allVehicles.push({
+            key: key,
+            name: v.name || '',
+            tag: v.tag || '',
+            specs: v.specs || '',
+            img: v.img || '',
+            price: price,
+            type: filters.type,
+            transmission: filters.transmission,
+            seats: filters.seats,
+            pageUrl: vehiclePageMap[key] || '/vehicles/2024-orange-slingshot-autodrive.html'
+          });
+        });
+
+        updateFilterCounts();
+        applyFilters();
+      }
+
+      // Update filter counts
+      function updateFilterCounts() {
+        var typeCounts = { slingshot: 0, canam: 0 };
+        var transCounts = { automatic: 0, manual: 0 };
+        var seatsCounts = { 1: 0, 2: 0 };
+
+        allVehicles.forEach(function(v) {
+          typeCounts[v.type]++;
+          transCounts[v.transmission]++;
+          seatsCounts[v.seats]++;
+        });
+
+        document.querySelectorAll('[data-type-count]').forEach(function(el) {
+          var type = el.getAttribute('data-type-count');
+          el.textContent = '(' + (typeCounts[type] || 0) + ')';
+        });
+
+        document.querySelectorAll('[data-trans-count]').forEach(function(el) {
+          var trans = el.getAttribute('data-trans-count');
+          el.textContent = '(' + (transCounts[trans] || 0) + ')';
+        });
+
+        document.querySelectorAll('[data-seats-count]').forEach(function(el) {
+          var seats = el.getAttribute('data-seats-count');
+          el.textContent = '(' + (seatsCounts[seats] || 0) + ')';
+        });
+      }
+
+      // Apply current filters
+      function applyFilters() {
+        var selectedTypes = Array.from(document.querySelectorAll('input[name="type"]:checked')).map(function(el) { return el.value; });
+        var selectedTrans = Array.from(document.querySelectorAll('input[name="transmission"]:checked')).map(function(el) { return el.value; });
+        var selectedSeats = Array.from(document.querySelectorAll('input[name="seats"]:checked')).map(function(el) { return parseInt(el.value); });
+        var selectedPrice = document.querySelector('input[name="price"]:checked').value;
+
+        filteredVehicles = allVehicles.filter(function(v) {
+          // Type filter
+          if (!selectedTypes.includes(v.type)) return false;
+
+          // Transmission filter
+          if (!selectedTrans.includes(v.transmission)) return false;
+
+          // Seats filter
+          if (!selectedSeats.includes(v.seats)) return false;
+
+          // Price filter
+          if (selectedPrice === 'under200' && v.price >= 200) return false;
+          if (selectedPrice === '200plus' && v.price < 200) return false;
+
+          return true;
+        });
+
+        applySorting();
+      }
+
+      // Apply sorting
+      function applySorting() {
+        var sortType = document.getElementById('sort-select').value;
+
+        if (sortType === 'price-low') {
+          filteredVehicles.sort(function(a, b) { return a.price - b.price; });
+        } else if (sortType === 'price-high') {
+          filteredVehicles.sort(function(a, b) { return b.price - a.price; });
+        } else if (sortType === 'name') {
+          filteredVehicles.sort(function(a, b) { return a.name.localeCompare(b.name); });
+        }
+        // 'default' keeps original order
+
+        renderVehicles();
+      }
+
+      // Render vehicles
+      function renderVehicles() {
+        var grid = document.getElementById('fleet-grid');
+        var noResults = document.getElementById('no-results');
+        var resultsCount = document.getElementById('results-count');
+
+        if (filteredVehicles.length === 0) {
+          grid.style.display = 'none';
+          noResults.style.display = 'block';
+          resultsCount.textContent = 'No vehicles found';
+          return;
+        }
+
+        grid.style.display = 'grid';
+        noResults.style.display = 'none';
+        resultsCount.textContent = filteredVehicles.length + ' vehicle' + (filteredVehicles.length !== 1 ? 's' : '');
+
+        var html = '';
+        filteredVehicles.forEach(function(v) {
+          html += '<div class="fleet-card">'
+            + '<a href="' + v.pageUrl + '" class="fleet-card-link">'
+            + '<img src="' + escHtml(v.img) + '" class="fleet-card-photo" alt="' + escHtml(v.name) + ' rental Lancaster PA" loading="lazy">'
+            + '<div class="fleet-card-info">'
+            + '<div class="fleet-card-text">'
+            + '<span class="fleet-card-tag">' + escHtml(v.tag) + '</span>'
+            + '<h3 class="fleet-card-name">' + escHtml(v.name) + '</h3>'
+            + '<p class="fleet-card-specs">' + escHtml(v.specs) + '</p>'
+            + '</div>'
+            + '<div class="fleet-card-bottom">'
+            + '<div class="fleet-card-price">$' + v.price + '<span>/ 10hrs</span></div>'
+            + '<span class="fleet-card-book">View Details & Book</span>'
+            + '</div>'
+            + '</div>'
+            + '</a>'
+            + '</div>';
+        });
+
+        grid.innerHTML = html;
+      }
+
+      // Event listeners
+      document.querySelectorAll('input[type="checkbox"], input[type="radio"]').forEach(function(input) {
+        input.addEventListener('change', applyFilters);
+      });
+
+      document.getElementById('sort-select').addEventListener('change', applySorting);
+
+      document.getElementById('clear-filters').addEventListener('click', function() {
+        document.querySelectorAll('input[name="type"]').forEach(function(el) { el.checked = true; });
+        document.querySelectorAll('input[name="transmission"]').forEach(function(el) { el.checked = true; });
+        document.querySelectorAll('input[name="seats"]').forEach(function(el) { el.checked = true; });
+        document.querySelector('input[name="price"][value="all"]').checked = true;
+        applyFilters();
+      });
+
+      // Wait for config to load
+      var checkConfig = setInterval(function() {
+        if (window.SITE_CONFIG && window.SITE_CONFIG.vehicles) {
+          clearInterval(checkConfig);
+          initVehicles();
+        }
+      }, 100);
+
+      // Timeout fallback
+      setTimeout(function() {
+        if (allVehicles.length === 0) {
+          document.getElementById('results-count').textContent = 'Unable to load vehicles';
+        }
+      }, 5000);
+    })();
+  </script>
+
+</body>
+</html>

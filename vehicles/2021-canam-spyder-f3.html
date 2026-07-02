@@ -53,17 +53,18 @@
     .nav-links a { font-size:13px; color:var(--text-muted); transition:color 0.2s; font-weight:500; }
     .nav-links a:hover { color:var(--text-primary); }
 
-    /* Hero */
-    .hero { padding:var(--space-xl) 0; border-bottom:1px solid var(--border); }
-    .hero-grid { display:grid; grid-template-columns:1fr 1fr; gap:48px; align-items:center; }
-    .hero h1 { font-family:var(--heading); font-size:clamp(2.8rem,5vw,4rem); letter-spacing:1px; line-height:1.15; margin-bottom:20px; }
-    .hero .tag { font-size:12px; letter-spacing:2px; text-transform:uppercase; color:var(--orange); margin-bottom:12px; display:block; font-weight:600; }
-    .hero p { font-size:16px; color:var(--text-secondary); line-height:1.75; margin-bottom:var(--space-md); }
-    .hero-img { border-radius:12px; overflow:hidden; border:1px solid var(--border); box-shadow:var(--shadow-md); }
-    .hero-img img { width:100%; height:auto; object-fit:cover; }
-    .stats { display:flex; gap:var(--space-lg); flex-wrap:wrap; margin:32px 0; }
-    .stat-num { font-family:var(--heading); font-size:2.5rem; letter-spacing:1px; color:var(--orange); }
-    .stat-label { font-size:12px; color:var(--text-muted); letter-spacing:1px; text-transform:uppercase; margin-top:4px; }
+    /* Hero - Airbnb Style */
+    .hero { padding:0; border:none; }
+    .hero-img { width:100%; height:500px; overflow:hidden; position:relative; }
+    .hero-img img { width:100%; height:100%; object-fit:cover; }
+    .hero-info { padding:var(--space-lg) 0 var(--space-md); border-bottom:1px solid var(--border); }
+    .hero-info h1 { font-family:var(--heading); font-size:clamp(2rem,4vw,2.8rem); letter-spacing:1px; line-height:1.2; margin-bottom:12px; }
+    .hero-meta { display:flex; align-items:center; gap:16px; flex-wrap:wrap; font-size:14px; color:var(--text-secondary); margin-bottom:var(--space-sm); }
+    .hero-meta .tag { color:var(--orange); font-weight:600; }
+    .hero-meta .divider { color:var(--text-muted); }
+    .stats { display:flex; gap:var(--space-lg); flex-wrap:wrap; margin-top:var(--space-sm); }
+    .stat-num { font-family:var(--heading); font-size:1.8rem; letter-spacing:0.5px; color:var(--text-primary); }
+    .stat-label { font-size:12px; color:var(--text-muted); letter-spacing:0.5px; margin-top:4px; }
 
     /* Sections */
     .section { padding:var(--space-2xl) 0; border-bottom:1px solid var(--border); }
@@ -86,13 +87,13 @@
     @keyframes fadeIn { from{opacity:0;transform:translateY(8px);} to{opacity:1;transform:translateY(0);} }
 
     /* Specs Grid */
-    .specs-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:var(--space-lg); margin-top:var(--space-lg); }
-    .spec-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:var(--space-lg) var(--space-md); box-shadow:var(--shadow-sm); transition:all 0.2s ease; }
+    .specs-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:var(--space-lg); margin-top:var(--space-lg); }
+    .spec-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:32px 28px; box-shadow:var(--shadow-sm); transition:all 0.2s ease; }
     .spec-card:hover { border-color:rgba(255,255,255,0.2); transform:translateY(-2px); box-shadow:var(--shadow-md); }
-    .spec-card h4 { font-family:var(--heading); font-size:1rem; letter-spacing:0.5px; margin-bottom:var(--space-sm); color:var(--text-primary); }
-    .spec-list { list-style:none; display:flex; flex-direction:column; gap:10px; }
-    .spec-list li { font-size:14px; color:var(--text-secondary); padding-left:20px; position:relative; line-height:1.6; }
-    .spec-list li::before { content:'✓'; color:var(--orange); position:absolute; left:0; font-weight:700; }
+    .spec-card h4 { font-family:var(--heading); font-size:1.2rem; letter-spacing:0.5px; margin-bottom:20px; color:var(--text-primary); display:flex; align-items:center; gap:10px; }
+    .spec-list { list-style:none; display:flex; flex-direction:column; gap:12px; }
+    .spec-list li { font-size:15px; color:var(--text-secondary); padding-left:24px; position:relative; line-height:1.7; }
+    .spec-list li::before { content:'✓'; color:var(--orange); position:absolute; left:0; font-weight:700; font-size:16px; }
 
     /* Page Layout with Sticky Sidebar */
     .page-layout { display:grid; grid-template-columns:1fr 420px; gap:var(--space-xl); align-items:start; }
@@ -114,14 +115,14 @@
     @media(max-width:1024px) {
       .page-layout{grid-template-columns:1fr;gap:var(--space-lg);}
       .page-sidebar{position:relative;top:0;max-height:none;}
-      .specs-grid{grid-template-columns:repeat(2,1fr);}
     }
     @media(max-width:768px) {
-      .hero-grid{grid-template-columns:1fr;gap:var(--space-lg);}
+      .hero-img{height:350px;}
       .footer-inner{grid-template-columns:1fr 1fr;}
       .nav-links{display:none;}
+      .specs-grid{grid-template-columns:1fr;}
+      .stats{gap:var(--space-md);}
     }
-    @media(max-width:640px) { .specs-grid{grid-template-columns:1fr;} }
   </style>
 </head>
 <body>
@@ -129,7 +130,7 @@
     <div class="container header-inner">
       <a href="/" class="header-logo"><img src="/cj_funtime_logo.png" alt="CJ's Fun Time Rental"></a>
       <nav class="nav-links">
-        <a href="/#fleet">Our Fleet</a>
+        <a href="/fleet.html">Our Fleet</a>
         <a href="/#reviews">Reviews</a>
         <a href="/#faq">FAQ</a>
         <a href="#booking-widget" class="btn btn-primary" style="font-size:13px;padding:9px 20px">Book Now</a>
@@ -137,21 +138,21 @@
     </div>
   </header>
   <section class="hero">
+    <div class="hero-img">
+      <img src="/Can_Am_Spyder_F3_Limited.png" alt="2021 Can-Am Spyder F3 Limited">
+    </div>
     <div class="container">
-      <div class="hero-grid">
-        <div>
+      <div class="hero-info">
+        <h1>2021 Can-Am Spyder F3 Limited</h1>
+        <div class="hero-meta">
           <span class="tag">Premium Touring · M License Required</span>
-          <h1>2021 Can-Am<br>Spyder F3<br>Limited</h1>
-          <p>The ultimate touring 3-wheeler. Heated grips, Garmin GPS, semi-automatic transmission. Two wheels in front, one in back. Built for comfort on long rides through Pennsylvania's scenic roads.</p>
-          <div class="stats">
-            <div class="stat"><div class="stat-num">$180</div><div class="stat-label">From / 10 Hours</div></div>
-            <div class="stat"><div class="stat-num">GPS</div><div class="stat-label">Garmin Nav</div></div>
-            <div class="stat"><div class="stat-num">300</div><div class="stat-label">Miles Included</div></div>
-          </div>
-          <a href="#booking-widget" class="btn btn-primary">Check Availability →</a>
+          <span class="divider">·</span>
+          <span>Lancaster, PA</span>
         </div>
-        <div class="hero-img">
-          <img src="/Can_Am_Spyder_F3_Limited.png" alt="2021 Can-Am Spyder F3 Limited">
+        <div class="stats">
+          <div class="stat"><div class="stat-num">$180</div><div class="stat-label">From / 10 Hours</div></div>
+          <div class="stat"><div class="stat-num">GPS</div><div class="stat-label">Garmin Nav Included</div></div>
+          <div class="stat"><div class="stat-num">300</div><div class="stat-label">Miles Included</div></div>
         </div>
       </div>
     </div>
@@ -188,39 +189,47 @@
             <h2>Features & Specifications</h2>
             <div class="specs-grid">
               <div class="spec-card">
-                <h4>🛣️ Touring Comfort</h4>
+                <h4><span style="font-size:1.4rem;margin-right:4px;">⚡</span> Performance & Power</h4>
                 <ul class="spec-list">
-                  <li>Tandem seating (rider + passenger)</li>
-                  <li>Heated grips & seats</li>
-                  <li>Wind deflector</li>
-                  <li>Storage compartments</li>
+                  <li>Rotax 1330 ACE inline 3-cylinder engine</li>
+                  <li>115 horsepower with smooth acceleration</li>
+                  <li>Semi-automatic SE6 transmission — no clutch</li>
+                  <li>Y-architecture front suspension for stability</li>
+                  <li>Reverse gear included for easy parking</li>
+                  <li>Large fuel tank for extended touring</li>
                 </ul>
               </div>
               <div class="spec-card">
-                <h4>⚡ Power & Control</h4>
+                <h4><span style="font-size:1.4rem;margin-right:4px;">🗺️</span> Premium Tech & Navigation</h4>
                 <ul class="spec-list">
-                  <li>Rotax 1330 ACE engine</li>
-                  <li>115 horsepower</li>
-                  <li>Semi-automatic transmission</li>
-                  <li>Y-architecture stability</li>
+                  <li>Garmin GPS navigation system integrated</li>
+                  <li>BRP Audio Premium sound system</li>
+                  <li>7.8" full-color TFT display</li>
+                  <li>Bluetooth hands-free phone integration</li>
+                  <li>Cruise control for highway touring</li>
+                  <li>USB charging ports for devices</li>
                 </ul>
               </div>
               <div class="spec-card">
-                <h4>🗺️ Premium Tech</h4>
+                <h4><span style="font-size:1.4rem;margin-right:4px;">🛣️</span> Comfort & Touring</h4>
                 <ul class="spec-list">
-                  <li>Garmin GPS navigation</li>
-                  <li>BRP Audio Premium</li>
-                  <li>7.8" color display</li>
-                  <li>Cruise control</li>
+                  <li>Tandem seating — rider + passenger</li>
+                  <li>Heated grips & heated driver seat</li>
+                  <li>Premium touring windshield with air deflector</li>
+                  <li>Integrated hard-sided storage compartments</li>
+                  <li>Air-adjustable rear suspension</li>
+                  <li>Ergonomic backrest for passenger comfort</li>
                 </ul>
               </div>
               <div class="spec-card">
-                <h4>🛡️ Safety</h4>
+                <h4><span style="font-size:1.4rem;margin-right:4px;">🛡️</span> Safety & Control</h4>
                 <ul class="spec-list">
-                  <li>3-wheel stability system</li>
-                  <li>ABS braking</li>
-                  <li>Traction control</li>
-                  <li>Stability control</li>
+                  <li>Stability Control System (SCS) standard</li>
+                  <li>ABS with cornering ABS (C-ABS)</li>
+                  <li>Traction Control System (TCS)</li>
+                  <li>Vehicle Stability System (VSS)</li>
+                  <li>Vehicle Hold Assist (VHA) on hills</li>
+                  <li>LED lighting for enhanced visibility</li>
                 </ul>
               </div>
             </div>
@@ -268,7 +277,7 @@
           <nav class="footer-nav">
             <a href="/">Polaris Slingshot</a>
             <a href="/pages/can-am-spyder-rental-pa.html">Can-Am Spyder</a>
-            <a href="/#book">Book Now</a>
+            <a href="#booking-widget">Book Now</a>
           </nav>
         </div>
         <div>

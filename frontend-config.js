@@ -67,10 +67,19 @@
           'slingshot_2016_red': '/vehicles/2016-red-slingshot-manual.html'
         };
 
+        // Homepage shows only featured vehicles (2-3 vehicles)
+        var featuredVehicles = ['slingshot_2022', 'canam_spyder', 'slingshot_2020'];
+        var vehicleCount = 0;
+
         var fleetHtml = '';
         Object.keys(cfg.vehicles).forEach(function (key) {
           var v = cfg.vehicles[key];
           if (v.available === false) return;
+
+          // Only show featured vehicles on homepage
+          if (!featuredVehicles.includes(key)) return;
+          vehicleCount++;
+
           var fromPrice = getFromPrice(v);
           var vehiclePageUrl = vehiclePageMap[key] || '/vehicles/2024-orange-slingshot-autodrive.html';
 
@@ -86,7 +95,7 @@
             + '<div class="fleet-card-bottom">'
             + '<div class="fleet-card-price">from $' + fromPrice + '<span>/ 10hrs</span></div>'
             + '<div style="display:flex;gap:8px;width:100%;">'
-            + '<span class="fleet-card-book" style="flex:1">Book Now</span>'
+            + '<span class="fleet-card-book" style="flex:1">View Details</span>'
             + '</div>'
             + '</div>'
             + '</div>'
@@ -94,6 +103,15 @@
             + '</div>';
         });
         fleetGrid.innerHTML = fleetHtml;
+
+        // Show "View All Vehicles" button if there are more vehicles
+        var viewAllBtn = document.querySelector('.fleet-view-all-btn');
+        if (viewAllBtn && vehicleCount < Object.keys(cfg.vehicles).length) {
+          viewAllBtn.style.display = 'inline-flex';
+          viewAllBtn.onclick = function() {
+            window.location.href = '/fleet.html';
+          };
+        }
       }
 
       // Build booking modal vehicle buttons
