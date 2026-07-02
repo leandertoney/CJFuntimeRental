@@ -1,0 +1,29 @@
+{
+  "version": "5",
+  "redirects": {
+    "https://deno.land/x/sentry/index.mjs": "https://deno.land/x/sentry@8.55.0/index.mjs",
+    "https://esm.sh/@supabase/supabase-js@2": "https://esm.sh/@supabase/supabase-js@2.110.0",
+    "https://esm.sh/@types/react@~19.0.7/index.d.ts": "https://esm.sh/@types/react@19.0.14/index.d.ts",
+    "https://esm.sh/resend@2": "https://esm.sh/resend@2.1.0"
+  },
+  "remote": {
+    "https://deno.land/x/sentry@8.55.0/index.mjs": "573a1f82e1528ad6d211cb4945c2df63168d038b500f80922efce0e8cff801cb",
+    "https://esm.sh/@supabase/supabase-js@2.110.0": "b99c0ce7729f9de7797f836b93ab9ec94f1cfe079b4f937fa4144fe13525e979",
+    "https://esm.sh/resend@2.1.0": "000545a4ad4e8ed9cb1c4e9a4011e85b18e3710d992fb04f15b6eb4214bb4b04"
+  },
+  "workspace": {
+    "packageJson": {
+      "dependencies": [
+        "npm:@supabase/supabase-js@^2.101.1",
+        "npm:bcryptjs@^3.0.3",
+        "npm:dotenv@16",
+        "npm:express-session@^1.17.0",
+        "npm:express@^4.18.0",
+        "npm:openai@^6.33.0",
+        "npm:pg@^8.22.0",
+        "npm:resend@^6.10.0",
+        "npm:stripe@22"
+      ]
+    }
+  }
+}
