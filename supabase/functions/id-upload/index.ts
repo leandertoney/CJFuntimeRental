@@ -1,3 +1,6 @@
+// Phase 2: ID Upload + Rental Agreement Feature
+// Handles government photo ID uploads (front+back) to private storage
+// Deployed: 2026-07-06
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import * as Sentry from 'https://deno.land/x/sentry/index.mjs';
 import { AGREEMENT_VERSION, RENTAL_AGREEMENT_TEXT } from '../_shared/rental-agreement.ts';
