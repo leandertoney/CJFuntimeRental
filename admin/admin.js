@@ -1761,6 +1761,9 @@
     }
 
     // Populate pickup/return fields (editable)
+    // Get defaults from site config if available
+    var defaults = cfg && cfg.default_pickup_details ? cfg.default_pickup_details : {};
+
     // Auto-fill with delivery address if delivery was requested and fields are empty
     var pickupAddr = booking.pickup_address || '';
     var returnAddr = booking.return_address || '';
@@ -1769,25 +1772,25 @@
       pickupAddr = booking.delivery_address;
       document.getElementById('bd-pickup-location').value = booking.pickup_location || 'Customer Location (Delivery)';
     } else {
-      document.getElementById('bd-pickup-location').value = booking.pickup_location || '';
+      document.getElementById('bd-pickup-location').value = booking.pickup_location || defaults.pickup_location || '';
     }
 
     if (booking.delivery_pickup && !returnAddr && booking.delivery_address) {
       returnAddr = booking.delivery_address;
       document.getElementById('bd-return-location').value = booking.return_location || 'Customer Location (Pickup)';
     } else {
-      document.getElementById('bd-return-location').value = booking.return_location || '';
+      document.getElementById('bd-return-location').value = booking.return_location || defaults.return_location || '';
     }
 
-    document.getElementById('bd-pickup-address').value = pickupAddr;
-    document.getElementById('bd-pickup-time').value = booking.pickup_time || '';
-    document.getElementById('bd-fuel-level').value = booking.fuel_level || '';
-    document.getElementById('bd-pickup-instructions').value = booking.pickup_instructions || '';
+    document.getElementById('bd-pickup-address').value = pickupAddr || defaults.pickup_address || '';
+    document.getElementById('bd-pickup-time').value = booking.pickup_time || defaults.pickup_time || '';
+    document.getElementById('bd-fuel-level').value = booking.fuel_level || defaults.fuel_level || '';
+    document.getElementById('bd-pickup-instructions').value = booking.pickup_instructions || defaults.pickup_instructions || '';
 
-    document.getElementById('bd-return-address').value = returnAddr;
-    document.getElementById('bd-return-time').value = booking.return_time || '';
-    document.getElementById('bd-key-drop').value = booking.key_drop_location || '';
-    document.getElementById('bd-return-instructions').value = booking.return_instructions || '';
+    document.getElementById('bd-return-address').value = returnAddr || defaults.return_address || '';
+    document.getElementById('bd-return-time').value = booking.return_time || defaults.return_time || '';
+    document.getElementById('bd-key-drop').value = booking.key_drop_location || defaults.key_drop_location || '';
+    document.getElementById('bd-return-instructions').value = booking.return_instructions || defaults.return_instructions || '';
 
     // Clear messages
     document.getElementById('bd-error').classList.add('hidden');
