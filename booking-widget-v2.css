@@ -1,0 +1,268 @@
+/* Simplified Booking Widget - Airbnb Style */
+.booking-widget {
+  background: var(--surface, #171717);
+  border: 1px solid var(--border, rgba(255,255,255,0.12));
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+}
+
+.bw-step h3 {
+  font-family: var(--heading, 'Bebas Neue', sans-serif);
+  font-size: 1.5rem;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+  color: var(--text-primary, rgba(255,255,255,0.95));
+}
+
+.bw-hint {
+  font-size: 14px;
+  color: var(--text-muted, rgba(255,255,255,0.55));
+  margin-bottom: 20px;
+}
+
+.bw-selected-date {
+  font-size: 14px;
+  color: var(--text-secondary, rgba(255,255,255,0.75));
+  margin-bottom: 20px;
+  padding: 12px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 8px;
+}
+
+/* Date Input */
+.bw-date-input {
+  width: 100%;
+  padding: 14px 16px;
+  font-size: 16px;
+  font-family: var(--body, 'Inter', sans-serif);
+  background: var(--dark, #111);
+  border: 1px solid var(--border, rgba(255,255,255,0.12));
+  border-radius: 8px;
+  color: var(--text-primary, rgba(255,255,255,0.95));
+  margin-bottom: 20px;
+  transition: all 0.2s;
+}
+
+.bw-date-input:focus {
+  outline: none;
+  border-color: var(--orange, #FF6B00);
+  box-shadow: 0 0 0 3px rgba(255,107,0,0.1);
+}
+
+/* Rental Type Cards */
+.bw-rental-types {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.bw-rental-card {
+  position: relative;
+  display: block;
+  cursor: pointer;
+}
+
+.bw-rental-card input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.bw-rental-content {
+  padding: 16px 20px;
+  background: var(--dark, #111);
+  border: 2px solid var(--border, rgba(255,255,255,0.12));
+  border-radius: 10px;
+  transition: all 0.2s;
+}
+
+.bw-rental-card:hover .bw-rental-content {
+  border-color: rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.03);
+}
+
+.bw-rental-card input:checked + .bw-rental-content {
+  border-color: var(--orange, #FF6B00);
+  background: rgba(255,107,0,0.08);
+}
+
+.bw-rental-title {
+  font-weight: 600;
+  font-size: 16px;
+  margin-bottom: 4px;
+  color: var(--text-primary, rgba(255,255,255,0.95));
+}
+
+.bw-rental-price {
+  font-family: var(--heading, 'Bebas Neue', sans-serif);
+  font-size: 1.4rem;
+  color: var(--orange, #FF6B00);
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.bw-rental-desc {
+  font-size: 13px;
+  color: var(--text-muted, rgba(255,255,255,0.55));
+}
+
+/* Time Picker */
+.bw-time-picker {
+  margin-bottom: 24px;
+}
+
+.bw-time-picker label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, rgba(255,255,255,0.95));
+  margin-bottom: 8px;
+}
+
+.bw-select {
+  width: 100%;
+  padding: 14px 16px;
+  font-size: 16px;
+  font-family: var(--body, 'Inter', sans-serif);
+  background: var(--dark, #111);
+  border: 1px solid var(--border, rgba(255,255,255,0.12));
+  border-radius: 8px;
+  color: var(--text-primary, rgba(255,255,255,0.95));
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.bw-select:focus {
+  outline: none;
+  border-color: var(--orange, #FF6B00);
+  box-shadow: 0 0 0 3px rgba(255,107,0,0.1);
+}
+
+.bw-time-calc {
+  margin-top: 16px;
+  padding: 16px;
+  background: rgba(255,107,0,0.06);
+  border: 1px solid rgba(255,107,0,0.2);
+  border-radius: 8px;
+}
+
+.bw-time-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  color: var(--text-secondary, rgba(255,255,255,0.75));
+  margin-bottom: 8px;
+}
+
+.bw-time-row:last-child {
+  margin-bottom: 0;
+}
+
+.bw-time-row strong {
+  color: var(--text-primary, rgba(255,255,255,0.95));
+  font-weight: 600;
+}
+
+/* Summary */
+.bw-summary {
+  background: var(--dark, #111);
+  border: 1px solid var(--border, rgba(255,255,255,0.12));
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.bw-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  color: var(--text-secondary, rgba(255,255,255,0.75));
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-subtle, rgba(255,255,255,0.07));
+}
+
+.bw-summary-row:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.bw-summary-total {
+  font-size: 18px;
+  padding-top: 12px;
+  border-top: 2px solid var(--border, rgba(255,255,255,0.12));
+}
+
+.bw-summary-total strong {
+  font-family: var(--heading, 'Bebas Neue', sans-serif);
+  font-size: 2rem;
+  color: var(--orange, #FF6B00);
+  letter-spacing: 0.5px;
+}
+
+/* Buttons */
+.btn-primary {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 24px;
+  font-size: 16px;
+  font-weight: 700;
+  font-family: var(--body, 'Inter', sans-serif);
+  background: var(--orange, #FF6B00);
+  color: #000;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.btn-primary:hover:not(:disabled) {
+  filter: brightness(1.1);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(255,107,0,0.4);
+}
+
+.btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.bw-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary, rgba(255,255,255,0.75));
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s;
+  margin-bottom: 16px;
+  font-family: var(--body, 'Inter', sans-serif);
+}
+
+.bw-back:hover {
+  color: var(--text-primary, rgba(255,255,255,0.95));
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .booking-widget {
+    padding: 20px;
+  }
+
+  .bw-step h3 {
+    font-size: 1.3rem;
+  }
+}

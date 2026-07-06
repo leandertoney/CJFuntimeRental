@@ -112,7 +112,7 @@ window.SITE_CONFIG = {
     {
       "id": "faq-5",
       "question": "Where can I rent a Slingshot near York, Harrisburg, or Reading PA?",
-      "answer": "We're based in Lancaster, PA — centrally located and easy to reach from York (30 min), Harrisburg (45 min), and Reading (45 min). We serve all of Central Pennsylvania. We also offer drop-off service within 30 miles of Lancaster for $50 each way. Reserve online and Chris will confirm your exact pickup location.",
+      "answer": "We're based in Lancaster, PA — centrally located and easy to reach from York (30 min), Harrisburg (45 min), and Reading (45 min). We serve all of Central Pennsylvania. We also offer drop-off service within 30 miles of Lancaster for $50 each way. Reserve online and you'll receive automated pickup details 48 hours before your rental.",
       "visible": true
     },
     {

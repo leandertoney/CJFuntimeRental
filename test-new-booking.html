@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Booking Widget Test</title>
+  <style>
+    :root {
+      --black:#0A0A0A; --dark:#111111; --surface:#171717; --orange:#FF6B00; --white:#FFFFFF;
+      --text-primary:rgba(255,255,255,0.95); --text-secondary:rgba(255,255,255,0.75); --text-muted:rgba(255,255,255,0.55);
+      --border:rgba(255,255,255,0.12); --border-subtle:rgba(255,255,255,0.07);
+      --heading:'Bebas Neue',sans-serif; --body:'Inter',sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--body);
+      background: var(--dark);
+      color: var(--text-primary);
+      padding: 40px 20px;
+      line-height: 1.6;
+    }
+    .test-container {
+      max-width: 480px;
+      margin: 0 auto;
+    }
+    h1 {
+      font-family: var(--heading);
+      font-size: 2.5rem;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+    .test-desc {
+      text-align: center;
+      color: var(--text-secondary);
+      margin-bottom: 40px;
+      font-size: 14px;
+    }
+  </style>
+  <link rel="stylesheet" href="/booking-widget-v2.css">
+</head>
+<body>
+  <div class="test-container">
+    <h1>New Booking Flow</h1>
+    <p class="test-desc">
+      Step 1: Pick date → Step 2: Pick rental type → Step 3: Pick time → Step 4: Book
+    </p>
+
+    <div data-booking-widget
+         data-vehicle-key="slingshot_2022"
+         data-vehicle-type="slingshot"></div>
+  </div>
+
+  <script src="/booking-widget-v2.js"></script>
+</body>
+</html>

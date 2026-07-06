@@ -166,8 +166,8 @@ Deno.serve(async (req) => {
     // Customer confirmation email
     const pickupTimeFormatted = formatTime(meta.pickupTime);
     const pickupMessage = pickupTimeFormatted
-      ? `Chris will reach out to confirm your ${pickupTimeFormatted} pickup time.`
-      : "We'll send exact pickup details before your trip.";
+      ? `You'll receive an automated pickup reminder 48 hours before your rental with complete details (location, address, ${pickupTimeFormatted} pickup time, and instructions).`
+      : "You'll receive an automated pickup reminder 48 hours before your rental with complete details (location, address, time, and instructions).";
     const customerHtml = baseEmail(`
       <h1 style="font-family:Impact,Arial,sans-serif;font-size:36px;letter-spacing:3px;margin:0 0 8px;">You're Booked, ${name.split(' ')[0] || 'Rider'}!</h1>
       <p style="font-size:15px;color:rgba(255,255,255,0.6);margin:16px 0 32px;line-height:1.7;">Your reservation is confirmed. ${pickupMessage}</p>
