@@ -725,19 +725,19 @@
     var el;
 
     el = document.getElementById('admin-hourly-rate');
-    if (el) el.value = p.hourlyRate || 30;
+    if (el) el.value = p.hourlyRate || 35;
     el = document.getElementById('admin-hourly-min');
     if (el) el.value = p.hourlyMin || 3;
 
-    el = document.getElementById('admin-9hr-slingshot');
-    if (el) el.value = (p.ninehrRate && p.ninehrRate.slingshot) || 175;
-    el = document.getElementById('admin-9hr-canam');
-    if (el) el.value = (p.ninehrRate && p.ninehrRate.canam) || 160;
+    el = document.getElementById('admin-10hr-slingshot');
+    if (el) el.value = (p.tenhrRate && p.tenhrRate.slingshot) || 180;
+    el = document.getElementById('admin-10hr-canam');
+    if (el) el.value = (p.tenhrRate && p.tenhrRate.canam) || 180;
 
     el = document.getElementById('admin-24hr-slingshot');
-    if (el) el.value = (p.dailyRate && p.dailyRate.slingshot) || 220;
+    if (el) el.value = (p.dailyRate && p.dailyRate.slingshot) || 250;
     el = document.getElementById('admin-24hr-canam');
-    if (el) el.value = (p.dailyRate && p.dailyRate.canam) || 200;
+    if (el) el.value = (p.dailyRate && p.dailyRate.canam) || 250;
 
     var del = p.delivery || {};
     el = document.getElementById('admin-delivery-enabled');

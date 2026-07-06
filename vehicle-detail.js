@@ -248,9 +248,9 @@
     var p = (window.SITE_CONFIG && window.SITE_CONFIG.pricing) || {};
     var type = v.type || (v.key && v.key.indexOf('canam') !== -1 ? 'canam' : 'slingshot');
     return {
-      hourly: (p.hourlyRate) || v.rateHourly || 30,
-      ninehr: (p.ninehrRate && p.ninehrRate[type]) || v.rate9hr || 175,
-      daily:  (p.dailyRate && p.dailyRate[type]) || v.rate24hr || 220,
+      hourly: (p.hourlyRate) || v.rateHourly || 35,
+      tenhr: (p.tenhrRate && p.tenhrRate[type]) || v.rate10hr || 180,
+      daily:  (p.dailyRate && p.dailyRate[type]) || v.rate24hr || 250,
       hourlyMin: (p.hourlyMin) || 3
     };
   }
@@ -295,7 +295,7 @@
       '<div class="vd-header">' +
         '<button class="vd-back" id="vd-back">\u2190 Back to Fleet</button>' +
         '<span class="vd-header-title">' + v.label + '</span>' +
-        '<span class="vd-header-price">from $' + prices.ninehr + '</span>' +
+        '<span class="vd-header-price">from $' + prices.tenhr + '</span>' +
       '</div>' +
 
       // Hero image with badges bottom-left
@@ -359,8 +359,8 @@
               '<span class="vd-pricing-value">$' + prices.hourly + '/hr</span>' +
             '</div>' +
             '<div class="vd-pricing-row">' +
-              '<span class="vd-pricing-label">9 Hours</span>' +
-              '<span class="vd-pricing-value">$' + prices.ninehr + '</span>' +
+              '<span class="vd-pricing-label">10 Hours</span>' +
+              '<span class="vd-pricing-value">$' + prices.tenhr + '</span>' +
             '</div>' +
             '<div class="vd-pricing-row">' +
               '<span class="vd-pricing-label">24 Hours</span>' +
