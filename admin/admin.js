@@ -1947,6 +1947,7 @@
   }
 
   // Bind modal event listeners
+  document.getElementById('bd-close-x').addEventListener('click', closeBookingDetailModal);
   document.getElementById('bd-cancel').addEventListener('click', closeBookingDetailModal);
   document.getElementById('bd-save').addEventListener('click', saveBookingDetails);
   document.getElementById('bd-verify-canam').addEventListener('click', verifyCanamEndorsement);

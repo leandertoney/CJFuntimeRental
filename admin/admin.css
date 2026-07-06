@@ -1398,6 +1398,9 @@ body.logged-in #admin-shell { display: flex; }
   padding: 28px 32px;
   width: 100%;
   max-width: 400px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -1579,6 +1582,31 @@ body.logged-in #admin-shell { display: flex; }
 }
 .booking-detail-item span {
   color: #fff;
+}
+
+/* Modal close button */
+.modal-close-x {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 20px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.15s, color 0.15s;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.modal-close-x:hover {
+  background: rgba(255,255,255,0.1);
+  color: #f87171;
 }
 
 /* Make booking rows clickable */
