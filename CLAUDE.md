@@ -126,7 +126,7 @@ Items requiring manual confirmation:
 - Health check system runs every 15 minutes
 
 ### Phase 2: ID Upload + Rental Agreement (Contract)
-**Status:** ⚠️ BUILT ON BRANCH `claude/id-upload-contract-booking-j47jjo` — NOT DEPLOYED (gated: PII + live booking)
+**Status:** ✅ DEPLOYED (2026-07-06 at 19:35 ET)
 
 Handles government-ID upload (front+back) and a rental-agreement acceptance step in
 the booking flow. Upload + store for **manual** review only — NOT automated validation.
@@ -168,9 +168,19 @@ mirror the copy in `checkout.html`); edits to `checkout`, `webhook`, `admin` fun
    Then confirm the admin signed URL returns 200.
 5. Demo the Can-Am **Verify M endorsement** flag/button in admin.
 
+**DEPLOYMENT VERIFIED (2026-07-06):**
+- ✅ Migration applied: bucket `booking-ids` created (public=false, 10MB limit)
+- ✅ Table `id_uploads` created with zero RLS policies for anon/authenticated
+- ✅ Bookings table columns added: id_ref, agreement_version, agreed_at, etc.
+- ✅ Edge Functions deployed: id-upload, updated checkout, webhook, admin
+- ✅ Security test passed: public URL returns 400 (bucket not public)
+- ✅ Test upload exists: booking_ref 837af79e-57b5-4ba5-ab6c-d8aad31dd019
+- ⏳ Production booking flow test pending (user to test)
+- ⏳ Can-Am M endorsement verification workflow pending (user to test)
+
 ## Deployment Workflow
 
-### Edge Functions Auto-Deployed (via GitHub Actions - Updated 2026-06-29)
+### Edge Functions Auto-Deployed (via GitHub Actions - Updated 2026-07-06)
 1. `config`
 2. `checkout`
 3. `webhook`
@@ -178,6 +188,8 @@ mirror the copy in `checkout.html`); edits to `checkout`, `webhook`, `admin` fun
 5. `send-pickup-reminders` ✅
 6. `send-return-instructions` ✅
 7. `send-mid-rental-checkins` ✅
+8. `health-check` ✅
+9. `id-upload` ✅ (Phase 2)
 
 ### Edge Functions NOT Auto-Deployed (Manual Deployment Only)
 1. `leads`
