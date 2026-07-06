@@ -1331,9 +1331,7 @@
     tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:32px;color:#555">Loading…</td></tr>';
     empty.classList.add('hidden');
 
-    fetch('/api/bookings', {
-      headers: adminHeaders()
-    })
+    apiFetch(ADMIN_API + '/bookings')
       .then(function (r) { return r.json(); })
       .then(function (bookings) {
         count.textContent = bookings.length + ' booking' + (bookings.length !== 1 ? 's' : '');
@@ -1923,9 +1921,8 @@
     errorEl.classList.add('hidden');
     successEl.classList.add('hidden');
 
-    fetch('/api/bookings/' + currentBooking.id, {
+    apiFetch(ADMIN_API + '/bookings/' + currentBooking.id, {
       method: 'PUT',
-      headers: adminHeaders(),
       body: JSON.stringify(data)
     })
       .then(function (r) {
