@@ -438,7 +438,7 @@
         applyFilters();
       });
 
-      // Wait for config to load
+      // Wait for config to load (check every 100ms)
       var checkConfig = setInterval(function() {
         if (window.SITE_CONFIG && window.SITE_CONFIG.vehicles) {
           clearInterval(checkConfig);
@@ -446,12 +446,13 @@
         }
       }, 100);
 
-      // Timeout fallback
+      // Timeout fallback (increased to 15s for slower mobile connections)
       setTimeout(function() {
         if (allVehicles.length === 0) {
-          document.getElementById('results-count').textContent = 'Unable to load vehicles';
+          clearInterval(checkConfig); // Stop checking
+          document.getElementById('results-count').textContent = 'Unable to load vehicles. Please refresh the page.';
         }
-      }, 5000);
+      }, 15000);
     })();
   </script>
 

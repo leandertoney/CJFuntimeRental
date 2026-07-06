@@ -106,6 +106,12 @@
     .footer-nav a:hover { color:var(--text-primary); }
     .footer-bottom { display:flex; justify-content:space-between; padding-top:20px; flex-wrap:wrap; }
     .footer-copy { font-size:11px; color:rgba(255,255,255,0.35); }
+    /* Hamburger Menu */
+    .hamburger { display:none; flex-direction:column; gap:5px; cursor:pointer; background:none; border:none; padding:2px; }
+    .hamburger span { display:block; width:22px; height:1.5px; background:var(--white); transition:all 0.3s ease; }
+    .hamburger.open span:nth-child(1) { transform:rotate(45deg) translate(4.5px, 4.5px); }
+    .hamburger.open span:nth-child(2) { opacity:0; }
+    .hamburger.open span:nth-child(3) { transform:rotate(-45deg) translate(4.5px, -4.5px); }
 
     /* Responsive */
     @media(max-width:1024px) {
@@ -115,7 +121,12 @@
     @media(max-width:768px) {
       .hero-grid{grid-template-columns:1fr;gap:var(--space-lg);}
       .footer-inner{grid-template-columns:1fr 1fr;}
-      .nav-links{display:none;}
+      .hamburger { display:flex; }
+      .nav-links { position:fixed; top:0; right:-100%; width:70%; max-width:280px; height:100vh; background:#111; flex-direction:column; padding:80px 28px 28px; gap:18px; transition:right 0.3s ease; z-index:1001; }
+      .nav-links.open { right:0; }
+      .nav-links a { font-size:15px; color:rgba(255,255,255,0.8); }
+      .nav-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:1000; }
+      .nav-overlay.open { display:block; }
       .specs-grid{grid-template-columns:1fr;}
     }
   </style>
@@ -124,13 +135,15 @@
   <header class="site-header">
     <div class="container header-inner">
       <a href="/" class="header-logo"><img src="/cj_funtime_logo.png" alt="CJ's Fun Time Rental"></a>
-      <nav class="nav-links">
+      <nav class="nav-links" id="nav-links">
         <a href="/fleet.html">Our Fleet</a>
         <a href="/#reviews">Reviews</a>
         <a href="/#faq">FAQ</a>
         <a href="#booking-widget" class="btn btn-primary" style="font-size:13px;padding:9px 20px">Book Now</a>
       </nav>
+      <button class="hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
     </div>
+    <div class="nav-overlay" id="nav-overlay"></div>
   </header>
   <section class="hero">
     <div class="hero-img">
@@ -309,6 +322,29 @@
           var tabName = this.getAttribute('data-tab');
           document.getElementById(tabName + '-tab').classList.add('active');
         });
+      });
+    })();
+  </script>
+
+  <!-- Hamburger Menu JavaScript -->
+  <script>
+    (function() {
+      var ham = document.getElementById('hamburger');
+      var nav = document.getElementById('nav-links');
+      var overlay = document.getElementById('nav-overlay');
+      function closeNav() {
+        ham.classList.remove('open');
+        nav.classList.remove('open');
+        overlay.classList.remove('open');
+      }
+      ham.addEventListener('click', function() {
+        ham.classList.toggle('open');
+        nav.classList.toggle('open');
+        overlay.classList.toggle('open');
+      });
+      overlay.addEventListener('click', closeNav);
+      nav.querySelectorAll('a').forEach(function(a) {
+        a.addEventListener('click', closeNav);
       });
     })();
   </script>

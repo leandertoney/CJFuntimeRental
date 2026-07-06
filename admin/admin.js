@@ -1526,7 +1526,8 @@
       }
       var obj = cfg.pricing;
       for (var i = 0; i < path.length - 1; i++) {
-        if (!obj[path[i]]) obj[path[i]] = {};
+        // Replace scalar values with objects to support nested paths
+        if (!obj[path[i]] || typeof obj[path[i]] !== 'object') obj[path[i]] = {};
         obj = obj[path[i]];
       }
       obj[path[path.length - 1]] = value;

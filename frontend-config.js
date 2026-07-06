@@ -104,13 +104,19 @@
         });
         fleetGrid.innerHTML = fleetHtml;
 
-        // Show "View All Vehicles" button if there are more vehicles
+        // Always attach click handler to "View All Vehicles" button
         var viewAllBtn = document.querySelector('.fleet-view-all-btn');
-        if (viewAllBtn && vehicleCount < Object.keys(cfg.vehicles).length) {
-          viewAllBtn.style.display = 'inline-flex';
+        if (viewAllBtn) {
+          // Always make button clickable (works even if config fails to load)
           viewAllBtn.onclick = function() {
             window.location.href = '/fleet.html';
           };
+          // Only show button if there are more vehicles than displayed
+          if (cfg.vehicles && vehicleCount < Object.keys(cfg.vehicles).length) {
+            viewAllBtn.style.display = 'inline-flex';
+          } else {
+            viewAllBtn.style.display = 'none';
+          }
         }
       }
 
@@ -281,6 +287,15 @@
           }
         });
       });
+    }
+
+    // ── Fallback: Always attach "View All Vehicles" button handler ────
+    // This ensures the button works even if config fails to load
+    var viewAllBtn = document.querySelector('.fleet-view-all-btn');
+    if (viewAllBtn && !viewAllBtn.onclick) {
+      viewAllBtn.onclick = function() {
+        window.location.href = '/fleet.html';
+      };
     }
 
   });
