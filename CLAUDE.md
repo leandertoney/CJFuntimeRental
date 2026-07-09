@@ -1,4 +1,45 @@
-# CJ Funtime Rentals - Project State (Updated 2026-06-30)
+# CJ Funtime Rentals - Project State (Updated 2026-07-09)
+
+## Session 2026-07-09 (part 2): Defect-Fix Sprint — ALL DEPLOYED & VERIFIED LIVE
+
+Four-phase fix plan executed, pushed (commits d97d403, 6c7d252, fe07b51), deployed via GitHub Actions run 28998088692 (all steps green), and verified live:
+
+**Phase A — Admin login + reschedule:**
+- **Login "500 with correct credentials" SOLVED — it was a test artifact, not a server bug.** The sandbox shell escapes `!` as `\!` inside curl JSON bodies; both admin passwords contain `!`, so every correct-credential curl test sent invalid JSON → `req.json()` threw → 500. Wrong-password test bodies had no `!` → clean 401. Browser dashboard login was never broken. Verified live: login → HTTP 200 + token; /me → 200. New `detail` field on 500s surfaced the root cause instantly. **Lesson: when curling with passwords containing `!`, write body bytes via `printf '\041'` octal escape to a temp file, use `--data @file`; pass auth headers via `curl -K configfile` (`$(cat …)` doesn't expand in this sandbox's headers).**
+- **`PUT /bookings/:id` handler added** to admin function (was 404). Whitelisted fields incl. start_date/end_date; on date change: ISO validation (verified live → 400 on bad format), conflict check vs confirmed bookings (fuzzy vehicle match) + vehicle_blocks + blockedDates → 409; recomputes `days`; clears all 3 email dedup stamps so reminders re-fire for new dates. Verified live: authed no-op PUT → 200 `{ok:true}`. Admin modal now has editable Rental Dates fields (admin/index.html + admin.js). **Reschedules no longer need direct DB access.**
+
+**Phase B — Email idempotency + safety (migration `20260709000001_email_dedup_columns.sql` applied, columns verified live):**
+- `bookings` gained `pickup_reminder_sent_at`, `return_instructions_sent_at`, `midrental_checkin_sent_at` (TIMESTAMPTZ, NULL = not sent).
+- All 3 scheduled email functions now filter `status='confirmed'`, skip test data (`test_*` ids, emails containing `test` or `@example.com`), skip already-stamped rows, and stamp after successful send. **Crons are NO LONGER pure date-arithmetic — sent-at stamps gate re-sends; PUT date-change clears them.**
+- Migration is applied idempotently on EVERY deploy by a new GitHub Actions step using the Supabase Management API (`POST api.supabase.com/v1/projects/{ref}/database/query` with the repo secret `SUPABASE_ACCESS_TOKEN`). **This is the working path for running SQL — local CLI cannot (see below).**
+
+**Phase C — Admin security hardening (verified live):**
+- Plaintext passwords removed from source; SHA-256 hashes stored instead (`ADMIN_USERS` in admin/index.ts). NOTE: old plaintext still exists in git history (pre-d97d403); rotation deferred by plan.
+- CORS `*` → `https://cjfuntimerentals.com` (verified via OPTIONS header).
+- Per-IP login rate limit: 5 attempts / 15 min (in-memory, resets on cold start) → 429.
+- `change-password` endpoint is in-memory only (lost on cold start) — documented in code, real fix deferred.
+
+**Phase D — Stale pricing + dead code (verified live, zero stale strings on domain):**
+- full-site.html + index.html + 6 landing pages: all `$30/hr`, `9-hour`, `$175/$160/$220/$200` references → current pricing ($35/hr 3hr-min, 10hr $180, 24hr $250). fleet.html `$200` lines are price-filter buckets — intentionally untouched.
+- Deleted deprecated `supabase/functions/reminders/` + its config.toml block (cron unscheduled since 2026-06-29).
+
+**Key infra discovery:** the local Supabase CLI is logged into a DIFFERENT account (only sees TPS/bruh-app projects) — this explains all historical CLI 403s on this project. There is no `rpc/exec` function in the DB (run-migration.mjs never worked). **Only working management credential = GitHub Actions secret `SUPABASE_ACCESS_TOKEN`.** DB SQL = Management API via workflow step.
+
+**Deferred (explicitly, by approved plan):** password rotation + git-history purge, migration to Supabase Auth, timezone audit.
+
+## Session 2026-07-09 (part 1): TJ Comp Booking Rescheduled + Issues Found
+
+**Reschedule completed (approved by Leander):**
+- Booking `comp_tj_jul10_2026` (Tavon Jackson, tjfire300@gmail.com, comp $0, automatic Slingshot) moved from 2026-07-10 → 2026-07-13 via PostgREST PATCH (start_date + end_date). All other fields unchanged (days=1, pickup_time 11:00).
+- Verified: DB row updated, check-availability + public config show Jul 13 blocked / Jul 10 released.
+- Email flows re-anchor automatically (at the time, crons were pure date-arithmetic with no sent-flags — NO LONGER TRUE, see part 2 dedup stamps): pickup reminder Jul 11 9AM, return instructions Jul 12 10AM, post-rental followup Jul 14 2PM.
+- TJ had already received the Jul 10 pickup reminder (sent Jul 8). Date-change correction email sent via Resend (ID f7afb318-09e4-4a0d-968a-830fb5ecf7bb, BCC leandertoney@gmail.com) telling him to disregard Jul 10.
+- Change executed 2026-07-09 ~00:50 ET, BEFORE the 10AM return-instructions cron — so no stray "return Jul 10" email fired.
+
+**Production issues discovered — #1 and #2 RESOLVED in part 2 above:**
+1. ~~Admin login returns 500 with correct credentials~~ → RESOLVED: was a curl/shell `!`-escaping artifact, never a server bug (see part 2).
+2. ~~Admin booking-edit endpoint missing (PUT /bookings/:id → 404)~~ → RESOLVED: handler added with availability checks (see part 2).
+3. **Supabase REST gateway flaky (2026-07-09 ~00:30-00:50 ET)**: same valid service-role key intermittently rejected with "Invalid API key" then accepted seconds later. Keys in .env are VALID — retry before assuming rotation.
 
 ## Critical Information
 
@@ -194,16 +235,14 @@ mirror the copy in `checkout.html`); edits to `checkout`, `webhook`, `admin` fun
 ### Edge Functions NOT Auto-Deployed (Manual Deployment Only)
 1. `leads`
 2. `follow-up` (used by post-rental-followup cron job)
-3. `reminders` (DEPRECATED - old pickup system, function exists but cron job unscheduled)
-4. `google-reviews`
-5. `check-availability`
+3. `google-reviews`
+4. `check-availability`
+
+(`reminders` was DELETED 2026-07-09 — deprecated old pickup system, cron unscheduled 2026-06-29.)
 
 ## Known Issues & Technical Debt
 
-1. **"FROM $175" Hardcoded Pricing**
-   - Location: Static HTML files + 14 landing pages
-   - Risk: If pricing changes, these won't update automatically
-   - Fix: Replace with dynamic config loading
+1. **Hardcoded pricing in static HTML** — ✅ FIXED 2026-07-09 (Phase D): all stale strings corrected to current pricing and verified live. Values are still static text, so any future price change must repeat a grep for old values across full-site.html/index.html/pages/*. Long-term fix (dynamic config loading) remains open.
 
 2. **Email Automation Uncertain Status**
    - Functions exist but cron scheduling unverified

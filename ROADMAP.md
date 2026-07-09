@@ -56,6 +56,7 @@ shape once here so Phase 2.2 reuses it** instead of rebuilding the calendar.
 
 - [ ] Customer portal: magic-link login, booking details, countdown, PDF download (read-only views, light review)
 - [ ] 🔒 🔗 Booking modification: date changes up to 48h before, price-diff calc, Stripe charge/refund. Reuses Phase 0.5 calendar. **Blocked until Phase 0 test passes.**
+  - [x] **Admin-side reschedule shipped 2026-07-09**: `PUT /bookings/:id` in admin function with availability-conflict check (bookings + vehicle_blocks + blockedDates → 409), days recompute, email-dedup stamp reset; date fields in admin booking modal. Verified live. Customer self-service + Stripe money movement still open.
 - [ ] 🔒 Cancellation + refund automation: tiered policy, auto Stripe refund. Money movement — gate every deploy.
 - [ ] 🔒 Digital waiver + e-signature + driver's-license upload. License images are sensitive PII — needs storage access controls + retention policy decided before build, not after.
 
