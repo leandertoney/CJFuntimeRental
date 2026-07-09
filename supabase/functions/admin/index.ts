@@ -23,21 +23,35 @@ async function sha256(str: string): Promise<string> {
   return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-// Admin users — passwords stored as SHA-256 hashes
-const ADMIN_USERS: { email: string; name: string; hash: string }[] = [];
-async function initUsers() {
-  if (ADMIN_USERS.length) return;
-  ADMIN_USERS.push(
-    { email: 'leandertoney@gmail.com',   name: 'Leander', hash: await sha256('Ballin!23') },
-    { email: 'chrisjohnson839@gmail.com', name: 'Chris',   hash: await sha256('Rental$!23') },
-  );
-}
+// Admin users — pre-computed SHA-256 hashes only (no plaintext passwords in
+// source). To rotate a password: sha256 the new one and replace the hash here.
+const ADMIN_USERS: { email: string; name: string; hash: string }[] = [
+  { email: 'leandertoney@gmail.com',    name: 'Leander', hash: '8cf7a5b981c18b79bc36f7796887c317e50800649ac813ba207f0da984950f1a' },
+  { email: 'chrisjohnson839@gmail.com', name: 'Chris',   hash: '284230bf951f50c8eb985d8a192635f79227ed655669f3b2044906af3a4a18be' },
+];
 
+// Admin API is only ever called from the production site (and localhost dev)
 const CORS = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'https://cjfuntimerentals.com',
   'Access-Control-Allow-Headers': 'content-type, authorization',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS'
 };
+
+// ── Per-IP login rate limit (in-memory; resets on cold start, which is fine —
+// its job is to blunt online brute-force, not be a perfect counter) ──────────
+const loginAttempts = new Map<string, { count: number; first: number }>();
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const LOGIN_MAX_ATTEMPTS = 5;
+function loginRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const rec = loginAttempts.get(ip);
+  if (!rec || now - rec.first > LOGIN_WINDOW_MS) {
+    loginAttempts.set(ip, { count: 1, first: now });
+    return false;
+  }
+  rec.count++;
+  return rec.count > LOGIN_MAX_ATTEMPTS;
+}
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -47,19 +61,35 @@ function json(data: unknown, status = 200) {
 }
 
 // ── HMAC token helpers ──────────────────────────────────────────────────────
+// Unicode-safe base64 (btoa throws on chars > 0xFF; encode UTF-8 bytes instead)
+function b64encodeUtf8(str: string): string {
+  const bytes = new TextEncoder().encode(str);
+  let bin = '';
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin);
+}
+
+function b64decodeUtf8(b64: string): string {
+  const bin = atob(b64);
+  const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+
 async function hmacSign(payload: string): Promise<string> {
   const key = await crypto.subtle.importKey(
     'raw', new TextEncoder().encode(TOKEN_SECRET),
     { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
   );
   const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(payload));
-  return btoa(String.fromCharCode(...new Uint8Array(sig))).replace(/=+$/, '');
+  let bin = '';
+  for (const b of new Uint8Array(sig)) bin += String.fromCharCode(b);
+  return btoa(bin).replace(/=+$/, '');
 }
 
 async function createToken(email: string, name: string): Promise<string> {
   const exp = Date.now() + 8 * 60 * 60 * 1000; // 8 hours
   const payload = JSON.stringify({ email, name, exp });
-  const b64 = btoa(payload);
+  const b64 = b64encodeUtf8(payload);
   const sig = await hmacSign(b64);
   return b64 + '.' + sig;
 }
@@ -70,7 +100,7 @@ async function verifyToken(token: string): Promise<{ email: string; name: string
   const expected = await hmacSign(b64);
   if (sig !== expected) return null;
   try {
-    const payload = JSON.parse(atob(b64));
+    const payload = JSON.parse(b64decodeUtf8(b64));
     if (!payload.exp || payload.exp < Date.now()) return null;
     return { email: payload.email, name: payload.name };
   } catch { return null; }
@@ -231,7 +261,10 @@ Deno.serve(async (req) => {
 
   // ── Login (public) ─────────────────────────────────────────────────────────
   if (path === '/login' && req.method === 'POST') {
-    await initUsers();
+    const ip = (req.headers.get('x-forwarded-for') || 'unknown').split(',')[0].trim();
+    if (loginRateLimited(ip)) {
+      return json({ error: 'Too many login attempts. Try again in 15 minutes.' }, 429);
+    }
     const { email, password } = await req.json();
     if (!email || !password) return json({ error: 'Email and password required' }, 400);
     const user = ADMIN_USERS.find(u => u.email.toLowerCase() === email.toLowerCase());
@@ -239,6 +272,7 @@ Deno.serve(async (req) => {
     if (!user || user.hash !== pwHash) {
       return json({ error: 'Invalid email or password' }, 401);
     }
+    loginAttempts.delete(ip); // successful login clears the counter
     const token = await createToken(user.email, user.name);
     return json({ ok: true, token, name: user.name, email: user.email });
   }
@@ -257,8 +291,9 @@ Deno.serve(async (req) => {
   }
 
   // ── Change password ────────────────────────────────────────────────────────
+  // NOTE: this only mutates the in-memory hash and is LOST on cold start.
+  // Permanent rotation = update the hash constant in ADMIN_USERS and redeploy.
   if (path === '/change-password' && req.method === 'POST') {
-    await initUsers();
     const { currentPassword, newPassword } = await req.json();
     if (!currentPassword || !newPassword) return json({ error: 'Both passwords required' }, 400);
     if (newPassword.length < 8) return json({ error: 'New password must be at least 8 characters' }, 400);
@@ -327,6 +362,127 @@ Deno.serve(async (req) => {
       }));
 
     return json(bookings);
+  }
+
+  // ── PUT /bookings/:id — Update booking details (incl. reschedule) ──────────
+  // Whitelisted fields only. Date changes run a full availability-conflict
+  // check (other confirmed bookings, per-vehicle blocks, fleet-wide blocked
+  // dates) and recompute `days`.
+  if (path.match(/^\/bookings\/[^/]+$/) && req.method === 'PUT') {
+    const bookingId = path.split('/')[2];
+    const body = await req.json().catch(() => null);
+    if (!body || typeof body !== 'object') return json({ error: 'Invalid JSON body' }, 400);
+
+    const ALLOWED_FIELDS = [
+      'pickup_location', 'pickup_address', 'pickup_time', 'fuel_level', 'pickup_instructions',
+      'return_location', 'return_address', 'return_time', 'key_drop_location', 'return_instructions',
+      'start_date', 'end_date'
+    ];
+    const updates: Record<string, unknown> = {};
+    for (const f of ALLOWED_FIELDS) {
+      if (f in body) updates[f] = body[f];
+    }
+    if (Object.keys(updates).length === 0) return json({ error: 'No valid fields to update' }, 400);
+
+    const { data: existing, error: fetchErr } = await supabase
+      .from('bookings')
+      .select('id, vehicle, start_date, end_date, days, status')
+      .eq('id', bookingId)
+      .maybeSingle();
+    if (fetchErr) return json({ error: fetchErr.message }, 500);
+    if (!existing) return json({ error: 'Booking not found' }, 404);
+
+    const newStart = String(updates.start_date ?? existing.start_date);
+    const newEnd = String(updates.end_date ?? existing.end_date);
+    const dateChanged = newStart !== existing.start_date || newEnd !== existing.end_date;
+
+    if (dateChanged) {
+      const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+      if (!ISO_DATE.test(newStart) || !ISO_DATE.test(newEnd)) {
+        return json({ error: 'Dates must be in YYYY-MM-DD format' }, 400);
+      }
+      if (newEnd < newStart) {
+        return json({ error: 'end_date cannot be before start_date' }, 400);
+      }
+
+      // 1) Other confirmed bookings on the same vehicle that overlap the new range
+      const { data: others, error: bErr } = await supabase
+        .from('bookings')
+        .select('id, vehicle, start_date, end_date')
+        .eq('status', 'confirmed')
+        .neq('id', bookingId)
+        .lte('start_date', newEnd)
+        .gte('end_date', newStart);
+      if (bErr) return json({ error: bErr.message }, 500);
+
+      const bookingVehicle = (existing.vehicle || '').toLowerCase();
+      const sameVehicle = (name: string) => {
+        const v = (name || '').toLowerCase();
+        return v === bookingVehicle || v.includes(bookingVehicle) || bookingVehicle.includes(v);
+      };
+      const bookingConflict = (others || []).find((b: { vehicle: string }) => sameVehicle(b.vehicle));
+      if (bookingConflict) {
+        return json({
+          error: `Vehicle already booked ${bookingConflict.start_date} → ${bookingConflict.end_date} (booking ${bookingConflict.id})`
+        }, 409);
+      }
+
+      // 2) Per-vehicle manual blocks + 3) fleet-wide blocked dates
+      const { data: cfgRow } = await supabase.from('site_config').select('config').eq('id', 1).single();
+      const cfg = cfgRow?.config || {};
+
+      // Map the booking's vehicle display name to config vehicle key(s)
+      const vehicleKeys = Object.entries(cfg.vehicles || {})
+        .filter(([key, v]) =>
+          sameVehicle((v as { name?: string })?.name || '') || sameVehicle(key.replace(/_/g, ' ')))
+        .map(([key]) => key);
+
+      if (vehicleKeys.length > 0) {
+        const { data: blocks, error: vbErr } = await supabase
+          .from('vehicle_blocks')
+          .select('vehicle_key, start_date, end_date, reason')
+          .in('vehicle_key', vehicleKeys)
+          .lte('start_date', newEnd)
+          .gte('end_date', newStart);
+        if (vbErr) return json({ error: vbErr.message }, 500);
+        if (blocks && blocks.length > 0) {
+          const blk = blocks[0];
+          return json({
+            error: `Vehicle blocked ${blk.start_date} → ${blk.end_date}${blk.reason ? ' (' + blk.reason + ')' : ''}`
+          }, 409);
+        }
+      }
+
+      const blockedDates: string[] = Array.isArray(cfg.blockedDates) ? cfg.blockedDates : [];
+      if (blockedDates.length > 0) {
+        for (let d = new Date(newStart + 'T00:00:00Z'); d <= new Date(newEnd + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + 1)) {
+          const iso = d.toISOString().split('T')[0];
+          if (blockedDates.includes(iso)) {
+            return json({ error: `Date ${iso} is blocked fleet-wide` }, 409);
+          }
+        }
+      }
+
+      // Recompute rental length (calendar days, minimum 1 — matches existing data model)
+      const msPerDay = 24 * 60 * 60 * 1000;
+      const diff = Math.round((new Date(newEnd + 'T00:00:00Z').getTime() - new Date(newStart + 'T00:00:00Z').getTime()) / msPerDay);
+      updates.days = Math.max(1, diff === 0 ? 1 : diff);
+
+      // Re-arm automated emails for the new dates (dedup stamps cleared)
+      updates.pickup_reminder_sent_at = null;
+      updates.return_instructions_sent_at = null;
+      updates.midrental_checkin_sent_at = null;
+    }
+
+    const { data: updated, error: updErr } = await supabase
+      .from('bookings')
+      .update(updates)
+      .eq('id', bookingId)
+      .select()
+      .single();
+    if (updErr) return json({ error: updErr.message }, 500);
+
+    return json({ ok: true, booking: updated, dateChanged });
   }
 
   // ── GET /bookings/:id/id — ID images (signed) + rental agreement ───────────
@@ -493,8 +649,7 @@ Deno.serve(async (req) => {
       return json({ error: 'vehicle_key, start_date, and end_date are required' }, 400);
     }
 
-    const user = await verifyAuth(req);
-    const created_by = user?.email || 'unknown';
+    const created_by = authedUser.email || 'unknown';
 
     const { data, error } = await supabase
       .from('vehicle_blocks')
@@ -528,8 +683,9 @@ Deno.serve(async (req) => {
 
   return json({ error: 'Not found' }, 404);
   } catch (error) {
+    console.error('[Admin Error]', error);
     Sentry.captureException(error);
     await Sentry.flush(2000);
-    return json({ error: 'Internal server error' }, 500);
+    return json({ error: 'Internal server error', detail: (error as Error)?.message ?? String(error) }, 500);
   }
 });

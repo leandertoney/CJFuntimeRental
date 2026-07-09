@@ -1739,6 +1739,10 @@
     document.getElementById('bd-dates').textContent = (booking.start_date || '') + ' to ' + (booking.end_date || '');
     document.getElementById('bd-total').textContent = '$' + (booking.total || 0).toLocaleString();
 
+    // Populate editable rental dates
+    document.getElementById('bd-start-date').value = booking.start_date || '';
+    document.getElementById('bd-end-date').value = booking.end_date || '';
+
     // Show/hide delivery section
     var deliverySection = document.getElementById('bd-delivery-section');
     var deliveryInfo = document.getElementById('bd-delivery-info');
@@ -1906,6 +1910,8 @@
 
     var data = {
       id: currentBooking.id,
+      start_date: document.getElementById('bd-start-date').value,
+      end_date: document.getElementById('bd-end-date').value,
       pickup_location: document.getElementById('bd-pickup-location').value.trim(),
       pickup_address: document.getElementById('bd-pickup-address').value.trim(),
       pickup_time: document.getElementById('bd-pickup-time').value.trim(),
@@ -1918,6 +1924,10 @@
       return_instructions: document.getElementById('bd-return-instructions').value.trim()
     };
 
+    // Don't send empty dates (would be rejected as invalid)
+    if (!data.start_date) delete data.start_date;
+    if (!data.end_date) delete data.end_date;
+
     var errorEl = document.getElementById('bd-error');
     var successEl = document.getElementById('bd-success');
 
@@ -1929,19 +1939,28 @@
       body: JSON.stringify(data)
     })
       .then(function (r) {
-        if (!r.ok) throw new Error('Failed to save');
-        return r.json();
+        return r.json().catch(function () { return {}; }).then(function (body) {
+          if (!r.ok) throw new Error(body.error || 'Failed to save');
+          return body;
+        });
       })
-      .then(function () {
-        successEl.textContent = '✓ Details saved successfully!';
+      .then(function (body) {
+        successEl.textContent = body.dateChanged
+          ? '✓ Saved — booking rescheduled to ' + data.start_date + (data.end_date !== data.start_date ? ' → ' + data.end_date : '') + '. Reminder emails re-anchor automatically.'
+          : '✓ Details saved successfully!';
         successEl.classList.remove('hidden');
 
         // Update currentBooking object with new data
         Object.keys(data).forEach(function (key) {
           if (key !== 'id') currentBooking[key] = data[key];
         });
+        document.getElementById('bd-dates').textContent =
+          (currentBooking.start_date || '') + ' to ' + (currentBooking.end_date || '');
 
-        setTimeout(closeBookingDetailModal, 1500);
+        // Refresh the bookings table so the new dates show immediately
+        try { renderBookingsPanel(); } catch (e) {}
+
+        setTimeout(closeBookingDetailModal, 2200);
       })
       .catch(function (err) {
         errorEl.textContent = 'Error: ' + err.message;
