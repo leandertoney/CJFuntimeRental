@@ -49,13 +49,19 @@ Deno.serve(async (req) => {
 
     console.log(`Looking for bookings ending on: ${targetDateStr}`);
 
-    // Find bookings ending in 24 hours
-    const { data: bookings, error } = await supabase
+    // Find confirmed bookings ending in 24 hours that haven't been sent yet
+    const { data: allBookings, error } = await supabase
       .from('bookings')
       .select('*')
-      .eq('end_date', targetDateStr);
+      .eq('end_date', targetDateStr)
+      .eq('status', 'confirmed')
+      .is('return_instructions_sent_at', null);
 
     if (error) throw error;
+
+    // Exclude test data (same rule as the admin dashboard)
+    const bookings = (allBookings || []).filter((b: Booking) =>
+      !b.id.startsWith('test_') && !b.email.includes('test') && !b.email.includes('@example.com'));
 
     if (!bookings || bookings.length === 0) {
       console.log('No bookings found for return instructions');
@@ -131,6 +137,12 @@ Deno.serve(async (req) => {
           throw new Error(`Failed to send email: ${error}`);
         }
 
+        // Stamp dedup marker so this booking is never sent twice
+        await supabase
+          .from('bookings')
+          .update({ return_instructions_sent_at: new Date().toISOString() })
+          .eq('id', booking.id);
+
         return { email: booking.email, success: true };
       })
     );
@@ -152,7 +164,7 @@ Deno.serve(async (req) => {
     console.error('Error:', error);
     Sentry.captureException(error);
     await Sentry.flush(2000);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: (error as Error).message }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
     });

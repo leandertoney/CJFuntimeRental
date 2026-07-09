@@ -34,14 +34,20 @@ Deno.serve(async (req) => {
 
     console.log(`Looking for multi-day bookings that started on: ${yesterdayStr}`);
 
-    // Find multi-day bookings that started yesterday (day 2 today)
-    const { data: bookings, error } = await supabase
+    // Find confirmed multi-day bookings that started yesterday (day 2 today)
+    const { data: allBookings, error } = await supabase
       .from('bookings')
       .select('*')
       .eq('start_date', yesterdayStr)
-      .gte('days', 2); // Only multi-day rentals
+      .gte('days', 2) // Only multi-day rentals
+      .eq('status', 'confirmed')
+      .is('midrental_checkin_sent_at', null);
 
     if (error) throw error;
+
+    // Exclude test data (same rule as the admin dashboard)
+    const bookings = (allBookings || []).filter((b: Booking) =>
+      !b.id.startsWith('test_') && !b.email.includes('test') && !b.email.includes('@example.com'));
 
     if (!bookings || bookings.length === 0) {
       console.log('No multi-day bookings found for check-ins');
@@ -80,6 +86,12 @@ Deno.serve(async (req) => {
           throw new Error(`Failed to send email: ${error}`);
         }
 
+        // Stamp dedup marker so this booking is never checked in twice
+        await supabase
+          .from('bookings')
+          .update({ midrental_checkin_sent_at: new Date().toISOString() })
+          .eq('id', booking.id);
+
         return { email: booking.email, success: true };
       })
     );
@@ -101,7 +113,7 @@ Deno.serve(async (req) => {
     console.error('Error:', error);
     Sentry.captureException(error);
     await Sentry.flush(2000);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: (error as Error).message }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
     });

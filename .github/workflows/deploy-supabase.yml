@@ -6,6 +6,8 @@ on:
       - main
     paths:
       - 'supabase/functions/**'
+      - 'supabase/migrations/**'
+      - '.github/workflows/**'
 
 jobs:
   deploy:
@@ -17,6 +19,18 @@ jobs:
       - uses: supabase/setup-cli@v1
         with:
           version: latest
+
+      # Idempotent (IF NOT EXISTS) — safe to run on every deploy. Must run
+      # BEFORE the email functions deploy, since they query these columns.
+      - name: Apply email dedup migration
+        run: |
+          SQL=$(jq -Rs . < supabase/migrations/20260709000001_email_dedup_columns.sql)
+          curl -sf -X POST "https://api.supabase.com/v1/projects/yzdtevrwystezhbmgcwn/database/query" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"query\": $SQL}"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
       - name: Deploy Config Function
         run: supabase functions deploy config --project-ref yzdtevrwystezhbmgcwn
