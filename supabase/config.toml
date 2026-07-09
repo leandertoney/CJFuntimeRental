@@ -54,17 +54,6 @@ entrypoint = "./functions/config/index.ts"
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/config/*.html" ]
 
-[functions.reminders]
-enabled = true
-verify_jwt = false
-import_map = "./functions/reminders/deno.json"
-# Uncomment to specify a custom file path to the entrypoint.
-# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
-entrypoint = "./functions/reminders/index.ts"
-# Specifies static files to be bundled with the function. Supports glob patterns.
-# For example, if you want to serve static HTML pages in your function:
-# static_files = [ "./functions/reminders/*.html" ]
-
 [functions.admin]
 enabled = true
 verify_jwt = false
