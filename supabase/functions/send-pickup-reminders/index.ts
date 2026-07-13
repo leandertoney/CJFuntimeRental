@@ -196,7 +196,7 @@ function buildPickupReminderEmail(vars: any): string {
             <li style="margin:6px 0;color:rgba(255,255,255,0.85);">Comfortable closed-toe shoes</li>
             <li style="margin:6px 0;color:rgba(255,255,255,0.85);">Sunglasses and sunscreen</li>
           </ul>
-          <p style="font-size:15px;color:rgba(255,255,255,0.85);margin:0 0 16px;line-height:1.7;"><strong>Questions?</strong><br>Call or text us: (717) 123-4567</p>
+          <p style="font-size:15px;color:rgba(255,255,255,0.85);margin:0 0 16px;line-height:1.7;"><strong>Questions?</strong><br>Call or text us: (717) 203-5778</p>
           <p style="font-size:15px;color:rgba(255,255,255,0.85);margin:0 0 16px;line-height:1.7;">Safe travels!<br>– Chris</p>
         </td></tr>
         <tr>

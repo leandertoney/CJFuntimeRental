@@ -142,7 +142,7 @@ function buildMidRentalCheckinEmail(vars: any): string {
           <p style="font-size:15px;color:rgba(255,255,255,0.85);margin:0 0 16px;line-height:1.7;"><strong>Need Anything?</strong></p>
           <p style="font-size:15px;color:rgba(255,255,255,0.85);margin:0 0 16px;line-height:1.7;">If you have questions or need assistance, we're here to help:</p>
           <ul style="margin:16px 0;padding-left:20px;">
-            <li style="margin:6px 0;color:rgba(255,255,255,0.85);">Call/Text: (717) 123-4567</li>
+            <li style="margin:6px 0;color:rgba(255,255,255,0.85);">Call/Text: (717) 203-5778</li>
             <li style="margin:6px 0;color:rgba(255,255,255,0.85);">Email: Just reply to this message</li>
           </ul>
           <p style="font-size:15px;color:rgba(255,255,255,0.85);margin:0 0 16px;line-height:1.7;"><strong>Reminder:</strong></p>
