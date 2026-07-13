@@ -1095,13 +1095,18 @@
   // ── Per-Vehicle Blocking ─────────────────────────────────────────────────
   var vehicleBlocks = [];
 
+  function vehicleDisplayName(v, key) {
+    var base = (v && v.name) || key;
+    return (v && v.color) ? base + ' — ' + v.color : base;
+  }
+
   function renderVehicleBlocksPanel() {
     // Populate vehicle dropdown
     var vehSelect = document.getElementById('vblock-vehicle');
     var html = '<option value="">Select vehicle...</option>';
     Object.keys(cfg.vehicles || {}).forEach(function (key) {
       var v = cfg.vehicles[key];
-      html += '<option value="' + key + '">' + (v.name || key) + '</option>';
+      html += '<option value="' + key + '">' + vehicleDisplayName(v, key) + '</option>';
     });
     vehSelect.innerHTML = html;
 
@@ -1158,7 +1163,7 @@
 
     var html = '';
     Object.keys(grouped).forEach(function (vkey) {
-      var vname = (cfg.vehicles && cfg.vehicles[vkey] && cfg.vehicles[vkey].name) || vkey;
+      var vname = vehicleDisplayName(cfg.vehicles && cfg.vehicles[vkey], vkey);
       html += '<div style="margin-bottom:24px">';
       html += '<h4 style="font-weight:600;font-size:14px;margin-bottom:12px;color:#333">' + vname + '</h4>';
       html += '<div style="display:flex;flex-direction:column;gap:8px">';
