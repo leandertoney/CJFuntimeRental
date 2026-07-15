@@ -102,13 +102,92 @@ Deno.serve(async (req) => {
 
     if (!stripeProductId) stripeProductId = STRIPE_PRODUCTS[vehicleKey] || null;
 
-    // Server-side price verification using config pricing
-    // The client sends totalCents/baseCents which we use, but we verify against config
+    // ── Server-side price verification ──────────────────────────────────────
+    // The client computes baseCents/totalCents itself (booking-widget.js's
+    // calcPrice()) and we previously charged that number with no server-side
+    // check at all — a stale, buggy, or tampered client value would be
+    // charged verbatim. Recompute the expected rental amount independently
+    // from the same config + duration/day math the client uses (mirrored
+    // from calcPrice()), using PRICING_DEFAULTS as the floor exactly like the
+    // client does (falsy/zeroed config values are ignored, not treated as
+    // real overrides — the live site_config.pricing.* fields are currently
+    // zeroed out, so this floor is what's actually in effect everywhere).
+    const PRICING_DEFAULTS = {
+      hourlyRate: 35,
+      hourlyMin: 3,
+      tenhrRate: { slingshot: 180, canam: 180 } as Record<string, number>,
+      dailyRate: { slingshot: 250, canam: 250 } as Record<string, number>,
+      multiDay: [
+        { minDays: 7, slingshot: 190, canam: 190, enabled: true },
+        { minDays: 4, slingshot: 210, canam: 210, enabled: true },
+        { minDays: 2, slingshot: 225, canam: 225, enabled: true }
+      ],
+      deliveryFee: 50
+    };
+
+    let cfgPricing: Record<string, unknown> = {};
+    try {
+      const { data } = await supabase.from('site_config').select('config').eq('id', 1).single();
+      cfgPricing = data?.config?.pricing || {};
+    } catch { /* fall through to defaults */ }
+
+    const hourlyRate = Number(cfgPricing.hourlyRate) || PRICING_DEFAULTS.hourlyRate;
+    const hourlyMin = Number(cfgPricing.hourlyMin) || PRICING_DEFAULTS.hourlyMin;
+    const tenhrRate = (cfgPricing.tenhrRate as Record<string, number>) || PRICING_DEFAULTS.tenhrRate;
+    const dailyRate = (cfgPricing.dailyRate as Record<string, number>) || PRICING_DEFAULTS.dailyRate;
+    const multiDay = (Array.isArray(cfgPricing.multiDay) && (cfgPricing.multiDay as unknown[]).length > 0)
+      ? (cfgPricing.multiDay as typeof PRICING_DEFAULTS.multiDay)
+      : PRICING_DEFAULTS.multiDay;
+
+    let expectedBaseDollars = 0;
+    if (durationType === 'hourly') {
+      expectedBaseDollars = hourlyRate * (Number(hours) || hourlyMin);
+    } else if (durationType === '10hr') {
+      expectedBaseDollars = tenhrRate[vehicleType] || PRICING_DEFAULTS.tenhrRate[vehicleType] || 180;
+    } else if (durationType === '24hr') {
+      expectedBaseDollars = dailyRate[vehicleType] || PRICING_DEFAULTS.dailyRate[vehicleType] || 250;
+    } else if (durationType === 'multi') {
+      const d = Number(days) || 0;
+      const tier = multiDay.find((t) => t.enabled && d >= t.minDays);
+      const perDay = tier ? (tier[vehicleType as 'slingshot' | 'canam'] || 0) : (dailyRate[vehicleType] || PRICING_DEFAULTS.dailyRate[vehicleType] || 250);
+      expectedBaseDollars = perDay * d;
+    }
+    const expectedBaseCents = Math.round(expectedBaseDollars * 100);
+
+    // The client sends totalCents/baseCents which we use to build the Stripe
+    // line item, but only after confirming it matches our own computation
+    // (a few cents of tolerance for client-side floating point rounding).
     const rentalAmount = baseCents;
     if (!rentalAmount || rentalAmount <= 0) {
       return new Response(JSON.stringify({ error: 'Invalid rental amount' }), {
         status: 400, headers: { ...CORS, 'Content-Type': 'application/json' }
       });
+    }
+    if (expectedBaseCents > 0 && Math.abs(rentalAmount - expectedBaseCents) > 5) {
+      Sentry.captureMessage(
+        `Checkout price mismatch: client sent ${rentalAmount}c, server expected ${expectedBaseCents}c ` +
+        `(vehicleKey=${vehicleKey}, durationType=${durationType}, days=${days}, hours=${hours})`,
+        'error'
+      );
+      return new Response(JSON.stringify({ error: 'Pricing has changed — please refresh the page and try again.' }), {
+        status: 409, headers: { ...CORS, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Delivery fee: log-only for now, NOT blocking. Real historical bookings
+    // have been seen with deliveryDropoff/deliveryPickup=true in Stripe
+    // metadata but no delivery fee actually charged (root cause not yet
+    // understood — possibly a customer toggling delivery off mid-checkout).
+    // Blocking here risks rejecting a legitimate customer's real payment over
+    // a mismatch that may be harmless, so this only reports to Sentry for
+    // visibility until that's investigated as its own task.
+    const expectedDeliveryFeeCents = Math.round((Number(cfgPricing.delivery && (cfgPricing.delivery as Record<string, unknown>).fee) || PRICING_DEFAULTS.deliveryFee) * 100)
+      * ((deliveryDropoff ? 1 : 0) + (deliveryPickup ? 1 : 0));
+    if (Math.abs(Number(deliveryFee || 0) - expectedDeliveryFeeCents) > 5) {
+      Sentry.captureMessage(
+        `Checkout delivery fee mismatch (non-blocking): client sent ${deliveryFee}c (dropoff=${deliveryDropoff}, pickup=${deliveryPickup}), server expected ${expectedDeliveryFeeCents}c`,
+        'warning'
+      );
     }
 
     // Build duration description for Stripe

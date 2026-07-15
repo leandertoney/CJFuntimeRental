@@ -727,7 +727,7 @@ app.post('/api/admin/chat', requireAuth, async (req, res) => {
 
     const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-    const systemPrompt = `You are CJ Assistant, a helpful admin tool for CJ's Fun Time Rental — a 3-wheel vehicle rental business in Lancaster, PA. Use tools to execute commands. Today: ${new Date().toISOString().split('T')[0]}. Vehicle keys: slingshot_2022 (2022 Polaris Slingshot), slingshot_2020 (2020 Polaris Slingshot), canam_spyder (2021 Can-Am Spyder F3 Limited).`;
+    const systemPrompt = `You are CJ Assistant, a helpful admin tool for CJ's Fun Time Rental — a 3-wheel vehicle rental business in Lancaster, PA. Use tools to execute commands. Today: ${new Date().toISOString().split('T')[0]}. Vehicle keys: slingshot_2022 (2024 Polaris Slingshot), slingshot_2020 (2016 Polaris Slingshot, gray), slingshot_2016_red (2016 Polaris Slingshot, red), canam_spyder (2021 Can-Am Spyder F3 Limited).`;
 
     const messages = [
       { role: 'system', content: systemPrompt },
@@ -764,9 +764,10 @@ app.post('/api/admin/chat', requireAuth, async (req, res) => {
     }
 
     // Phase 2: separate JSON-only call to get reply + suggestions reliably
-    const jsonSystemPrompt = `You are CJ Assistant for CJ's Fun Time Rental. The business has 3 vehicles:
-- 2022 Polaris Slingshot
-- 2020 Polaris Slingshot
+    const jsonSystemPrompt = `You are CJ Assistant for CJ's Fun Time Rental. The business has 4 vehicles:
+- 2024 Polaris Slingshot (orange)
+- 2016 Polaris Slingshot (gray)
+- 2016 Polaris Slingshot (red)
 - 2021 Can-Am Spyder F3 Limited
 
 Your job is to guide the admin using clickable chips as much as possible. The admin should rarely need to type.
@@ -780,7 +781,7 @@ REPLY rules:
 CHIPS rules:
 - Return 3 to 6 chips depending on context.
 - Chips ARE the options. If the user needs to pick something, each chip IS one of the choices.
-- Phrase chips as things the admin would naturally say or want, e.g. "Change 2022 Slingshot to $200/day"
+- Phrase chips as things the admin would naturally say or want, e.g. "Change 2024 Slingshot to $200/day"
 - When a choice needs a specific value (like a price), include a realistic example value in the chip text so the user can tap and immediately understand what will happen.
 - Chips must be specific and actionable — never generic like "See more" or "Go back".
 - Adapt to the conversation. After showing prices, chips should be about changing or acting on those prices. After leads, chips should be about contacting or managing those leads.

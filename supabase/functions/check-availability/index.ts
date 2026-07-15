@@ -25,21 +25,36 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Fetch all confirmed bookings for this vehicle
+    // Fetch all confirmed bookings, future/current only
     const { data: bookings, error } = await supabase
       .from('bookings')
-      .select('id, vehicle, start_date, end_date, status')
+      .select('id, vehicle, vehicle_key, start_date, end_date, status')
       .eq('status', 'confirmed')
-      .gte('end_date', new Date().toISOString().split('T')[0]); // Only future/current bookings
+      .gte('end_date', new Date().toISOString().split('T')[0]);
 
     if (error) throw error;
 
-    // Filter bookings to match the requested vehicle key
+    // Match by exact vehicle_key (set on every booking since 2026-07-15).
+    // Older bookings created before that column exist have vehicle_key NULL
+    // and only ever stored the display NAME (e.g. "2016 Polaris Slingshot").
+    // Comparing that name directly against vehicleKey (e.g. "slingshot_2020")
+    // can never match — different formats — so for legacy rows we resolve
+    // vehicleKey to its configured display name first, then compare name to
+    // name. Note two fleet vehicles share the same display name (the two
+    // 2016 Slingshots), so this fallback is inherently ambiguous between
+    // them; it's only reached for bookings that predate exact-key tracking.
+    let legacyVehicleName: string | null = null;
+    const needsLegacyFallback = (bookings || []).some((b: any) => !b.vehicle_key);
+    if (needsLegacyFallback) {
+      const { data: cfgRow } = await supabase.from('site_config').select('config').eq('id', 1).single();
+      legacyVehicleName = (cfgRow?.config?.vehicles?.[vehicleKey]?.name || '').toLowerCase();
+    }
+
     const filteredBookings = (bookings || []).filter((b: any) => {
-      // Match exact vehicle name or key
-      return b.vehicle === vehicleKey ||
-             b.vehicle.toLowerCase().includes(vehicleKey.toLowerCase()) ||
-             vehicleKey.toLowerCase().includes(b.vehicle.toLowerCase());
+      if (b.vehicle_key) return b.vehicle_key === vehicleKey;
+      if (!legacyVehicleName) return false;
+      const v = (b.vehicle || '').toLowerCase();
+      return v === legacyVehicleName || v.includes(legacyVehicleName) || legacyVehicleName.includes(v);
     });
 
     return new Response(
