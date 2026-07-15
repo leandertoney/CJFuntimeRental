@@ -177,7 +177,7 @@ async function sendOwnerBookingAlert({ name, email, phone, vehicle, startDate, e
 
   return getResend().emails.send({
     from:    FROM,
-    to:      process.env.OWNER_EMAIL || 'chrisjohnson839@gmail.com',   // sends to Chris's email
+    to:      [process.env.OWNER_EMAIL || 'chrisjohnson839@gmail.com', 'johnsonmilonda37@gmail.com'],
     subject: `🔔 New booking — ${name} · ${vehicle} · ${startDate}`,
     html
   });

@@ -386,7 +386,7 @@ Deno.serve(async (req) => {
 
     const { data: existing, error: fetchErr } = await supabase
       .from('bookings')
-      .select('id, vehicle, start_date, end_date, days, status')
+      .select('id, vehicle, vehicle_key, start_date, end_date, days, total, status, delivery_dropoff, delivery_pickup')
       .eq('id', bookingId)
       .maybeSingle();
     if (fetchErr) return json({ error: fetchErr.message }, 500);
@@ -405,22 +405,28 @@ Deno.serve(async (req) => {
         return json({ error: 'end_date cannot be before start_date' }, 400);
       }
 
+      // Prefer exact vehicle_key match (set on every booking since 2026-07-15).
+      // Legacy bookings without a stored key fall back to fuzzy display-name
+      // matching, which cannot tell apart vehicles that share a name (e.g. the
+      // two 2016 Slingshots) — only used when we have nothing better.
+      const bookingVehicle = (existing.vehicle || '').toLowerCase();
+      const sameVehicle = (b: { vehicle: string; vehicle_key?: string | null }) => {
+        if (existing.vehicle_key && b.vehicle_key) return b.vehicle_key === existing.vehicle_key;
+        const v = (b.vehicle || '').toLowerCase();
+        return v === bookingVehicle || v.includes(bookingVehicle) || bookingVehicle.includes(v);
+      };
+
       // 1) Other confirmed bookings on the same vehicle that overlap the new range
       const { data: others, error: bErr } = await supabase
         .from('bookings')
-        .select('id, vehicle, start_date, end_date')
+        .select('id, vehicle, vehicle_key, start_date, end_date')
         .eq('status', 'confirmed')
         .neq('id', bookingId)
         .lte('start_date', newEnd)
         .gte('end_date', newStart);
       if (bErr) return json({ error: bErr.message }, 500);
 
-      const bookingVehicle = (existing.vehicle || '').toLowerCase();
-      const sameVehicle = (name: string) => {
-        const v = (name || '').toLowerCase();
-        return v === bookingVehicle || v.includes(bookingVehicle) || bookingVehicle.includes(v);
-      };
-      const bookingConflict = (others || []).find((b: { vehicle: string }) => sameVehicle(b.vehicle));
+      const bookingConflict = (others || []).find(sameVehicle);
       if (bookingConflict) {
         return json({
           error: `Vehicle already booked ${bookingConflict.start_date} → ${bookingConflict.end_date} (booking ${bookingConflict.id})`
@@ -431,11 +437,15 @@ Deno.serve(async (req) => {
       const { data: cfgRow } = await supabase.from('site_config').select('config').eq('id', 1).single();
       const cfg = cfgRow?.config || {};
 
-      // Map the booking's vehicle display name to config vehicle key(s)
-      const vehicleKeys = Object.entries(cfg.vehicles || {})
-        .filter(([key, v]) =>
-          sameVehicle((v as { name?: string })?.name || '') || sameVehicle(key.replace(/_/g, ' ')))
-        .map(([key]) => key);
+      // Resolve the booking's own vehicle key: prefer the stored column, else
+      // fall back to matching config vehicles by display name (legacy bookings).
+      const vehicleKeys = existing.vehicle_key
+        ? [existing.vehicle_key]
+        : Object.entries(cfg.vehicles || {})
+            .filter(([key, v]) =>
+              sameVehicle({ vehicle: (v as { name?: string })?.name || '' }) ||
+              sameVehicle({ vehicle: key.replace(/_/g, ' ') }))
+            .map(([key]) => key);
 
       if (vehicleKeys.length > 0) {
         const { data: blocks, error: vbErr } = await supabase
@@ -466,7 +476,31 @@ Deno.serve(async (req) => {
       // Recompute rental length (calendar days, minimum 1 — matches existing data model)
       const msPerDay = 24 * 60 * 60 * 1000;
       const diff = Math.round((new Date(newEnd + 'T00:00:00Z').getTime() - new Date(newStart + 'T00:00:00Z').getTime()) / msPerDay);
-      updates.days = Math.max(1, diff === 0 ? 1 : diff);
+      const newDays = Math.max(1, diff === 0 ? 1 : diff);
+      updates.days = newDays;
+
+      // 4) Price-difference guardrail (v1: date-change only, no price changes).
+      // Flat ratePerDay pricing today means this never actually differs, but
+      // if day-of-week/seasonal pricing is ever added, this stops a silent
+      // price change and requires an explicit admin override.
+      // Skipped when delivery was involved: `total` includes a delivery fee
+      // that isn't broken out on the booking row, so rate*days can't be
+      // compared against it without a false positive on every delivery booking.
+      const hasDelivery = !!(existing.delivery_dropoff || existing.delivery_pickup);
+      if (!hasDelivery && vehicleKeys.length > 0 && !body.confirmPriceChange) {
+        const rate = Number((cfg.vehicles || {})?.[vehicleKeys[0]]?.ratePerDay);
+        if (Number.isFinite(rate) && Number.isFinite(existing.total) && existing.days > 0) {
+          const expectedTotal = rate * newDays;
+          if (Math.abs(expectedTotal - Number(existing.total)) > 0.01) {
+            return json({
+              warning: 'price_mismatch',
+              error: `New dates would price at $${expectedTotal.toFixed(2)} vs the $${Number(existing.total).toFixed(2)} already paid. Confirm to proceed without changing the charged amount, or handle the price difference manually.`,
+              currentTotal: existing.total,
+              expectedTotal
+            }, 409);
+          }
+        }
+      }
 
       // Re-arm automated emails for the new dates (dedup stamps cleared)
       updates.pickup_reminder_sent_at = null;

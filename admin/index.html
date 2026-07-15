@@ -523,14 +523,16 @@
         </details>
       </div>
 
-      <div class="booking-detail-section">
-        <h4>Rental Dates</h4>
+      <div class="booking-detail-section" style="border:2px solid #FF6B00;border-radius:8px;padding:16px;background:rgba(255,107,0,0.06);">
+        <h4 style="margin:0 0 8px 0;">📅 Reschedule</h4>
         <p style="font-size:12px;color:#888;margin:0 0 10px 0;">
-          Changing dates reschedules the booking. Availability is checked automatically —
-          conflicting bookings or blocked dates will be rejected. Automated reminder emails
-          re-anchor to the new dates.
+          Pick new dates and click Reschedule. Vehicle availability is checked automatically —
+          a conflicting booking or blocked date is refused. The amount paid is never changed by
+          this action; if the new dates would price differently you'll get a warning instead of
+          a silent change. Reminder emails re-anchor to the new dates and won't re-send ones
+          already sent.
         </p>
-        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:end;">
           <div class="login-field" style="flex:1;min-width:140px;">
             <label for="bd-start-date">Start Date</label>
             <input type="date" id="bd-start-date">
@@ -539,7 +541,13 @@
             <label for="bd-end-date">End Date</label>
             <input type="date" id="bd-end-date">
           </div>
+          <div class="login-field" style="flex:0;">
+            <button type="button" id="bd-reschedule" class="btn-primary-admin" style="background:#FF6B00;white-space:nowrap;">
+              Reschedule
+            </button>
+          </div>
         </div>
+        <div id="bd-reschedule-msg" style="font-size:13px;margin-top:10px;"></div>
       </div>
 
       <div class="booking-detail-section">

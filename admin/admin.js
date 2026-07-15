@@ -1913,10 +1913,11 @@
   function saveBookingDetails() {
     if (!currentBooking) return;
 
+    // Date changes go through the dedicated Reschedule button (which runs the
+    // availability + price-guardrail flow) — this Save button only handles
+    // pickup/return details, so it never sends start_date/end_date.
     var data = {
       id: currentBooking.id,
-      start_date: document.getElementById('bd-start-date').value,
-      end_date: document.getElementById('bd-end-date').value,
       pickup_location: document.getElementById('bd-pickup-location').value.trim(),
       pickup_address: document.getElementById('bd-pickup-address').value.trim(),
       pickup_time: document.getElementById('bd-pickup-time').value.trim(),
@@ -1928,10 +1929,6 @@
       key_drop_location: document.getElementById('bd-key-drop').value.trim(),
       return_instructions: document.getElementById('bd-return-instructions').value.trim()
     };
-
-    // Don't send empty dates (would be rejected as invalid)
-    if (!data.start_date) delete data.start_date;
-    if (!data.end_date) delete data.end_date;
 
     var errorEl = document.getElementById('bd-error');
     var successEl = document.getElementById('bd-success');
@@ -1950,19 +1947,13 @@
         });
       })
       .then(function (body) {
-        successEl.textContent = body.dateChanged
-          ? '✓ Saved — booking rescheduled to ' + data.start_date + (data.end_date !== data.start_date ? ' → ' + data.end_date : '') + '. Reminder emails re-anchor automatically.'
-          : '✓ Details saved successfully!';
+        successEl.textContent = '✓ Details saved successfully!';
         successEl.classList.remove('hidden');
 
         // Update currentBooking object with new data
         Object.keys(data).forEach(function (key) {
           if (key !== 'id') currentBooking[key] = data[key];
         });
-        document.getElementById('bd-dates').textContent =
-          (currentBooking.start_date || '') + ' to ' + (currentBooking.end_date || '');
-
-        // Refresh the bookings table so the new dates show immediately
         try { renderBookingsPanel(); } catch (e) {}
 
         setTimeout(closeBookingDetailModal, 2200);
@@ -1972,6 +1963,78 @@
         errorEl.classList.remove('hidden');
       });
   }
+
+  // ── Reschedule (dedicated one-click date-change action) ────────────────
+  function rescheduleBooking(confirmPriceChange) {
+    if (!currentBooking) return;
+
+    var msgEl = document.getElementById('bd-reschedule-msg');
+    var btn = document.getElementById('bd-reschedule');
+    var startDate = document.getElementById('bd-start-date').value;
+    var endDate = document.getElementById('bd-end-date').value;
+
+    if (!startDate || !endDate) {
+      msgEl.style.color = '#f87171';
+      msgEl.textContent = 'Pick both a start and end date first.';
+      return;
+    }
+
+    var payload = { start_date: startDate, end_date: endDate };
+    if (confirmPriceChange) payload.confirmPriceChange = true;
+
+    btn.disabled = true;
+    btn.textContent = 'Checking…';
+    msgEl.style.color = '#888';
+    msgEl.textContent = '';
+
+    apiFetch(ADMIN_API + '/bookings/' + currentBooking.id, {
+      method: 'PUT',
+      body: JSON.stringify(payload)
+    })
+      .then(function (r) {
+        return r.json().catch(function () { return {}; }).then(function (body) {
+          return { ok: r.ok, body: body };
+        });
+      })
+      .then(function (res) {
+        btn.disabled = false;
+        btn.textContent = 'Reschedule';
+
+        if (!res.ok) {
+          if (res.body && res.body.warning === 'price_mismatch') {
+            var proceed = confirm(res.body.error + '\n\nProceed anyway without changing the amount charged?');
+            if (proceed) {
+              rescheduleBooking(true);
+              return;
+            }
+            msgEl.style.color = '#fbbf24';
+            msgEl.textContent = 'Reschedule cancelled — price mismatch not confirmed.';
+            return;
+          }
+          throw new Error((res.body && res.body.error) || 'Failed to reschedule');
+        }
+
+        currentBooking.start_date = startDate;
+        currentBooking.end_date = endDate;
+        currentBooking.days = res.body.booking ? res.body.booking.days : currentBooking.days;
+        document.getElementById('bd-dates').textContent = startDate + ' to ' + endDate;
+
+        msgEl.style.color = '#4ade80';
+        msgEl.textContent = '✓ Rescheduled to ' + startDate + (endDate !== startDate ? ' → ' + endDate : '') + '. Old date freed, new date blocked, reminder emails re-anchored.';
+
+        try { renderBookingsPanel(); } catch (e) {}
+      })
+      .catch(function (err) {
+        btn.disabled = false;
+        btn.textContent = 'Reschedule';
+        msgEl.style.color = '#f87171';
+        msgEl.textContent = 'Error: ' + err.message;
+      });
+  }
+
+  document.getElementById('bd-reschedule').addEventListener('click', function () {
+    rescheduleBooking(false);
+  });
 
   // Bind modal event listeners
   document.getElementById('bd-close-x').addEventListener('click', closeBookingDetailModal);

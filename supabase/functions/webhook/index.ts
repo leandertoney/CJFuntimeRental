@@ -145,6 +145,7 @@ Deno.serve(async (req) => {
       email: email.toLowerCase(),
       name, phone,
       vehicle: vehicleName,
+      vehicle_key: meta.vehicleKey || null,
       start_date: meta.startDate,
       end_date: meta.endDate,
       days: Number(meta.days) || 1,
@@ -208,7 +209,7 @@ Deno.serve(async (req) => {
 
     await Promise.all([
       resend.emails.send({ from: FROM, to: email, subject: `✅ Booking confirmed — ${vehicleName} · ${meta.startDate}`, html: customerHtml }),
-      resend.emails.send({ from: FROM, to: Deno.env.get('OWNER_EMAIL') || 'chrisjohnson839@gmail.com', subject: `🔔 New booking — ${name} · ${vehicleName} · ${meta.startDate}`, html: ownerHtml })
+      resend.emails.send({ from: FROM, to: [Deno.env.get('OWNER_EMAIL') || 'chrisjohnson839@gmail.com', 'johnsonmilonda37@gmail.com'], subject: `🔔 New booking — ${name} · ${vehicleName} · ${meta.startDate}`, html: ownerHtml })
     ]);
   }
 

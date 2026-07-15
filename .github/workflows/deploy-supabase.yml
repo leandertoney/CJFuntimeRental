@@ -32,6 +32,18 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
+      # Idempotent (IF NOT EXISTS) — safe to run on every deploy. Must run
+      # BEFORE the webhook/admin functions deploy, since they read/write this column.
+      - name: Apply vehicle_key migration
+        run: |
+          SQL=$(jq -Rs . < supabase/migrations/20260715000001_vehicle_key_column.sql)
+          curl -sf -X POST "https://api.supabase.com/v1/projects/yzdtevrwystezhbmgcwn/database/query" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"query\": $SQL}"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
       - name: Deploy Config Function
         run: supabase functions deploy config --project-ref yzdtevrwystezhbmgcwn
         env:
