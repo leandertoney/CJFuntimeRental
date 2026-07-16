@@ -1,4 +1,32 @@
-# CJ Funtime Rentals - Project State (Updated 2026-07-15)
+# CJ Funtime Rentals - Project State (Updated 2026-07-16)
+
+## Session 2026-07-15/16 (continued): checkout price verification + fleet-data consolidation — DEPLOYED & VERIFIED LIVE
+
+Two more commits same continued session, both deployed and verified live:
+
+**Commit d8e0333 — server-side checkout price verification (the highest-severity fix of the session):**
+`supabase/functions/checkout/index.ts` had a comment claiming "server-side price verification using config pricing" but the actual code just charged whatever `baseCents` the client sent — zero real verification. Fixed: the function now independently recomputes the expected rental price (mirroring `booking-widget.js`'s `calcPrice()` — same duration-type/tier logic, same hardcoded-floor defaults since the live `site_config.pricing.*` fields are currently zeroed out) and rejects the checkout with a 409 if the client's number doesn't match within a few cents. **Verified safe** against every real historical booking (including bookings priced under older, since-changed rates — confirmed the check is point-in-time, not retroactive) and all duration-type/tier-boundary combinations before shipping. Delivery fee gets the same recomputation but is **log-only (Sentry), not blocking** — a real historical booking (Lamar's) was found with `deliveryDropoff/Pickup: true` in Stripe metadata but no delivery fee actually charged, root cause not understood, so blocking on that specific mismatch risked rejecting a legitimate future customer. **Watch Sentry for `Checkout delivery fee mismatch` — if it recurs, that's the signal to dig into root cause as its own task.**
+
+**Also in d8e0333:**
+- Fixed the `index.html` config race condition: the live `/functions/v1/config` script was `async` and could finish before OR after the static `site-config.js` fallback that follows it in the DOM, non-deterministically overwriting `window.SITE_CONFIG` either way. Made the live fetch a normal blocking script (guaranteed to run first) and `site-config.js` fallback-only (`window.SITE_CONFIG = window.SITE_CONFIG || {...}`) so it only ever fills in if the live fetch genuinely failed.
+- Rebuilt `vehicle-detail.js`'s hardcoded `VEHICLES` fallback: was missing the red 2016 Slingshot entirely, had wrong years/prices, and had a dead field name bug (`rate9hr` was set but `getPricingForVehicle()` reads `rate10hr`, so the per-vehicle override silently never applied — always fell through to the `|| 180` default). **Note: nothing on the live site actually triggers this panel right now (`openVehicleDetail`/`data-vehicle-detail` has zero callers) — this fix is precautionary, not currently customer-facing.**
+- Regenerated `site-config.js` from the live DB (previous "regenerated" pass on 2026-07-15 only fixed prose text, not the underlying vehicle/pricing data — this pass fixed both).
+- Fixed the `check-availability` Edge Function's vehicle-matching bug (same root cause as the admin reschedule fix in b97dd79 below) — **not in the CI auto-deploy list**, so this fix is committed but not live; doesn't matter today since the function also has zero live callers (confirmed — nothing calls it, `booking-widget-v2.js`'s "Check Availability" button is a stubbed `// TODO`).
+- Swept every live page still showing "2020"/"2022" Polaris Slingshot → "2016"/"2024": `booking-success.html`, `full-site.html`, 6 SEO landing pages, plus the local (non-production) AI-assistant prompt in `server.js`.
+
+**Commit 3251e9b — client-side fleet-data consolidation (deliberately scoped narrow, no Edge Function/Stripe path touched):**
+- `checkout.html`: delivery fee display now reads `SITE_CONFIG.pricing.delivery.fee` instead of a literal `"$50"` string.
+- `booking-success.html`: now loads the live config script and reads `SITE_CONFIG.vehicles[key]` first; the hardcoded `FALLBACK_VEHICLES` map only fires if that fetch fails.
+- All 4 `vehicles/*.html` detail pages: the "$180 / From 10 Hours" stat badge now syncs from `SITE_CONFIG.pricing.tenhrRate` via a small inline script instead of being frozen text.
+- Fixed 2 more stale year mentions missed in the first sweep (Allentown + trike landing pages, one `index.html` alt tag).
+- **Deliberately left alone:** SEO landing page `<title>`/meta/JSON-LD text (needs to stay static/crawler-visible, not a bug); all confirmed-dead files (`full-site.html`, `stripe-checkout.js`, `booking-widget-v2.js`, `test-*.js`, `server.js`/`emails.js`/`db.js` — reachable by direct URL on Netlify but unlinked/unindexed, not worth a correctness pass on dead code); the DB's own `copy.how.step1Body` field (confirmed stale years in the actual `site_config` table, but confirmed `index.html`'s "How It Works" section doesn't read that field at all — it's hardcoded correctly inline — so the DB field is orphaned/unused data, not worth a write).
+
+**Root cause of the whole day's "why does it keep getting worse" feeling:** the fleet is genuinely 4 vehicles (2016 gray Slingshot, 2016 red Slingshot, 2024 orange Slingshot, 2021 Can-Am), but vehicle name/year/price data was duplicated across ~10 files that were meant to mirror `site_config` but drifted independently over time as the fleet/pricing changed. Nothing was ever actually charging customers wrong — Stripe/checkout pricing was always correct — it was *display* data (labels, fallback panels, static snapshots) that drifted. That's now consolidated: the two highest-stakes paths (what a customer is *charged*, and what vehicle *name* they see pre-purchase) both read live from the DB with the DB as the only real source of truth; hardcoded copies are fallback-only, never authoritative.
+
+**Also in this session, from a separate Milonda email thread (Jul 15, unrelated to the vehicle-naming investigation):**
+- Lamar Williams Jr's booking rescheduled Sat 7/18 → Sun 7/19 per his phone request to Milonda (see full detail in the session below — same booking, same fix).
+- Milonda (johnsonmilonda37@gmail.com) added as a second recipient on new-booking owner alert emails, per her request in that thread — done in the same webhook change documented below.
+- Milonda replied to/closed that thread herself; no outstanding action there.
 
 ## Session 2026-07-15: Lamar reschedule + self-service admin reschedule — DEPLOYED & VERIFIED LIVE
 
