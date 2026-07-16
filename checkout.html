@@ -330,10 +330,11 @@
       }
 
       if (bookingData.deliveryDropoff || bookingData.deliveryPickup) {
+        var deliveryFeeDisplay = (window.SITE_CONFIG && window.SITE_CONFIG.pricing && window.SITE_CONFIG.pricing.delivery && window.SITE_CONFIG.pricing.delivery.fee) || 50;
         html += '<div class="details-section">';
         html += '<h2>Delivery Options</h2>';
-        if (bookingData.deliveryDropoff) html += '<div class="detail-row"><span class="detail-label">Drop-off at my location</span><span style="font-weight:600;color:var(--white);">$50</span></div>';
-        if (bookingData.deliveryPickup) html += '<div class="detail-row"><span class="detail-label">Pick up from my location</span><span style="font-weight:600;color:var(--white);">$50</span></div>';
+        if (bookingData.deliveryDropoff) html += '<div class="detail-row"><span class="detail-label">Drop-off at my location</span><span style="font-weight:600;color:var(--white);">$' + deliveryFeeDisplay + '</span></div>';
+        if (bookingData.deliveryPickup) html += '<div class="detail-row"><span class="detail-label">Pick up from my location</span><span style="font-weight:600;color:var(--white);">$' + deliveryFeeDisplay + '</span></div>';
         html += '</div>';
       }
 

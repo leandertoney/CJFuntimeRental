@@ -158,7 +158,7 @@
           <span>Lancaster, PA</span>
         </div>
         <div class="stats">
-          <div class="stat"><div class="stat-num">$180</div><div class="stat-label">From / 10 Hours</div></div>
+          <div class="stat"><div class="stat-num" id="tenhr-rate-stat">$180</div><div class="stat-label">From / 10 Hours</div></div>
           <div class="stat"><div class="stat-num">5-Speed</div><div class="stat-label">Manual Trans</div></div>
           <div class="stat"><div class="stat-num">300</div><div class="stat-label">Miles Included</div></div>
         </div>
@@ -299,6 +299,14 @@
 
   <!-- Load site config first -->
   <script src="https://yzdtevrwystezhbmgcwn.supabase.co/functions/v1/config"></script>
+  <!-- Keep the "From / 10 Hours" stat in sync with the live rate instead of a hardcoded number -->
+  <script>
+    (function () {
+      var p = window.SITE_CONFIG && window.SITE_CONFIG.pricing;
+      var rate = p && p.tenhrRate && p.tenhrRate.slingshot;
+      if (rate) document.getElementById('tenhr-rate-stat').textContent = '$' + rate;
+    })();
+  </script>
   <!-- Load booking widget -->
   <script src="/booking-widget.js"></script>
 

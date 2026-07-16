@@ -440,6 +440,7 @@
 
 </div>
 
+<script src="https://yzdtevrwystezhbmgcwn.supabase.co/functions/v1/config"></script>
 <script>
 (function () {
   'use strict';
@@ -500,7 +501,10 @@
   setTimeout(animateConfetti, 300);
 
   // ── Vehicle card from URL params ──────────────────────────────
-  var VEHICLES = {
+  // Prefer the live database (window.SITE_CONFIG.vehicles, loaded above) so
+  // this page never goes stale on vehicle names/years again — this local map
+  // is only a fallback if that fetch fails.
+  var FALLBACK_VEHICLES = {
     slingshot_2022:     { img: '/cj_orange_sling.jpg', name: '2024 Polaris Slingshot SL' },
     slingshot_2020:     { img: '/gray_polaris_front.png', name: '2016 Polaris Slingshot S' },
     slingshot_2016_red: { img: '/red_polaris_slingshot.png', name: '2016 Polaris Slingshot S (Red)' },
@@ -511,8 +515,12 @@
   var vehicleKey = params.get('vehicle');
   var startDate = params.get('date');
 
-  if (vehicleKey && VEHICLES[vehicleKey]) {
-    var v = VEHICLES[vehicleKey];
+  var liveVehicle = window.SITE_CONFIG && window.SITE_CONFIG.vehicles && vehicleKey ? window.SITE_CONFIG.vehicles[vehicleKey] : null;
+  var v = liveVehicle
+    ? { img: '/' + liveVehicle.img, name: liveVehicle.label || liveVehicle.name }
+    : (vehicleKey ? FALLBACK_VEHICLES[vehicleKey] : null);
+
+  if (v) {
     document.getElementById('vehicle-img').src = v.img;
     document.getElementById('vehicle-img').alt = v.name;
     document.getElementById('vehicle-name').textContent = v.name;
