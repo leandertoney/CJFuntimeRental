@@ -190,6 +190,14 @@ Deno.serve(async (req) => {
       );
     }
 
+    // ── Refundable reservation deposit ───────────────────────────────────────
+    // $100 (default) charged as its own line item, refunded from the admin
+    // panel after the vehicle comes back. Configurable / disable-able via
+    // site_config.pricing.deposit = { enabled: boolean, amount: dollars }.
+    const depCfg = (cfgPricing.deposit || {}) as Record<string, unknown>;
+    const depositEnabled = depCfg.enabled !== false; // default ON
+    const depositCents = depositEnabled ? Math.round((Number(depCfg.amount) || 100) * 100) : 0;
+
     // Build duration description for Stripe
     let durationDesc = '';
     switch (durationType) {
@@ -213,6 +221,7 @@ Deno.serve(async (req) => {
       'metadata[deliveryDropoff]': String(!!deliveryDropoff),
       'metadata[deliveryPickup]': String(!!deliveryPickup),
       'metadata[bookingRef]': bookingRef,
+      'metadata[depositCents]': String(depositCents),
       'success_url': `https://cjfuntimerentals.com/booking-success?session_id={CHECKOUT_SESSION_ID}&vehicle=${encodeURIComponent(vehicleKey)}&date=${encodeURIComponent(startDate)}`,
       'cancel_url': 'https://cjfuntimerentals.com',
       'phone_number_collection[enabled]': 'true',
@@ -242,6 +251,16 @@ Deno.serve(async (req) => {
       sessionBody[`line_items[${lineIdx}][price_data][currency]`] = 'usd';
       sessionBody[`line_items[${lineIdx}][price_data][unit_amount]`] = String(deliveryFee);
       sessionBody[`line_items[${lineIdx}][price_data][product_data][name]`] = deliveryLabel;
+      sessionBody[`line_items[${lineIdx}][quantity]`] = '1';
+    }
+
+    // Line item: Refundable reservation deposit (if enabled)
+    if (depositCents > 0) {
+      lineIdx++;
+      sessionBody[`line_items[${lineIdx}][price_data][currency]`] = 'usd';
+      sessionBody[`line_items[${lineIdx}][price_data][unit_amount]`] = String(depositCents);
+      sessionBody[`line_items[${lineIdx}][price_data][product_data][name]`] = 'Refundable Reservation Deposit';
+      sessionBody[`line_items[${lineIdx}][price_data][product_data][description]`] = 'Fully refunded after the vehicle is returned in good condition.';
       sessionBody[`line_items[${lineIdx}][quantity]`] = '1';
     }
 

@@ -661,6 +661,11 @@
       if (state.durationType === 'multi' && pricing.days > 0) {
         priceText += ' total · ' + pricing.days + ' days';
       }
+      // Refundable deposit note (config: SITE_CONFIG.pricing.deposit)
+      var depCfg = (window.SITE_CONFIG && window.SITE_CONFIG.pricing && window.SITE_CONFIG.pricing.deposit) || {};
+      if (depCfg.enabled !== false) {
+        priceText += ' + $' + (Number(depCfg.amount) || 100) + ' refundable deposit';
+      }
       priceDisplay.textContent = priceText;
     }
 

@@ -598,6 +598,81 @@ Deno.serve(async (req) => {
     return json({ ok: true, verifiedBy: authedUser.email, verifiedAt });
   }
 
+  // ── POST /bookings/:id/refund-deposit — vehicle returned, refund the $100 ──
+  // Refunds ONLY the deposit portion of the original payment via the Stripe
+  // Refunds API (partial refund on the payment intent). Idempotent: a second
+  // call is rejected once deposit_refunded_at is set, and the Stripe request
+  // carries an idempotency key tied to the booking id as a backstop.
+  if (path.match(/^\/bookings\/[^/]+\/refund-deposit$/) && req.method === 'POST') {
+    const bookingId = path.split('/')[2];
+
+    const { data: booking, error } = await supabase
+      .from('bookings')
+      .select('id, deposit_cents, deposit_refunded_at, stripe_payment_intent, stripe_session_id, email, name')
+      .eq('id', bookingId)
+      .maybeSingle();
+
+    if (error) return json({ error: error.message }, 500);
+    if (!booking) return json({ error: 'Booking not found' }, 404);
+    if (!booking.deposit_cents || booking.deposit_cents <= 0) {
+      return json({ error: 'No deposit was collected on this booking.' }, 400);
+    }
+    if (booking.deposit_refunded_at) {
+      return json({ error: 'Deposit was already refunded on ' + booking.deposit_refunded_at + '.' }, 409);
+    }
+
+    const stripeKey = Deno.env.get('STRIPE_SECRET_KEY')!;
+
+    // Resolve the payment intent (older bookings may not have it stored).
+    let paymentIntent = booking.stripe_payment_intent;
+    if (!paymentIntent && booking.stripe_session_id) {
+      const sessRes = await fetch(
+        'https://api.stripe.com/v1/checkout/sessions/' + encodeURIComponent(booking.stripe_session_id),
+        { headers: { 'Authorization': 'Bearer ' + stripeKey } }
+      );
+      const sess = await sessRes.json();
+      paymentIntent = sess?.payment_intent || null;
+    }
+    if (!paymentIntent) {
+      return json({ error: 'Could not find the Stripe payment for this booking.' }, 500);
+    }
+
+    const refundRes = await fetch('https://api.stripe.com/v1/refunds', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + stripeKey,
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Idempotency-Key': 'deposit-refund-' + bookingId
+      },
+      body: new URLSearchParams({
+        payment_intent: paymentIntent,
+        amount: String(booking.deposit_cents),
+        'metadata[reason]': 'reservation_deposit_refund',
+        'metadata[bookingId]': bookingId,
+        'metadata[refundedBy]': authedUser.email
+      })
+    });
+    const refund = await refundRes.json();
+    if (refund.error) return json({ error: 'Stripe refund failed: ' + refund.error.message }, 502);
+
+    const refundedAt = new Date().toISOString();
+    const { error: updErr } = await supabase
+      .from('bookings')
+      .update({
+        deposit_refunded_at: refundedAt,
+        deposit_refund_id: refund.id,
+        deposit_refunded_by: authedUser.email
+      })
+      .eq('id', bookingId);
+    if (updErr) {
+      // Refund went through but the DB write failed — surface loudly so the
+      // admin knows not to click again on another device.
+      return json({ ok: true, warning: 'Refund succeeded (' + refund.id + ') but recording it failed: ' + updErr.message, refundId: refund.id, refundedAt }, 200);
+    }
+
+    return json({ ok: true, refundId: refund.id, refundedAt, amountCents: booking.deposit_cents });
+  }
+
   // ── AI Chat ─────────────────────────────────────────────────────────────────
   if (path === '/chat' && req.method === 'POST') {
     const openaiKey = Deno.env.get('OPENAI_API_KEY');

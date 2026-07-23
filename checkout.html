@@ -383,11 +383,23 @@
       html += '<div>';
       html += '<div class="checkout-summary">';
       html += '<h2>Order Summary</h2>';
+      // Refundable reservation deposit — kept in sync with the server default
+      // in supabase/functions/checkout/index.ts (site_config.pricing.deposit).
+      var depositCfg = (window.SITE_CONFIG && window.SITE_CONFIG.pricing && window.SITE_CONFIG.pricing.deposit) || {};
+      var depositEnabled = depositCfg.enabled !== false;
+      var depositAmount = depositEnabled ? (Number(depositCfg.amount) || 100) : 0;
+
       html += '<div class="summary-row"><span class="summary-label">Base Price</span><span class="summary-value" style="font-weight:600;color:var(--white);">' + formatCurrency(bookingData.basePrice * 100) + '</span></div>';
       if (bookingData.deliveryFee > 0) {
         html += '<div class="summary-row"><span class="summary-label">Delivery</span><span class="summary-value" style="font-weight:600;color:var(--white);">' + formatCurrency(bookingData.deliveryFee * 100) + '</span></div>';
       }
-      html += '<div class="summary-row" style="margin-top:16px;padding-top:20px;"><span class="summary-label" style="color:var(--white);font-weight:600;">Total</span><span class="summary-value" style="font-size:1.5rem;font-weight:700;color:var(--orange);">' + formatCurrency(bookingData.total * 100) + '</span></div>';
+      if (depositAmount > 0) {
+        html += '<div class="summary-row"><span class="summary-label">Refundable Deposit</span><span class="summary-value" style="font-weight:600;color:var(--white);">' + formatCurrency(depositAmount * 100) + '</span></div>';
+      }
+      html += '<div class="summary-row" style="margin-top:16px;padding-top:20px;"><span class="summary-label" style="color:var(--white);font-weight:600;">Total Due Today</span><span class="summary-value" style="font-size:1.5rem;font-weight:700;color:var(--orange);">' + formatCurrency((bookingData.total + depositAmount) * 100) + '</span></div>';
+      if (depositAmount > 0) {
+        html += '<div style="font-size:12px;color:var(--muted);line-height:1.5;margin-top:8px;">The ' + formatCurrency(depositAmount * 100) + ' deposit is fully refunded to your card after the vehicle is returned in good condition.</div>';
+      }
 
       // Stripe checkout notice
       html += '<div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:14px;margin-top:20px;font-size:13px;line-height:1.5;color:rgba(255,255,255,0.7);text-align:center;">';

@@ -103,6 +103,9 @@ Deno.serve(async (req) => {
     const phone = customer.phone || '';
     const amountTotal = obj.amount_total as number;
     const total = (amountTotal / 100).toFixed(2);
+    const depositCents = Number(meta.depositCents) || 0;
+    const depositDollars = (depositCents / 100).toFixed(2).replace(/\.00$/, '');
+    const paymentIntent = (obj.payment_intent as string) || null;
     const amountDiscount = (obj.total_details as Record<string, number>)?.amount_discount || 0;
     const savings = amountDiscount ? (amountDiscount / 100).toFixed(2) : null;
 
@@ -153,6 +156,8 @@ Deno.serve(async (req) => {
       savings: savings ? Number(savings) : 0,
       pickup_time: meta.pickupTime || null,
       stripe_session_id: obj.id as string,
+      stripe_payment_intent: paymentIntent,
+      deposit_cents: depositCents,
       status: 'confirmed',
       ...idFields
     });
@@ -180,8 +185,10 @@ Deno.serve(async (req) => {
           ${emailRow('Return', meta.endDate || meta.startDate)}
           ${emailRow('Duration', meta.durationType === 'hourly' ? (meta.hours || '3') + ' hours' : meta.durationType === '9hr' ? '9 hours' : meta.durationType === '24hr' ? '24 hours' : meta.days + ' day' + (Number(meta.days) === 1 ? '' : 's'))}
           ${savings ? emailRow('Discount', '- $' + savings) : ''}
+          ${depositCents > 0 ? emailRow('Refundable Deposit', '$' + depositDollars + ' <span style="color:#888;font-size:12px;">(returned after drop-off)</span>') : ''}
           ${emailRow('Total', '<strong style="color:#FF6B00;font-size:16px;">$' + total + '</strong>')}
         </table>
+        ${depositCents > 0 ? '<p style="font-size:12px;color:#888;margin:14px 0 0;line-height:1.6;">Your $' + depositDollars + ' reservation deposit is fully refunded to your card after the vehicle is returned in good condition.</p>' : ''}
       </div>
       <div style="text-align:center;">
         <p style="font-size:13px;color:#555;">Questions? Reply to this email and Chris will get back to you.</p>
@@ -202,6 +209,7 @@ Deno.serve(async (req) => {
           ${emailRow('Return', meta.endDate || meta.startDate)}
           ${emailRow('Type', meta.durationType === 'hourly' ? (meta.hours || '3') + ' hours' : meta.durationType === '9hr' ? '9 hours' : meta.durationType === '24hr' ? '24 hours' : meta.days + ' day' + (Number(meta.days) === 1 ? '' : 's'))}
           ${meta.deliveryDropoff === 'true' || meta.deliveryPickup === 'true' ? emailRow('Delivery', [meta.deliveryDropoff === 'true' ? 'Drop-off' : '', meta.deliveryPickup === 'true' ? 'Pickup' : ''].filter(Boolean).join(' + ')) : ''}
+          ${depositCents > 0 ? emailRow('Deposit Held', '$' + depositDollars + ' <span style="color:#888;font-size:12px;">(refund from admin panel after return)</span>') : ''}
           ${emailRow('Total', '$' + total)}
         </table>
       </div>

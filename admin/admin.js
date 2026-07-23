@@ -1362,6 +1362,14 @@
           if (b.delivery_pickup) {
             deliveryBadges += '<span class="source-badge" style="background:#fbbf24;color:#000;margin-left:4px;font-size:10px;">🚚 Pickup</span>';
           }
+          // Deposit badge
+          if (b.deposit_cents > 0) {
+            if (b.deposit_refunded_at) {
+              deliveryBadges += '<span class="source-badge" style="background:#374151;color:#9ca3af;margin-left:4px;font-size:10px;">💵 Deposit refunded</span>';
+            } else {
+              deliveryBadges += '<span class="source-badge" style="background:#4ade80;color:#000;margin-left:4px;font-size:10px;">💵 Deposit held</span>';
+            }
+          }
           // Can-Am manual M-endorsement check badge
           if (b.requires_canam_license_check) {
             if (b.canam_license_verified) {
@@ -1748,6 +1756,9 @@
     document.getElementById('bd-start-date').value = booking.start_date || '';
     document.getElementById('bd-end-date').value = booking.end_date || '';
 
+    // Refundable deposit section
+    renderDepositSection(booking);
+
     // Show/hide delivery section
     var deliverySection = document.getElementById('bd-delivery-section');
     var deliveryInfo = document.getElementById('bd-delivery-info');
@@ -1879,6 +1890,55 @@
       .catch(function () {
         metaEl.textContent = 'Could not load ID for this booking.';
         idSection.classList.remove('hidden');
+      });
+  }
+
+  function renderDepositSection(booking) {
+    var section = document.getElementById('bd-deposit-section');
+    var status  = document.getElementById('bd-deposit-status');
+    var btn     = document.getElementById('bd-refund-deposit');
+
+    if (!booking.deposit_cents || booking.deposit_cents <= 0) {
+      section.classList.add('hidden');
+      return;
+    }
+
+    var dollars = '$' + (booking.deposit_cents / 100).toLocaleString();
+    if (booking.deposit_refunded_at) {
+      var when = new Date(booking.deposit_refunded_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      status.innerHTML = '<span style="color:#4ade80;font-weight:600;">✓ ' + dollars + ' deposit refunded</span> <span style="color:#888;">on ' + when + (booking.deposit_refunded_by ? ' by ' + esc(booking.deposit_refunded_by) : '') + '</span>';
+      btn.style.display = 'none';
+    } else {
+      status.innerHTML = '<span style="font-weight:600;">' + dollars + ' deposit held.</span> <span style="color:#aaa;">Refund it once the vehicle is back and checked over.</span>';
+      btn.style.display = '';
+      btn.disabled = false;
+      btn.textContent = '✓ Vehicle returned — refund deposit';
+    }
+    section.classList.remove('hidden');
+  }
+
+  function refundDeposit() {
+    if (!currentBooking) return;
+    var dollars = '$' + ((currentBooking.deposit_cents || 0) / 100).toLocaleString();
+    if (!confirm('Refund the ' + dollars + ' deposit to ' + (currentBooking.name || currentBooking.email) + '? This sends the money back to their card and cannot be undone.')) return;
+
+    var btn = document.getElementById('bd-refund-deposit');
+    btn.disabled = true;
+    btn.textContent = 'Refunding…';
+
+    apiFetch(ADMIN_API + '/bookings/' + encodeURIComponent(currentBooking.id) + '/refund-deposit', { method: 'POST' })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+      .then(function (r) {
+        if (!r.ok || !r.data.ok) throw new Error(r.data.error || 'Refund failed');
+        currentBooking.deposit_refunded_at = r.data.refundedAt;
+        renderDepositSection(currentBooking);
+        showToast('success', 'Deposit refunded', dollars + ' is on its way back to the customer’s card.');
+        try { renderBookingsPanel(); } catch (e) {}
+      })
+      .catch(function (err) {
+        btn.disabled = false;
+        btn.textContent = '✓ Vehicle returned — refund deposit';
+        alert(err.message || 'Could not refund the deposit. Please try again.');
       });
   }
 
@@ -2041,6 +2101,7 @@
   document.getElementById('bd-cancel').addEventListener('click', closeBookingDetailModal);
   document.getElementById('bd-save').addEventListener('click', saveBookingDetails);
   document.getElementById('bd-verify-canam').addEventListener('click', verifyCanamEndorsement);
+  document.getElementById('bd-refund-deposit').addEventListener('click', refundDeposit);
   document.getElementById('booking-detail-modal').addEventListener('click', function (e) {
     if (e.target === this) closeBookingDetailModal();
   });

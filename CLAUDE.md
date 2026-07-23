@@ -1,4 +1,24 @@
-# CJ Funtime Rentals - Project State (Updated 2026-07-16)
+# CJ Funtime Rentals - Project State (Updated 2026-07-23)
+
+## Session 2026-07-23: $100 refundable reservation deposit — CODED, NOT YET DEPLOYED
+
+Client request (Milonda, Jul 18 email): (1) shareable booking link — nothing to build, site is public, direct vehicle-page links + "Book Now" already work; (2) add a $100 reservation fee refunded after the vehicle comes back.
+
+**Implementation (charge + auto-refund; a true Stripe hold was rejected because uncaptured PaymentIntents expire in 7 days, which breaks bookings made further out):**
+- `supabase/functions/checkout/index.ts` — adds a "Refundable Reservation Deposit" line item (default $100, config-driven via `site_config.pricing.deposit = { enabled, amount }`, default ON when the key is absent) + `metadata[depositCents]`. Deposit is NOT part of the baseCents price-verification check.
+- `supabase/functions/webhook/index.ts` — stores `deposit_cents` + `stripe_payment_intent` on the booking; customer + owner emails show the deposit and explain the refund.
+- `supabase/functions/admin/index.ts` — new `POST /bookings/:id/refund-deposit`: partial refund of `deposit_cents` on the payment intent (Stripe Idempotency-Key `deposit-refund-{bookingId}`; falls back to resolving the payment intent from the checkout session for older rows), records `deposit_refunded_at/by` + refund id. 409 if already refunded.
+- `admin/index.html` + `admin/admin.js` — deposit section in the booking modal ("Vehicle returned — refund deposit" button, confirm dialog), held/refunded badges in the bookings table.
+- `checkout.html` — deposit row + "Total Due Today" + refund explainer in the order summary (reads the same config key).
+- `booking-widget.js` — "+ $100 refundable deposit" note on the vehicle-page price display.
+- Migration `20260723000001_deposit_columns.sql` — adds `deposit_cents`, `deposit_refunded_at`, `deposit_refund_id`, `deposit_refunded_by`, `stripe_payment_intent` to `bookings`.
+
+**🔒 Deploy checklist (money movement — run in this order):**
+1. Apply the migration to the live DB (webhook writes the new columns; deploy webhook only after the columns exist).
+2. Push → CI deploys Edge Functions + Netlify deploys the static site.
+3. Run a real test booking end-to-end: pay, confirm deposit line item + emails, then refund the deposit from the admin panel and confirm the partial refund in Stripe.
+
+**Known caveat:** a percentage promo code applies across the whole Checkout session, so it would also discount the deposit line item (Stripe Checkout has no per-line-item coupon exclusion). Current live promo usage is flat/COMEBACK10-style — verify behavior on the test booking if promo codes matter.
 
 ## Session 2026-07-15/16 (continued): checkout price verification + fleet-data consolidation — DEPLOYED & VERIFIED LIVE
 
