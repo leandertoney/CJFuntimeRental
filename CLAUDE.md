@@ -1,6 +1,20 @@
 # CJ Funtime Rentals - Project State (Updated 2026-07-23)
 
-## Session 2026-07-23: $100 refundable reservation deposit — CODED, NOT YET DEPLOYED
+## Session 2026-07-24: deposit DEPLOYED & LIVE — awaiting owner's manual test booking
+
+Applied the deposit patch via `git am` (commit 4ad62f5) and deployed it (CI run 30112309833, all 17 steps green, 2026-07-24). **The $100 deposit is LIVE and ACTIVE for every customer right now.**
+
+**Gap found and fixed before pushing (commit 00a6621):** the patch added `supabase/migrations/20260723000001_deposit_columns.sql` but **no CI step to run it**. `deploy-supabase.yml` does NOT auto-apply everything in `supabase/migrations/` — only explicitly listed steps. Without this, the columns would never have been created and the new webhook would have failed writing `deposit_cents`/`stripe_payment_intent` on the first real booking. Added as its own idempotent step (all 5 statements `IF NOT EXISTS`), placed **before** the Checkout/Webhook/Admin deploys.
+
+**The checklist's "apply migration first, then push" was satisfied via CI, not locally.** Local tooling cannot run DDL on this project: `apply-migration.js` and `run-migration.mjs` both depend on an `exec_sql` RPC that returns **404** (verified this session), and the service-role key can't execute DDL. The GitHub Actions secret `SUPABASE_ACCESS_TOKEN` remains the only working SQL credential — so the migration runs as step 1 of the same CI run, before the functions. Same ordering guarantee, different mechanism.
+
+**Verified live:** all 5 deposit columns return data from `bookings` (previously `42703 column does not exist`); CI steps for checkout/webhook/admin all green; Netlify serving the deposit row + "Total Due Today" in `checkout.html` and the `+ $100 refundable deposit` note in `booking-widget.js`; vehicle pages load both the widget and the live config. **No Stripe charge was created during verification.**
+
+**Deposit is ON by default and there is no `deposit` key in live `site_config.config.pricing`** — so both client (`booking-widget.js`) and server (`checkout/index.ts`) fall through to the same default (`enabled !== false`, `amount || 100`). They use identical logic, so they cannot drift. To disable or change the amount, set `config.pricing.deposit = { enabled, amount }` (a PostgREST data write — no DDL needed). Note the live schema nests pricing under the **`config`** column (`site_config.config.pricing`), not a top-level `pricing` column.
+
+**Still outstanding:** the owner's end-to-end manual test — pay a real booking, confirm the deposit line item + emails, then refund via the admin panel and confirm the partial refund in Stripe. Until that runs, the refund endpoint (`POST /bookings/:id/refund-deposit`) is deployed but has never been exercised against a real payment intent.
+
+## Session 2026-07-23: $100 refundable reservation deposit — CODED, DEPLOYED 2026-07-24 (see above)
 
 Client request (Milonda, Jul 18 email): (1) shareable booking link — nothing to build, site is public, direct vehicle-page links + "Book Now" already work; (2) add a $100 reservation fee refunded after the vehicle comes back.
 
