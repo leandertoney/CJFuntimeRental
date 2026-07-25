@@ -10,29 +10,59 @@ async function ensurePromoCode(): Promise<void> {
   const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
   if (!stripeKey) return;
 
-  // Check if it already exists
+  // Check if the promotion code already exists (active). If so, nothing to do.
   const checkRes = await fetch(
-    'https://api.stripe.com/v1/promotion_codes?code=' + COMEBACK_CODE + '&limit=1',
+    'https://api.stripe.com/v1/promotion_codes?code=' + COMEBACK_CODE + '&limit=1&active=true',
     { headers: { 'Authorization': 'Bearer ' + stripeKey } }
   );
   const checkData = await checkRes.json();
   if (checkData.data && checkData.data.length > 0) return; // already exists
 
-  // Create coupon (10% off, once, reusable)
-  const couponRes = await fetch('https://api.stripe.com/v1/coupons', {
-    method: 'POST',
-    headers: { 'Authorization': 'Bearer ' + stripeKey, 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ percent_off: '10', duration: 'once', name: 'Comeback 10% Off' })
+  // Find an existing 10%-off coupon to reuse. IMPORTANT: reuse rather than
+  // create a fresh coupon on every run — the old code minted a new coupon each
+  // time and (because the promotion-code create silently failed, see below) it
+  // never attached one, orphaning 20+ coupons between 2026-06-20 and 2026-07-24.
+  const couponsRes = await fetch('https://api.stripe.com/v1/coupons?limit=100', {
+    headers: { 'Authorization': 'Bearer ' + stripeKey }
   });
-  const coupon = await couponRes.json();
-  if (!coupon.id) return;
+  const couponsData = await couponsRes.json();
+  let couponId: string | undefined = (couponsData.data || []).find(
+    (c: Record<string, unknown>) => c.percent_off === 10 && c.valid === true
+  )?.id;
 
-  // Create promotion code (reusable, no max redemptions)
-  await fetch('https://api.stripe.com/v1/promotion_codes', {
+  // No reusable 10% coupon exists yet — create one (should be a one-time event).
+  if (!couponId) {
+    const couponRes = await fetch('https://api.stripe.com/v1/coupons', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + stripeKey, 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ percent_off: '10', duration: 'once', name: 'Comeback 10% Off' })
+    });
+    const coupon = await couponRes.json();
+    if (!coupon.id) {
+      console.error('[ensurePromoCode] coupon create failed:', JSON.stringify(coupon.error || coupon));
+      return;
+    }
+    couponId = coupon.id;
+  }
+
+  // Create the promotion code. On Stripe API 2026-03-25.dahlia the create
+  // parameter is the nested `promotion[type]=coupon` + `promotion[coupon]=<id>`
+  // form — the legacy top-level `coupon=<id>` param was REMOVED and returns
+  // "Received unknown parameter: coupon". The old code used the legacy form and
+  // never read the response, so this failed silently on every run.
+  const promoRes = await fetch('https://api.stripe.com/v1/promotion_codes', {
     method: 'POST',
     headers: { 'Authorization': 'Bearer ' + stripeKey, 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ coupon: coupon.id, code: COMEBACK_CODE })
+    body: new URLSearchParams({
+      'promotion[type]': 'coupon',
+      'promotion[coupon]': couponId!,
+      code: COMEBACK_CODE
+    })
   });
+  const promo = await promoRes.json();
+  if (promo.error) {
+    console.error('[ensurePromoCode] promotion code create failed:', JSON.stringify(promo.error));
+  }
 }
 
 function baseEmail(content: string) {

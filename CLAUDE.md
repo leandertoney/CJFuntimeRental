@@ -1,4 +1,27 @@
-# CJ Funtime Rentals - Project State (Updated 2026-07-23)
+# CJ Funtime Rentals - Project State (Updated 2026-07-25)
+
+## Session 2026-07-25: BOTH 10% coupons were broken (Stripe API change) — FIXED
+
+**The two 10% coupons and how they're meant to work:** (1) `FIRST10` — new-visitor offer promoted on the page (`index.html` "First-Time Renter Offer"); the public `leads` Edge Function mints a unique single-use `FIRST10-XXXXXXXX` per email and emails it. (2) `COMEBACK10` — a single shared repeat-customer code, emailed by the post-rental `follow-up` Edge Function. **Both were broken by the same root cause and are now fixed.**
+
+**Root cause (both functions):** the live Stripe account runs API version **`2026-03-25.dahlia`**, which **removed the top-level `coupon` parameter** on `POST /v1/promotion_codes`. The correct form is now nested: `promotion[type]=coupon` + `promotion[coupon]=<id>` (confirmed by inspecting the existing `BmoreTJ` promo code, whose `.promotion` = `{coupon, type:"coupon"}`). Both `leads/index.ts` and `follow-up/index.ts` used the legacy `coupon=<id>` form → Stripe returned `parameter_unknown: Received unknown parameter: coupon` on every call. Neither function checked the response, so both failed **silently**.
+
+**Impact found:**
+- **COMEBACK10 never existed** in live Stripe (verified active+inactive). `follow-up.ensurePromoCode()` created a fresh coupon then failed to attach the promo code every run → **20+ orphaned 10% coupons** accumulated 2026-06-20 → 2026-07-24, zero usable code. Customers typing COMEBACK10 got "invalid."
+- **FIRST10 worse:** `leads.createPromoCode()` had `catch { return code }` — so it **emailed the code to the customer even when Stripe creation failed**. Result: **0 working FIRST10-* codes in Stripe, but 40 leads emailed dead codes** (2026-07-13 → 07-24). Every one would be rejected at checkout.
+
+**Fixes applied (all live-verified):**
+- **COMEBACK10 created live now** — `promo_1Tx9CiDlmCSCy5M3PmxmGDqo`, 10% off, active, no expiry, attached to a reused orphan coupon. Verified it resolves as active.
+- **All 40 dead FIRST10 codes backfilled** into live Stripe — created the exact `FIRST10-XXXX` string each lead was emailed, as single-use (`max_redemptions:1`) 10% codes with `metadata[email]`. 40 created, 0 failed. So codes people already hold now work. Spot-checked 3 resolve active.
+- **`follow-up/index.ts` fixed** — uses `promotion[coupon]` form, **reuses** an existing 10% coupon instead of minting a new one each run (stops the orphaning), checks + logs the response.
+- **`leads/index.ts` fixed** — same Stripe-API fix; **no longer emails a dead code** on failure (returns null, records the lead, logs, skips the email).
+- **Both functions added to CI** (`deploy-supabase.yml`) — they were manual-deploy-only (which is why the bug shipped and sat unnoticed); now they auto-deploy like the rest. Both type-check clean (`deno check`).
+
+**Deliberately NOT done / deferred (by approval):**
+- **Deposit vs. COMEBACK10 caveat still open:** a 10% code applies across the whole Stripe Checkout session, so COMEBACK10 also shaves ~$10 off the new $100 deposit. Investigated excluding it via coupon `applies_to` product allow-list — **viable but fragile** (the deposit + delivery are inline `price_data` with no product ID; an `applies_to` allow-list would silently stop discounting any rental whose Stripe product ID is missing/drifts — worse than the $10). Was mid-decision when the FIRST10 discovery reframed the task; **still needs a final call** (leave the $10 / build applies_to / waive deposit during promos).
+- **20+ orphaned COMEBACK coupons** left in place (harmless — unreachable without a promo code); cleanup was approved but superseded by the two-coupon fix priority. Low-priority housekeeping.
+
+## Session 2026-07-23 → deploy 2026-07-24: $100 refundable reservation deposit — DEPLOYED & LIVE
 
 ## Session 2026-07-24: deposit DEPLOYED & LIVE — awaiting owner's manual test booking
 
@@ -9,6 +32,10 @@ Applied the deposit patch via `git am` (commit 4ad62f5) and deployed it (CI run 
 **The checklist's "apply migration first, then push" was satisfied via CI, not locally.** Local tooling cannot run DDL on this project: `apply-migration.js` and `run-migration.mjs` both depend on an `exec_sql` RPC that returns **404** (verified this session), and the service-role key can't execute DDL. The GitHub Actions secret `SUPABASE_ACCESS_TOKEN` remains the only working SQL credential — so the migration runs as step 1 of the same CI run, before the functions. Same ordering guarantee, different mechanism.
 
 **Verified live:** all 5 deposit columns return data from `bookings` (previously `42703 column does not exist`); CI steps for checkout/webhook/admin all green; Netlify serving the deposit row + "Total Due Today" in `checkout.html` and the `+ $100 refundable deposit` note in `booking-widget.js`; vehicle pages load both the widget and the live config. **No Stripe charge was created during verification.**
+
+**Front-end path verified end-to-end via browser (2026-07-24, no charge):** drove a real booking (gray 2016 Slingshot, Aug 15 2026, 10hr) through the vehicle-page widget → checkout.html → **the live Stripe-hosted payment screen** (`checkout.stripe.com/c/pay/cs_live_...`). Stripe showed two distinct line items — "Polaris Slingshot S (2020) $180.00" and "Refundable Reservation Deposit $100.00" (with "Fully refunded after the vehicle is returned in good condition."), **Total due $280.00**. Deposit correctly separate from the rental. Owner confirmed the screen; **Pay was intentionally NOT clicked** — no real charge. **Still untested: the refund half** (`POST /bookings/:id/refund-deposit`) — deployed but never exercised against a real payment intent; needs one completed real booking + admin-panel refund to fully prove.
+
+**Cosmetic (not blocking):** the Stripe line item reads "Polaris Slingshot S **(2020)**" — old `slingshot_2020` config-key label; the car is a 2016. Same fleet-naming drift documented in the 2026-07-15/16 session. Doesn't affect pricing or the deposit.
 
 **Deposit is ON by default and there is no `deposit` key in live `site_config.config.pricing`** — so both client (`booking-widget.js`) and server (`checkout/index.ts`) fall through to the same default (`enabled !== false`, `amount || 100`). They use identical logic, so they cannot drift. To disable or change the amount, set `config.pricing.deposit = { enabled, amount }` (a PostgREST data write — no DDL needed). Note the live schema nests pricing under the **`config`** column (`site_config.config.pricing`), not a top-level `pricing` column.
 

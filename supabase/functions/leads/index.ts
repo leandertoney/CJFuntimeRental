@@ -20,10 +20,10 @@ function randomHex(n: number) {
   return Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
 }
 
-async function createPromoCode(email: string): Promise<string> {
+async function createPromoCode(email: string): Promise<string | null> {
   const code = 'FIRST10-' + randomHex(4);
   const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
-  if (!stripeKey) return code;
+  if (!stripeKey) return null;
   try {
     const couponRes = await fetch('https://api.stripe.com/v1/coupons', {
       method: 'POST',
@@ -31,14 +31,37 @@ async function createPromoCode(email: string): Promise<string> {
       body: new URLSearchParams({ percent_off: '10', duration: 'once', max_redemptions: '1', 'metadata[email]': email })
     });
     const coupon = await couponRes.json();
+    if (!coupon.id) {
+      console.error('[createPromoCode] coupon create failed:', JSON.stringify(coupon.error || coupon));
+      return null;
+    }
+    // Stripe API 2026-03-25.dahlia removed the top-level `coupon` param on
+    // promotion_codes — it must be the nested `promotion[type]=coupon` +
+    // `promotion[coupon]=<id>` form. The old top-level `coupon=<id>` returned
+    // "Received unknown parameter: coupon", which the previous `catch { return code }`
+    // swallowed — so every FIRST10 code was emailed to the customer but never
+    // actually created in Stripe, and was rejected at checkout.
     const promoRes = await fetch('https://api.stripe.com/v1/promotion_codes', {
       method: 'POST',
       headers: { 'Authorization': 'Bearer ' + stripeKey, 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ coupon: coupon.id, code, max_redemptions: '1', 'metadata[email]': email })
+      body: new URLSearchParams({
+        'promotion[type]': 'coupon',
+        'promotion[coupon]': coupon.id,
+        code,
+        max_redemptions: '1',
+        'metadata[email]': email
+      })
     });
     const promo = await promoRes.json();
-    return promo.code || code;
-  } catch { return code; }
+    if (promo.error || !promo.code) {
+      console.error('[createPromoCode] promotion code create failed:', JSON.stringify(promo.error || promo));
+      return null;
+    }
+    return promo.code;
+  } catch (err) {
+    console.error('[createPromoCode] threw:', (err as Error).message);
+    return null;
+  }
 }
 
 async function sendDiscountEmail(email: string, code: string) {
@@ -87,8 +110,14 @@ Deno.serve(async (req) => {
     // Fire async after response
     const run = async () => {
       const code = await createPromoCode(cleanEmail);
+      // Always record the lead. Only email a code if Stripe actually created it —
+      // never email a dead code (the old bug emailed codes that failed to create).
       await supabase.from('leads').insert({ email: cleanEmail, source: source || 'website', promo_code: code });
-      await sendDiscountEmail(cleanEmail, code);
+      if (code) {
+        await sendDiscountEmail(cleanEmail, code);
+      } else {
+        console.error('[leads] promo code creation failed for', cleanEmail, '— no discount email sent');
+      }
     };
     run().catch(err => console.error('Lead flow error:', err));
 

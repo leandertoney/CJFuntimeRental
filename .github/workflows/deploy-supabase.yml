@@ -101,3 +101,17 @@ jobs:
         run: supabase functions deploy id-upload --project-ref yzdtevrwystezhbmgcwn
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      # leads (FIRST10 new-visitor codes) and follow-up (COMEBACK10 repeat-customer
+      # code) were previously manual-deploy-only, which is why the Stripe-API promo
+      # bug in both went undeployed/unnoticed. Added to CI so their fixes ship and
+      # future changes auto-deploy like the others.
+      - name: Deploy Leads Function
+        run: supabase functions deploy leads --project-ref yzdtevrwystezhbmgcwn
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Deploy Follow-up Function
+        run: supabase functions deploy follow-up --project-ref yzdtevrwystezhbmgcwn
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
