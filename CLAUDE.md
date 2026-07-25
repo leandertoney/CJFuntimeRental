@@ -17,9 +17,12 @@
 - **`leads/index.ts` fixed** — same Stripe-API fix; **no longer emails a dead code** on failure (returns null, records the lead, logs, skips the email).
 - **Both functions added to CI** (`deploy-supabase.yml`) — they were manual-deploy-only (which is why the bug shipped and sat unnoticed); now they auto-deploy like the rest. Both type-check clean (`deno check`).
 
-**Deliberately NOT done / deferred (by approval):**
-- **Deposit vs. COMEBACK10 caveat still open:** a 10% code applies across the whole Stripe Checkout session, so COMEBACK10 also shaves ~$10 off the new $100 deposit. Investigated excluding it via coupon `applies_to` product allow-list — **viable but fragile** (the deposit + delivery are inline `price_data` with no product ID; an `applies_to` allow-list would silently stop discounting any rental whose Stripe product ID is missing/drifts — worse than the $10). Was mid-decision when the FIRST10 discovery reframed the task; **still needs a final call** (leave the $10 / build applies_to / waive deposit during promos).
-- **20+ orphaned COMEBACK coupons** left in place (harmless — unreachable without a promo code); cleanup was approved but superseded by the two-coupon fix priority. Low-priority housekeeping.
+**Decisions settled (2026-07-25):**
+- **Deposit vs. COMEBACK10 → LEAVE IT (accepted, not a bug to fix).** A 10% code applies across the whole Stripe Checkout session, so COMEBACK10 also shaves ~$10 off the $100 deposit. Investigated excluding it via coupon `applies_to` product allow-list — **rejected as too fragile**: deposit + delivery are inline `price_data` with no product ID, and an `applies_to` allow-list would silently stop discounting any rental whose Stripe product ID is missing/drifts (worse failure than a $10 overage on *refundable* money). Leander's call: accept the ~$10.
+- **Customer outreach → NO mass-email (Leander's call).** The 40 dead FIRST10 codes are backfilled and all codes work now; the problem self-heals for anyone who tries going forward. A broad apology would surface a glitch to people who never noticed, and outward-facing brand comms are Chris/Milonda's call anyway. Handle only anyone who actually complained, case by case. (Stripe doesn't log rejected-code *attempts* per email, so there's no clean "who was affected" list beyond the original complainant.)
+
+**Deferred (low priority):**
+- **20+ orphaned COMEBACK coupons** left in place (harmless — unreachable without a promo code); cleanup was approved earlier but superseded by the two-coupon fix. Housekeeping only.
 
 ## Session 2026-07-23 → deploy 2026-07-24: $100 refundable reservation deposit — DEPLOYED & LIVE
 
