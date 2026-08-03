@@ -1,3 +1,4 @@
 node_modules/
 .env
 data/leads.json
+.config-backups/

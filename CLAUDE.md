@@ -36,6 +36,18 @@ Lee's real booking used it). The key `'10hr'` is retained with 9-hour *semantics
 only display strings changed. Email templates in `webhook/index.ts` accept both
 `'10hr'` and `'9hr'` → "9 hours".
 
+**Live `site_config.config.pricing` now holds the REAL numbers (written 2026-08-03).**
+Previously every field except `hourlyCap`/`multiDayRate` was **zeroed**, and all readers
+fell through to hardcoded defaults. That masked a second live bug: `booking-widget.js:244`
+does `if (cp.delivery) PRICING.delivery = cp.delivery` — replacing the WHOLE object — so
+the DB's `delivery.fee: 0` overrode the $50 default while the checkbox still advertised
+"+$50". **Delivery was free to every customer.** Fixed by writing `delivery:
+{enabled:true, fee:50, maxMiles:30}`. Multi-day tiers collapsed to a single flat
+$220/day entry to match the owner's stated structure (was 190/210/225 tiers).
+Note this whole-object-replace pattern is still a latent hazard for `delivery`,
+`tenhrRate`, `dailyRate` and `multiDay`: a partial object in the DB silently drops
+sibling keys. Scalars are safe (guarded by `||`/truthy).
+
 **Config keys that ARE now read live:** `pricing.hourlyCap` (180),
 `pricing.hourlyMax` (9), `pricing.hourlyRate`, `pricing.hourlyMin`. The hourly
 dropdown is GENERATED from these (`hourlyOptionsHtml()`), so labels can no longer
