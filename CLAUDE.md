@@ -1,4 +1,53 @@
-# CJ Funtime Rentals - Project State (Updated 2026-07-25)
+# CJ Funtime Rentals - Project State (Updated 2026-08-03)
+
+## 💰 PRICING — SOURCE OF TRUTH (owner-confirmed 2026-08-03)
+
+| Duration | Price |
+|---|---|
+| Hourly | **$30/hr**, 3-hour minimum |
+| 3–9 hours | capped at **$180** (no hourly duration bills above this) |
+| Over 9 hours / 24-hour | **$250** |
+| Multi-day | flat **$220/day** |
+| Delivery | $50 each way, within 30 miles |
+
+All four vehicles are the same price. Cap point moved 10hr → **9hr** on 2026-08-03
+(owner confirmed "$180 for up to 9 and $250 full day").
+
+**The hourly cap did not exist in the live money path until 2026-08-03.** Both
+`booking-widget.js` `calcPrice()` and `checkout/index.ts` computed raw
+`hourlyRate * hours` with no ceiling, while the UI *displayed* "$180". Live effect:
+8 hours displayed $180 and charged $280. Root cause: Leander's commit `4e8c6ca`
+(2026-07-01 13:45, "Finalize rental pricing") set $30/$180 cap/$220 per day but
+touched only `data/siteConfig.json`, `test-pricing.html`, and `stripe-checkout.js`
+— and `stripe-checkout.js` is the DEPRECATED modal flow. The live widget
+(`23763c3`, created 4 hours earlier the same day) kept $35/hr and $225/day from the
+superseded `8b2dfe0`. So the correct pricing was written into dead code and never
+reached a customer. That also explains the orphaned `hourlyCap: 180` and
+`multiDayRate: 220` sitting in live `site_config.config.pricing` that nothing read.
+
+**Invariant: client and server price math must stay byte-identical.**
+`booking-widget.js` `calcPrice()` and `checkout/index.ts` `expectedBaseDollars` are
+mirrored on purpose; the server 409s a mismatch (added in `d8e0333`). Change one,
+change the other, or every hourly checkout is rejected.
+
+**Do NOT rename the `10hr` durationType key.** `'9hr'` is ALREADY a legacy key
+meaning TEN hours (`stripe-checkout.js:432` maps `'9hr'` → "10-Hour Day"; Brenda
+Lee's real booking used it). The key `'10hr'` is retained with 9-hour *semantics*;
+only display strings changed. Email templates in `webhook/index.ts` accept both
+`'10hr'` and `'9hr'` → "9 hours".
+
+**Config keys that ARE now read live:** `pricing.hourlyCap` (180),
+`pricing.hourlyMax` (9), `pricing.hourlyRate`, `pricing.hourlyMin`. The hourly
+dropdown is GENERATED from these (`hourlyOptionsHtml()`), so labels can no longer
+drift from the math. Note live `site_config.config.pricing` has most fields
+**zeroed**; all readers use `||`/truthy fallbacks to the hardcoded defaults, so a
+zeroed field is ignored rather than treated as a real $0 override.
+
+**Grandfathering:** `bookings` has NO `duration_type` or `hours` column, so nothing
+reads historical duration. Existing bookings (incl. Lamar's $180/10hr row and TJ's
+$0 comp) are untouched by construction — no migration or backfill was needed.
+
+
 
 ## Session 2026-07-25: BOTH 10% coupons were broken (Stripe API change) — FIXED
 
@@ -180,13 +229,11 @@ The `cron.job` table exists in the `cron` schema and is not accessible via Supab
   - `pickup_instructions` (TEXT)
 - Migration: `20260622000001_email_automation_fields.sql` applied
 
-### Pricing Configuration ✅ CONFIRMED (Updated 2026-06-30)
-Live pricing in `site_config` table:
-- **Slingshot**: 10hr $180, 24hr $250
-- **Can-Am**: 10hr $180, 24hr $250
-- **Hourly**: $35/hr (3hr minimum)
-- **Multi-day tiers**: Tiered discounts (10-24% off depending on duration)
-- **Delivery**: $50 within 30 miles
+### Pricing Configuration — ⚠️ SUPERSEDED, see "PRICING — SOURCE OF TRUTH" at top
+This section described the 2026-06-30 state ($35/hr, 10hr cap, tiered multi-day).
+Both the $35/hr and the tiered multi-day rates were **drift**, not intent — see the
+root-cause note at the top of this file. Current confirmed structure: $30/hr,
+$180 cap up to 9 hours, $250 full day, flat $220/day.
 
 **Previous pricing** (before June 30):
 - Slingshot: 9hr $175, 24hr $220

@@ -16,14 +16,16 @@
 
   // Default pricing — overridable via window.SITE_CONFIG.pricing
   var PRICING = {
-    hourlyRate: 35,
+    hourlyRate: 30,
     hourlyMin: 3,
+    hourlyMax: 9,           // max selectable hours; above this it's a full day
+    hourlyCap: 180,         // hourly total never exceeds this (= the 9hr rate)
     tenhrRate: { slingshot: 180, canam: 180 },
     dailyRate:  { slingshot: 250, canam: 250 },
     multiDay: [
       { minDays: 7, label: 'Weekly rate',  slingshot: 190, canam: 190, enabled: true },
       { minDays: 4, label: '4–6 day rate', slingshot: 210, canam: 210, enabled: true },
-      { minDays: 2, label: '2–3 day rate', slingshot: 225, canam: 225, enabled: true }
+      { minDays: 2, label: '2–3 day rate', slingshot: 220, canam: 220, enabled: true }
     ],
     delivery: { enabled: true, fee: 50, maxMiles: 30, locationName: 'Lancaster, PA' }
   };
@@ -168,7 +170,9 @@
 
     if (state.durationType === 'hourly') {
       var hours = state.hours || PRICING.hourlyMin;
-      basePrice = PRICING.hourlyRate * hours;
+      // Cap the hourly total at the 9-hour rate: no 3-9hr duration bills above $180.
+      // Anything longer than hourlyMax is a full day and is not selectable as hourly.
+      basePrice = Math.min(PRICING.hourlyRate * hours, PRICING.hourlyCap);
 
     } else if (state.durationType === '10hr') {
       basePrice = PRICING.tenhrRate[type] || 180;
@@ -231,6 +235,8 @@
       var cp = window.SITE_CONFIG.pricing;
       if (cp.hourlyRate)  PRICING.hourlyRate  = cp.hourlyRate;
       if (cp.hourlyMin)   PRICING.hourlyMin   = cp.hourlyMin;
+      if (cp.hourlyMax)   PRICING.hourlyMax   = cp.hourlyMax;
+      if (cp.hourlyCap)   PRICING.hourlyCap   = cp.hourlyCap;
       if (cp.tenhrRate)   PRICING.tenhrRate   = cp.tenhrRate;
       else if (cp.ninehrRate) PRICING.tenhrRate = cp.ninehrRate; // Legacy
       if (cp.dailyRate)   PRICING.dailyRate    = cp.dailyRate;
@@ -275,7 +281,7 @@
       + '<span class="bw-btn-sub">$30/hr · 3hr min</span>'
       + '</button>'
       + '<button type="button" class="bw-duration-btn" data-duration="10hr">'
-      + '<span class="bw-btn-label">☀️ ≤ 10 Hours</span>'
+      + '<span class="bw-btn-label">☀️ ≤ 9 Hours</span>'
       + '<span class="bw-btn-sub">$180 full day</span>'
       + '</button>'
       + '<button type="button" class="bw-duration-btn" data-duration="24hr">'
@@ -484,6 +490,17 @@
     }
   }
 
+  // Build the hourly <option> list from config so the labels can never drift
+  // from calcPrice(). Runs 3..hourlyMax (9); anything longer is a full day.
+  function hourlyOptionsHtml() {
+    var html = '';
+    for (var h = PRICING.hourlyMin; h <= PRICING.hourlyMax; h++) {
+      var price = Math.min(PRICING.hourlyRate * h, PRICING.hourlyCap);
+      html += '<option value="' + h + '">' + h + ' hours — $' + price + '</option>';
+    }
+    return html;
+  }
+
   function showDateFields(durationType) {
     var container = $('bw-date-fields');
     if (!container) return;
@@ -500,14 +517,7 @@
         + '<div class="bw-field">'
         + '<label class="bw-label">Hours</label>'
         + '<select class="bw-input" id="bw-hourly-hours">'
-        + '<option value="3">3 hours — $90</option>'
-        + '<option value="4">4 hours — $120</option>'
-        + '<option value="5">5 hours — $150</option>'
-        + '<option value="6">6 hours — $180</option>'
-        + '<option value="7">7 hours — $180</option>'
-        + '<option value="8">8 hours — $180</option>'
-        + '<option value="9">9 hours — $180</option>'
-        + '<option value="10">10 hours — $180</option>'
+        + hourlyOptionsHtml()
         + '</select>'
         + '</div>'
         + '</div>';

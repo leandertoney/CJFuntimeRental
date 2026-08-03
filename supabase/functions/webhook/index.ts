@@ -183,7 +183,7 @@ Deno.serve(async (req) => {
           ${emailRow('Vehicle', vehicleName)}
           ${emailRow('Pick-up', meta.startDate + (pickupTimeFormatted ? ' at ' + pickupTimeFormatted : ''))}
           ${emailRow('Return', meta.endDate || meta.startDate)}
-          ${emailRow('Duration', meta.durationType === 'hourly' ? (meta.hours || '3') + ' hours' : meta.durationType === '9hr' ? '9 hours' : meta.durationType === '24hr' ? '24 hours' : meta.days + ' day' + (Number(meta.days) === 1 ? '' : 's'))}
+          ${emailRow('Duration', meta.durationType === 'hourly' ? (meta.hours || '3') + ' hours' : (meta.durationType === '10hr' || meta.durationType === '9hr') ? '9 hours' : meta.durationType === '24hr' ? '24 hours' : meta.days + ' day' + (Number(meta.days) === 1 ? '' : 's'))}
           ${savings ? emailRow('Discount', '- $' + savings) : ''}
           ${depositCents > 0 ? emailRow('Refundable Deposit', '$' + depositDollars + ' <span style="color:#888;font-size:12px;">(returned after drop-off)</span>') : ''}
           ${emailRow('Total', '<strong style="color:#FF6B00;font-size:16px;">$' + total + '</strong>')}
@@ -207,7 +207,7 @@ Deno.serve(async (req) => {
           ${emailRow('Vehicle', vehicleName)}
           ${emailRow('Pick-up', meta.startDate + (pickupTimeFormatted ? ' at ' + pickupTimeFormatted : ''))}
           ${emailRow('Return', meta.endDate || meta.startDate)}
-          ${emailRow('Type', meta.durationType === 'hourly' ? (meta.hours || '3') + ' hours' : meta.durationType === '9hr' ? '9 hours' : meta.durationType === '24hr' ? '24 hours' : meta.days + ' day' + (Number(meta.days) === 1 ? '' : 's'))}
+          ${emailRow('Type', meta.durationType === 'hourly' ? (meta.hours || '3') + ' hours' : (meta.durationType === '10hr' || meta.durationType === '9hr') ? '9 hours' : meta.durationType === '24hr' ? '24 hours' : meta.days + ' day' + (Number(meta.days) === 1 ? '' : 's'))}
           ${meta.deliveryDropoff === 'true' || meta.deliveryPickup === 'true' ? emailRow('Delivery', [meta.deliveryDropoff === 'true' ? 'Drop-off' : '', meta.deliveryPickup === 'true' ? 'Pickup' : ''].filter(Boolean).join(' + ')) : ''}
           ${depositCents > 0 ? emailRow('Deposit Held', '$' + depositDollars + ' <span style="color:#888;font-size:12px;">(refund from admin panel after return)</span>') : ''}
           ${emailRow('Total', '$' + total)}

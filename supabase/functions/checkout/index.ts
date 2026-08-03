@@ -113,14 +113,15 @@ Deno.serve(async (req) => {
     // real overrides — the live site_config.pricing.* fields are currently
     // zeroed out, so this floor is what's actually in effect everywhere).
     const PRICING_DEFAULTS = {
-      hourlyRate: 35,
+      hourlyRate: 30,
       hourlyMin: 3,
+      hourlyCap: 180,
       tenhrRate: { slingshot: 180, canam: 180 } as Record<string, number>,
       dailyRate: { slingshot: 250, canam: 250 } as Record<string, number>,
       multiDay: [
         { minDays: 7, slingshot: 190, canam: 190, enabled: true },
         { minDays: 4, slingshot: 210, canam: 210, enabled: true },
-        { minDays: 2, slingshot: 225, canam: 225, enabled: true }
+        { minDays: 2, slingshot: 220, canam: 220, enabled: true }
       ],
       deliveryFee: 50
     };
@@ -133,6 +134,7 @@ Deno.serve(async (req) => {
 
     const hourlyRate = Number(cfgPricing.hourlyRate) || PRICING_DEFAULTS.hourlyRate;
     const hourlyMin = Number(cfgPricing.hourlyMin) || PRICING_DEFAULTS.hourlyMin;
+    const hourlyCap = Number(cfgPricing.hourlyCap) || PRICING_DEFAULTS.hourlyCap;
     const tenhrRate = (cfgPricing.tenhrRate as Record<string, number>) || PRICING_DEFAULTS.tenhrRate;
     const dailyRate = (cfgPricing.dailyRate as Record<string, number>) || PRICING_DEFAULTS.dailyRate;
     const multiDay = (Array.isArray(cfgPricing.multiDay) && (cfgPricing.multiDay as unknown[]).length > 0)
@@ -141,7 +143,10 @@ Deno.serve(async (req) => {
 
     let expectedBaseDollars = 0;
     if (durationType === 'hourly') {
-      expectedBaseDollars = hourlyRate * (Number(hours) || hourlyMin);
+      // Mirror booking-widget.js calcPrice(): cap the hourly total at the 9hr
+      // rate so no 3-9hr duration bills above $180. MUST stay identical to the
+      // client or this function 409s every legitimate hourly checkout.
+      expectedBaseDollars = Math.min(hourlyRate * (Number(hours) || hourlyMin), hourlyCap);
     } else if (durationType === '10hr') {
       expectedBaseDollars = tenhrRate[vehicleType] || PRICING_DEFAULTS.tenhrRate[vehicleType] || 180;
     } else if (durationType === '24hr') {
@@ -202,7 +207,11 @@ Deno.serve(async (req) => {
     let durationDesc = '';
     switch (durationType) {
       case 'hourly': durationDesc = `${hours || 3} Hour Rental`; break;
-      case '9hr':    durationDesc = '9-Hour Rental'; break;
+      // '10hr' is the internal key for the capped single-day rate. Its meaning
+      // changed 10h -> 9h on 2026-08-02; the key is intentionally NOT renamed
+      // because '9hr' is already a legacy key on historical bookings.
+      case '10hr':   durationDesc = '9-Hour Rental'; break;
+      case '9hr':    durationDesc = '9-Hour Rental'; break; // legacy key, older rows
       case '24hr':   durationDesc = '24-Hour Rental'; break;
       case 'multi':  durationDesc = `${days || 1}-Day Rental`; break;
       default:       durationDesc = 'Rental';
