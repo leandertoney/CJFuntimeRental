@@ -1,5 +1,75 @@
 # CJ Funtime Rentals - Project State (Updated 2026-08-04)
 
+## Session 2026-08-04 (part 2): post-rental REVIEW EMAIL was dead for 6 weeks - FIXED & LIVE
+
+**The post-rental Google-review email (the COMEBACK10 loop) sent NOTHING from
+~2026-06-26 to 2026-08-04.** Commit 778a55e, CI run 30884372602, all 17 steps
+green, verified live.
+
+**Root cause: a regression from `fix-date-formats.js`.** `send_followup_emails()`
+(migration `20260408000002`) selected bookings by **three-letter month name**:
+
+```sql
+end_date ilike '%' || to_char(now() - interval '1 day', 'Mon%') || '%'
+```
+
+That worked while `end_date` held `"Fri, Apr 17, 2026"`. When dates were
+converted to ISO (`2026-07-19`) there was no month name left to match, so the
+`FOR` loop never executed, `net.http_post` was never called, and the 14:00 UTC
+job reported success every day doing nothing. **Verified empirically against
+live data: zero rows match any of the twelve month abbreviations.**
+
+**The cron was never at fault.** `post-rental-followup` is active and the
+identical cron -> pg_net -> Edge Function chain demonstrably works for the other
+three emails (they stamped Lamar's booking at `2026-07-17T09:00:03` and
+`2026-07-18T10:00:03`, exactly the cron times). Only the SQL selector was broken.
+
+**Customers who missed their review request:** end_date `2026-07-06`,
+`2026-07-13`, `2026-07-19`. Only 6 bookings exist, so that is the full list.
+**No backfill was sent** - a review request 2-4 weeks late reads as broken, and
+outward comms are Chris/Milonda's call (same reasoning as the 2026-07-25
+no-mass-email decision). Open if anyone wants to revisit.
+
+**Two latent faults fixed in the same pass:**
+- `current_setting('app.supabase_url')` and `current_setting('app.service_role_key')`
+  were called **without** `missing_ok`, so they raise if unset - and nothing had
+  ever reached that line. Fixing only the date would have traded a silent
+  failure for a loud one. **The known-good pattern is the one in
+  `20260622000003`: hardcode the function URL and use the DIFFERENT setting name
+  `app.supabase_service_role_key` WITH `missing_ok => true`.** That works because
+  every scheduled function has `verify_jwt = false` in `config.toml`, so a null
+  Authorization header is harmless. Mirror this for any new cron'd function.
+- **No idempotency.** The other three scheduled emails got sent-at stamps in
+  `20260709000001`; this one was missed. Added `bookings.followup_sent_at`,
+  filtered in the SQL selector and written by the `follow-up` Edge Function
+  **only after Resend accepts the send**, so a failed send stays retryable.
+  Phase B test-data guards (`test_*` ids, addresses containing `test` or
+  `@example.com`) added in both the selector and the function.
+
+**How it was verified before pushing** (worth repeating for any cron change):
+a throwaway local Postgres with `net.http_post` replaced by a capture table, so
+the exact recipients are **observable rather than inferred**. New selector on 6
+seeded rows emailed exactly 1 - the real customer whose rental ended yesterday -
+correctly skipping one ending earlier, a cancelled one, an already-stamped one,
+a `test_*` id and an address containing "test". The **old** function on the same
+ISO data emailed 0, reproducing the regression. Blast radius on deploy was
+confirmed ZERO before pushing (latest booking ended 2026-07-19; the window is a
+single day).
+
+**Live verification:** `followup_sent_at` returns from `bookings` (migration
+applied - and since the Management API runs the file as one implicit
+transaction, the column existing proves the `CREATE OR REPLACE` ran too);
+`POST /functions/v1/follow-up` with an `@example.com` address returns
+`{"ok":true,"skipped":"test-data"}`, proving the new code is deployed and that
+the guard short-circuits before both Resend and Stripe.
+
+**⚠️ CI fragility found:** the first run of this deploy **failed** at
+`supabase/setup-cli@v1` with `Failed to resolve latest Supabase CLI release:
+rate limit exceeded`. Nothing deployed (all later steps skipped, so no partial
+state); a plain re-run went green. `version: latest` makes every deploy of the
+checkout/webhook/money-path functions one GitHub API rate limit away from
+failing. **Pinning the CLI version is recommended and not yet done.**
+
 ## 🎨 ADMIN THEME - FORCED LIGHT, DO NOT REVERT (2026-08-04, commit 54928eb, LIVE)
 
 **`/admin` is a single forced LIGHT theme and must render identically on every
