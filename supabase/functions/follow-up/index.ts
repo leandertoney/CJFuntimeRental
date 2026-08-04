@@ -140,7 +140,7 @@ Deno.serve(async (req) => {
     const html = baseEmail(`
       <h1 style="font-family:Impact,Arial,sans-serif;font-size:36px;letter-spacing:3px;margin:0 0 8px;">How Was<br><span style="color:#FF6B00;">Your Ride?</span></h1>
       <p style="font-size:15px;color:rgba(255,255,255,0.6);margin:16px 0 32px;line-height:1.7;">
-        Hey ${firstName} — hope you had an amazing time on the <strong>${vehicle}</strong>! We'd love to hear about your experience.
+        Hey ${firstName}, hope you had an amazing time on the <strong>${vehicle}</strong>! We'd love to hear about your experience.
       </p>
 
       <div style="text-align:center;margin-bottom:36px;">
