@@ -16,9 +16,24 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      # PINNED ON PURPOSE - do not change back to `latest`.
+      #
+      # `version: latest` makes the action call the GitHub releases API on every
+      # run to resolve what "latest" means. On 2026-08-04 that call failed with
+      # "Failed to resolve latest Supabase CLI release: rate limit exceeded",
+      # which failed the whole deploy at step 3 before any migration or function
+      # shipped (run 30884372602, attempt 1). A plain re-run went green, so
+      # nothing was actually wrong with the code - the deploy path for the
+      # checkout/webhook money-path functions was simply one GitHub API rate
+      # limit away from failing at 2am.
+      #
+      # A pinned version is fetched directly and needs no resolution call.
+      # 2.111.0 is the exact stable release `latest` resolved to when this was
+      # pinned, so this is behaviour-neutral. Bump deliberately when there is a
+      # reason to, and re-run the workflow to confirm the new version deploys.
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.111.0
 
       # Idempotent (IF NOT EXISTS) — safe to run on every deploy. Must run
       # BEFORE the email functions deploy, since they query these columns.
