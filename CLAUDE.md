@@ -1,4 +1,57 @@
-# CJ Funtime Rentals - Project State (Updated 2026-08-03)
+# CJ Funtime Rentals - Project State (Updated 2026-08-04)
+
+## 🎨 ADMIN THEME - FORCED LIGHT, DO NOT REVERT (2026-08-04, commit 54928eb, LIVE)
+
+**`/admin` is a single forced LIGHT theme and must render identically on every
+device regardless of the OS/browser dark-mode setting.** Do not add a
+`prefers-color-scheme` block to `admin/admin.css`, do not reintroduce dark
+surfaces, and **do not add hardcoded colours as inline `style=` attributes** in
+`admin/index.html` or `admin/admin.js` - use the `:root` tokens (`--surface`,
+`--text`, `--text-2/3/4`, `--orange-ink`, `--danger`, `--success`, `--warn`).
+This applies to the ADMIN ONLY. The customer-facing site stays dark/orange.
+
+**What the bug actually was** (Milonda reported unreadable dates on Blocked
+Dates): the admin never had a dark-mode media query. The stylesheet was dark
+while the Blocked Dates markup was written with *light* inline styles, so white
+cards sat inside a dark shell. Block dates were `#e8e8e8` on `#ffffff`
+(**1.23:1**, invisible); vehicle headers were `#333` on `#0f0f0f` (**1.52:1**,
+invisible). Broken on every device; the client described it as "light."
+
+**`color-scheme: only light` on `:root` is load-bearing, not decoration.** It
+forces light UA widgets (the `<input type="date">` pickers, selects,
+scrollbars) and it opts the page out of Chrome/Android "Auto Dark Theme", which
+is the one thing that genuinely does differ per device. Verified: with Chrome's
+forced-dark engine on, a control page without the declaration paints
+`rgb(21,21,21)` while the admin stays `rgb(249,247,246)`.
+
+**Per-vehicle blocks have two independent identity mechanisms on purpose** - a
+sticky `.vblock-group-header` AND the vehicle name repeated on every
+`.vblock-row`, with Remove on the same line as that name. Requirement: at any
+scroll position at mobile width you can tell which vehicle a block belongs to
+without scrolling up. Keep both; sticky breaks silently if any ancestor gains
+`transform` or `overflow`. Verified across 454 scroll positions at 390/360/768px
+(the old layout run as a control failed 122 of them).
+
+**Verification harness** (throwaway, in the session scratchpad, not committed):
+headless Chromium logs into a local copy of the admin with the real live config,
+screenshots every panel across light/dark x desktop/mobile, and measures WCAG
+contrast of every text node against its real painted background. Result: **752
+contrast failures before, 0 after**, across 56 views; all 28 light/dark view
+pairs byte-identical. If the admin is restyled again, rebuild something like it -
+a screenshot alone will not catch a 1.23:1 white-on-white date.
+
+**Local preview gotcha:** you cannot open the admin from `file://` or a plain
+localhost static server and log in - the admin Edge Function sets
+`Access-Control-Allow-Origin: https://cjfuntimerentals.com` (set 2026-07-09,
+Phase C), so the browser blocks `/me` before login. To preview locally, serve
+the repo AND proxy `/functions/v1/*` to Supabase, rewriting `ADMIN_API` in the
+served copy of `admin.js` to a relative path so the calls are same-origin.
+
+**Not touched by this change:** booking logic, pricing, database, Edge
+Functions, and the customer-facing theme. Frontend only, 3 files under `/admin`.
+Note `deploy-supabase.yml` is path-filtered to `supabase/**` and
+`.github/workflows/**`, so an admin-only push does not trigger a CI run - only
+Netlify redeploys.
 
 ## 💰 PRICING — SOURCE OF TRUTH (owner-confirmed 2026-08-03)
 
