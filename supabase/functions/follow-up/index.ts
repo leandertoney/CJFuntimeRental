@@ -81,11 +81,55 @@ function baseEmail(content: string) {
 </body></html>`;
 }
 
+/**
+ * Record that the review email went out, so a re-run or cron misfire cannot
+ * email the same customer twice. Mirrors the sent-at stamps the other three
+ * scheduled emails got in 20260709000001. Best-effort: a failure here must not
+ * turn a successful send into a 500, so it is logged and swallowed.
+ */
+async function stampSent(bookingId: string): Promise<void> {
+  const url = Deno.env.get('SUPABASE_URL');
+  const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!url || !key) {
+    console.error('followup: cannot stamp followup_sent_at, SUPABASE_URL/SERVICE_ROLE_KEY missing');
+    return;
+  }
+  try {
+    const res = await fetch(
+      `${url}/rest/v1/bookings?id=eq.${encodeURIComponent(bookingId)}`,
+      {
+        method: 'PATCH',
+        headers: {
+          apikey: key,
+          Authorization: 'Bearer ' + key,
+          'Content-Type': 'application/json',
+          Prefer: 'return=minimal',
+        },
+        body: JSON.stringify({ followup_sent_at: new Date().toISOString() }),
+      }
+    );
+    if (!res.ok) {
+      console.error('followup: stamp failed', res.status, (await res.text()).slice(0, 200));
+    }
+  } catch (e) {
+    console.error('followup: stamp threw', (e as Error).message);
+  }
+}
+
 Deno.serve(async (req) => {
   try {
-    const { email, name, vehicle } = await req.json();
+    const { email, name, vehicle, bookingId } = await req.json();
     if (!email || !vehicle) {
       return new Response(JSON.stringify({ error: 'Missing fields' }), { status: 400 });
+    }
+
+    // Test-data guard, same as the other three scheduled email functions. The
+    // SQL selector already filters these out, but this function is also
+    // callable directly, so do not rely on the caller.
+    if (/test/i.test(email) || /@example\.com$/i.test(email) || String(bookingId || '').startsWith('test_')) {
+      console.log('followup: skipping test address', email);
+      return new Response(JSON.stringify({ ok: true, skipped: 'test-data' }),
+        { headers: { 'Content-Type': 'application/json' } });
     }
 
     const firstName = (name || 'there').split(' ')[0];
@@ -123,14 +167,24 @@ Deno.serve(async (req) => {
       </div>
     `);
 
-    await resend.emails.send({
+    const sent = await resend.emails.send({
       from: FROM,
       to: email,
       subject: `How was your ${vehicle} ride? ⭐`,
       html
     });
 
-    return new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json' } });
+    if (sent?.error) {
+      console.error('followup: Resend rejected the send', JSON.stringify(sent.error));
+      return new Response(JSON.stringify({ error: sent.error }), { status: 502 });
+    }
+
+    // Only stamp once Resend has accepted it, so a failed send stays retryable.
+    if (bookingId) await stampSent(String(bookingId));
+
+    console.log('followup: sent review request to', email, 'booking', bookingId ?? '(none)');
+    return new Response(JSON.stringify({ ok: true, id: sent?.data?.id ?? null }),
+      { headers: { 'Content-Type': 'application/json' } });
   } catch (err) {
     return new Response(JSON.stringify({ error: (err as Error).message }), { status: 500 });
   }
