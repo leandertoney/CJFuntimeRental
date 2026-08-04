@@ -284,7 +284,7 @@
     document.getElementById('reset-btn').addEventListener('click', function () {
       var statusEl = document.getElementById('reset-status');
       statusEl.textContent = 'Contact your administrator to reset your password.';
-      statusEl.style.color = '#4ade80';
+      statusEl.style.color = 'var(--success)';
       statusEl.classList.remove('hidden');
     });
   }
@@ -765,7 +765,7 @@
         + '</div>'
         + '<div class="vac-row">'
         +   '<label>Type</label>'
-        +   '<span style="font-size:13px;color:#aaa;text-transform:capitalize">' + esc(vtype) + '</span>'
+        +   '<span style="font-size:13px;color:var(--text-3);text-transform:capitalize">' + esc(vtype) + '</span>'
         + '</div>'
         + '</div>';
     });
@@ -1150,7 +1150,7 @@
     var container = document.getElementById('vehicle-blocks-list');
 
     if (!vehicleBlocks.length) {
-      container.innerHTML = '<p style="color:#999;font-size:14px">No per-vehicle blocks yet. Add one above to block a specific vehicle while leaving others bookable.</p>';
+      container.innerHTML = '<p class="vblock-empty">No per-vehicle blocks yet. Add one above to block a specific vehicle while leaving others bookable.</p>';
       return;
     }
 
@@ -1161,21 +1161,35 @@
       grouped[block.vehicle_key].push(block);
     });
 
+    // Which vehicle a block belongs to must be obvious at ANY scroll position,
+    // including on a phone. Two independent mechanisms, deliberately redundant:
+    //   1. .vblock-group-header is sticky, so the vehicle name stays pinned
+    //      while its rows scroll past.
+    //   2. every row also carries .vblock-row-vehicle with the same name, so
+    //      the answer is on-screen even if sticky ever stops working.
     var html = '';
     Object.keys(grouped).forEach(function (vkey) {
       var vname = vehicleDisplayName(cfg.vehicles && cfg.vehicles[vkey], vkey);
-      html += '<div style="margin-bottom:24px">';
-      html += '<h4 style="font-weight:600;font-size:14px;margin-bottom:12px;color:#333">' + vname + '</h4>';
-      html += '<div style="display:flex;flex-direction:column;gap:8px">';
+      var rows  = grouped[vkey];
 
-      grouped[vkey].forEach(function (block) {
-        var reasonText = block.reason ? ' — ' + block.reason : '';
-        html += '<div style="display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid #ddd;border-radius:6px;padding:12px 16px">';
-        html += '<div style="font-size:13px">';
-        html += '<strong>' + block.start_date + '</strong> to <strong>' + block.end_date + '</strong>';
-        html += '<span style="color:#666">' + reasonText + '</span>';
-        html += '</div>';
-        html += '<button class="vblock-delete" data-id="' + block.id + '" style="background:#dc3545;color:#fff;border:none;border-radius:4px;padding:6px 12px;font-size:12px;cursor:pointer;font-weight:600">Remove</button>';
+      html += '<div class="vblock-group">';
+      html += '<div class="vblock-group-header">'
+        + '<span class="vblock-group-name">' + esc(vname) + '</span>'
+        + '<span class="vblock-group-count">' + rows.length + ' block' + (rows.length !== 1 ? 's' : '') + '</span>'
+        + '</div>';
+      html += '<div class="vblock-rows">';
+
+      rows.forEach(function (block) {
+        html += '<div class="vblock-row">';
+        html +=   '<div class="vblock-row-main">';
+        html +=     '<span class="vblock-row-vehicle">' + esc(vname) + '</span>';
+        html +=     '<span class="vblock-row-dates">' + esc(block.start_date)
+          + '<span class="vblock-row-sep">to</span>' + esc(block.end_date) + '</span>';
+        if (block.reason) {
+          html +=   '<span class="vblock-row-reason">' + esc(block.reason) + '</span>';
+        }
+        html +=   '</div>';
+        html +=   '<button class="vblock-delete" data-id="' + esc(block.id) + '">Remove</button>';
         html += '</div>';
       });
 
@@ -1333,7 +1347,7 @@
     var count  = document.getElementById('bookings-count');
     var expBtn = document.getElementById('bookings-export-btn');
 
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:32px;color:#555">Loading…</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-3)">Loading…</td></tr>';
     empty.classList.add('hidden');
 
     apiFetch(ADMIN_API + '/bookings')
@@ -1357,36 +1371,36 @@
           // Build delivery badges
           var deliveryBadges = '';
           if (b.delivery_dropoff) {
-            deliveryBadges += '<span class="source-badge" style="background:#fbbf24;color:#000;margin-left:4px;font-size:10px;">🚚 Delivery</span>';
+            deliveryBadges += '<span class="source-badge" style="background:var(--warn-soft);color:var(--warn);border-color:var(--warn-line);margin-left:4px;font-size:10px;">🚚 Delivery</span>';
           }
           if (b.delivery_pickup) {
-            deliveryBadges += '<span class="source-badge" style="background:#fbbf24;color:#000;margin-left:4px;font-size:10px;">🚚 Pickup</span>';
+            deliveryBadges += '<span class="source-badge" style="background:var(--warn-soft);color:var(--warn);border-color:var(--warn-line);margin-left:4px;font-size:10px;">🚚 Pickup</span>';
           }
           // Deposit badge
           if (b.deposit_cents > 0) {
             if (b.deposit_refunded_at) {
-              deliveryBadges += '<span class="source-badge" style="background:#374151;color:#9ca3af;margin-left:4px;font-size:10px;">💵 Deposit refunded</span>';
+              deliveryBadges += '<span class="source-badge" style="background:var(--surface-3);color:var(--text-2);border-color:var(--border-strong);margin-left:4px;font-size:10px;">💵 Deposit refunded</span>';
             } else {
-              deliveryBadges += '<span class="source-badge" style="background:#4ade80;color:#000;margin-left:4px;font-size:10px;">💵 Deposit held</span>';
+              deliveryBadges += '<span class="source-badge" style="background:var(--success-soft);color:var(--success);border-color:var(--success-line);margin-left:4px;font-size:10px;">💵 Deposit held</span>';
             }
           }
           // Can-Am manual M-endorsement check badge
           if (b.requires_canam_license_check) {
             if (b.canam_license_verified) {
-              deliveryBadges += '<span class="source-badge" style="background:#4ade80;color:#000;margin-left:4px;font-size:10px;">✓ M verified</span>';
+              deliveryBadges += '<span class="source-badge" style="background:var(--success-soft);color:var(--success);border-color:var(--success-line);margin-left:4px;font-size:10px;">✓ M verified</span>';
             } else {
-              deliveryBadges += '<span class="source-badge" style="background:#f87171;color:#000;margin-left:4px;font-size:10px;">⚠️ Verify M endorsement</span>';
+              deliveryBadges += '<span class="source-badge" style="background:var(--danger-soft);color:var(--danger);border-color:var(--danger-line);margin-left:4px;font-size:10px;">⚠️ Verify M endorsement</span>';
             }
           }
 
           html += '<tr data-booking-id="' + esc(b.id) + '">'
             + '<td class="lead-num">' + (idx + 1) + '</td>'
-            + '<td class="lead-email"><strong>' + esc(b.name || '—') + '</strong><br><span style="color:#555;font-size:11px;">' + esc(b.email) + '</span></td>'
+            + '<td class="lead-email"><strong>' + esc(b.name || '—') + '</strong><br><span style="color:var(--text-3);font-size:11px;">' + esc(b.email) + '</span></td>'
             + '<td>' + esc(b.vehicle || '—') + deliveryBadges + '</td>'
             + '<td>' + esc(b.start_date || '—') + '</td>'
             + '<td>' + esc(b.end_date || '—') + '</td>'
             + '<td style="text-align:center;">' + (b.days || '—') + '</td>'
-            + '<td style="color:#4ade80;font-weight:600;">$' + (b.total || 0).toLocaleString() + '</td>'
+            + '<td style="color:var(--success);font-weight:600;">$' + (b.total || 0).toLocaleString() + '</td>'
             + '<td><span class="source-badge ' + statusClass + '">' + esc(b.status || 'confirmed') + '</span></td>'
             + '</tr>';
         });
@@ -1424,7 +1438,7 @@
         };
       })
       .catch(function () {
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:32px;color:#f87171">Failed to load bookings.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--danger)">Failed to load bookings.</td></tr>';
       });
   }
 
@@ -1435,7 +1449,7 @@
     var count   = document.getElementById('leads-count');
     var expBtn  = document.getElementById('leads-export-btn');
 
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:32px;color:#555">Loading…</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text-3)">Loading…</td></tr>';
     empty.classList.add('hidden');
 
     apiFetch(ADMIN_API + '/leads')
@@ -1496,7 +1510,7 @@
         };
       })
       .catch(function () {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:32px;color:#f87171">Failed to load leads.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--danger)">Failed to load leads.</td></tr>';
       });
   }
 
@@ -1857,11 +1871,11 @@
         metaEl.textContent = 'On file: ' + idTypeLabel + '. Links expire in 15 minutes.';
 
         function imgTile(label, url) {
-          if (!url) return '<div style="font-size:12px;color:#f87171;">' + label + ': unavailable</div>';
+          if (!url) return '<div style="font-size:12px;color:var(--danger);">' + label + ': unavailable</div>';
           return '<div style="text-align:center;">'
             + '<a href="' + esc(url) + '" target="_blank" rel="noopener">'
-            + '<img src="' + esc(url) + '" alt="' + esc(label) + '" style="width:200px;height:130px;object-fit:cover;border:1px solid #333;border-radius:6px;">'
-            + '</a><div style="font-size:11px;color:#888;margin-top:4px;">' + esc(label) + ' · click to enlarge</div></div>';
+            + '<img src="' + esc(url) + '" alt="' + esc(label) + '" style="width:200px;height:130px;object-fit:cover;border:1px solid var(--border-strong);border-radius:6px;">'
+            + '</a><div style="font-size:11px;color:var(--text-3);margin-top:4px;">' + esc(label) + ' · click to enlarge</div></div>';
         }
         imagesEl.innerHTML = imgTile('Front', data.frontUrl) + imgTile('Back', data.backUrl);
 
@@ -1876,13 +1890,13 @@
         if (data.requiresCanamCheck) {
           canamSection.classList.remove('hidden');
           if (data.canamVerified) {
-            canamStatus.innerHTML = '<span style="color:#4ade80;">✓ M endorsement confirmed'
+            canamStatus.innerHTML = '<span style="color:var(--success);">✓ M endorsement confirmed'
               + (data.canamVerifiedBy ? ' by ' + esc(data.canamVerifiedBy) : '')
               + (data.canamVerifiedAt ? ' on ' + esc(new Date(data.canamVerifiedAt).toLocaleString()) : '')
               + '</span>';
             document.getElementById('bd-verify-canam').style.display = 'none';
           } else {
-            canamStatus.innerHTML = '<span style="color:#f87171;">Not yet confirmed. Open the license image above, verify the M endorsement, then confirm below.</span>';
+            canamStatus.innerHTML = '<span style="color:var(--danger);">Not yet confirmed. Open the license image above, verify the M endorsement, then confirm below.</span>';
             document.getElementById('bd-verify-canam').style.display = '';
           }
         }
@@ -1906,10 +1920,10 @@
     var dollars = '$' + (booking.deposit_cents / 100).toLocaleString();
     if (booking.deposit_refunded_at) {
       var when = new Date(booking.deposit_refunded_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-      status.innerHTML = '<span style="color:#4ade80;font-weight:600;">✓ ' + dollars + ' deposit refunded</span> <span style="color:#888;">on ' + when + (booking.deposit_refunded_by ? ' by ' + esc(booking.deposit_refunded_by) : '') + '</span>';
+      status.innerHTML = '<span style="color:var(--success);font-weight:600;">✓ ' + dollars + ' deposit refunded</span> <span style="color:var(--text-3);">on ' + when + (booking.deposit_refunded_by ? ' by ' + esc(booking.deposit_refunded_by) : '') + '</span>';
       btn.style.display = 'none';
     } else {
-      status.innerHTML = '<span style="font-weight:600;">' + dollars + ' deposit held.</span> <span style="color:#aaa;">Refund it once the vehicle is back and checked over.</span>';
+      status.innerHTML = '<span style="font-weight:600;">' + dollars + ' deposit held.</span> <span style="color:var(--text-2);">Refund it once the vehicle is back and checked over.</span>';
       btn.style.display = '';
       btn.disabled = false;
       btn.textContent = '✓ Vehicle returned — refund deposit';
@@ -2034,7 +2048,7 @@
     var endDate = document.getElementById('bd-end-date').value;
 
     if (!startDate || !endDate) {
-      msgEl.style.color = '#f87171';
+      msgEl.style.color = 'var(--danger)';
       msgEl.textContent = 'Pick both a start and end date first.';
       return;
     }
@@ -2044,7 +2058,7 @@
 
     btn.disabled = true;
     btn.textContent = 'Checking…';
-    msgEl.style.color = '#888';
+    msgEl.style.color = 'var(--text-3)';
     msgEl.textContent = '';
 
     apiFetch(ADMIN_API + '/bookings/' + currentBooking.id, {
@@ -2067,7 +2081,7 @@
               rescheduleBooking(true);
               return;
             }
-            msgEl.style.color = '#fbbf24';
+            msgEl.style.color = 'var(--warn)';
             msgEl.textContent = 'Reschedule cancelled — price mismatch not confirmed.';
             return;
           }
@@ -2079,7 +2093,7 @@
         currentBooking.days = res.body.booking ? res.body.booking.days : currentBooking.days;
         document.getElementById('bd-dates').textContent = startDate + ' to ' + endDate;
 
-        msgEl.style.color = '#4ade80';
+        msgEl.style.color = 'var(--success)';
         msgEl.textContent = '✓ Rescheduled to ' + startDate + (endDate !== startDate ? ' → ' + endDate : '') + '. Old date freed, new date blocked, reminder emails re-anchored.';
 
         try { renderBookingsPanel(); } catch (e) {}
@@ -2087,7 +2101,7 @@
       .catch(function (err) {
         btn.disabled = false;
         btn.textContent = 'Reschedule';
-        msgEl.style.color = '#f87171';
+        msgEl.style.color = 'var(--danger)';
         msgEl.textContent = 'Error: ' + err.message;
       });
   }

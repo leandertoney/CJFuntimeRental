@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- The admin panel is a single FORCED LIGHT theme. It must never follow the
+       device's dark-mode preference — see the theme note at the top of admin.css. -->
+  <meta name="color-scheme" content="light">
   <title>Admin — CJ's Fun Time Rental</title>
   <link rel="icon" href="/favicon.ico" type="image/png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -152,7 +155,7 @@
             <p>Set rental rates, availability, and delivery options. Unavailable vehicles are hidden from the booking flow.</p>
           </div>
 
-          <h4 style="margin:24px 0 12px;font-size:14px;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,0.5);">Base Rates</h4>
+          <h4 class="admin-group-heading">Base Rates</h4>
           <div class="admin-rate-grid">
             <div class="admin-rate-card">
               <label>Hourly Rate (all vehicles)</label>
@@ -168,7 +171,7 @@
             </div>
           </div>
 
-          <h4 style="margin:24px 0 12px;font-size:14px;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,0.5);">9-Hour Rates</h4>
+          <h4 class="admin-group-heading">9-Hour Rates</h4>
           <div class="admin-rate-grid">
             <div class="admin-rate-card">
               <label>Slingshots (9hr)</label>
@@ -180,7 +183,7 @@
             </div>
           </div>
 
-          <h4 style="margin:24px 0 12px;font-size:14px;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,0.5);">24-Hour Rates</h4>
+          <h4 class="admin-group-heading">24-Hour Rates</h4>
           <div class="admin-rate-grid">
             <div class="admin-rate-card">
               <label>Slingshots (24hr)</label>
@@ -192,7 +195,7 @@
             </div>
           </div>
 
-          <h4 style="margin:24px 0 12px;font-size:14px;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,0.5);">Delivery Service</h4>
+          <h4 class="admin-group-heading">Delivery Service</h4>
           <div class="admin-rate-grid">
             <div class="admin-rate-card">
               <label>Delivery Enabled</label>
@@ -211,7 +214,7 @@
             </div>
           </div>
 
-          <h4 style="margin:24px 0 12px;font-size:14px;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,0.5);">Vehicles</h4>
+          <h4 class="admin-group-heading">Vehicles</h4>
           <div id="vehicle-cards" class="vehicle-grid"></div>
         </section>
 
@@ -323,33 +326,33 @@
 
           <!-- Per-Vehicle Blocks Section -->
           <div class="panel-section" style="margin-bottom:48px">
-            <h3 style="font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:1px;margin-bottom:12px">Per-Vehicle Blocks</h3>
+            <h3 class="panel-section-title">Per-Vehicle Blocks</h3>
             <div class="panel-intro">
               <p>Block specific vehicles for specific dates (e.g. when rented on Turo, maintenance). Other vehicles remain available.</p>
             </div>
 
-            <div class="vehicle-block-form" style="background:#f9f9f9;border:1px solid #ddd;border-radius:8px;padding:20px;margin:20px 0">
-              <div style="display:grid;grid-template-columns:1fr 1fr 1fr 2fr auto;gap:12px;align-items:end">
-                <div>
-                  <label style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:#666">Vehicle</label>
-                  <select id="vblock-vehicle" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;font-size:13px">
+            <div class="vehicle-block-form vblock-form">
+              <div class="vblock-form-grid">
+                <div class="vblock-field">
+                  <label for="vblock-vehicle">Vehicle</label>
+                  <select id="vblock-vehicle">
                     <option value="">Select vehicle...</option>
                   </select>
                 </div>
-                <div>
-                  <label style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:#666">Start Date</label>
-                  <input type="date" id="vblock-start" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;font-size:13px">
+                <div class="vblock-field">
+                  <label for="vblock-start">Start Date</label>
+                  <input type="date" id="vblock-start">
                 </div>
-                <div>
-                  <label style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:#666">End Date</label>
-                  <input type="date" id="vblock-end" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;font-size:13px">
+                <div class="vblock-field">
+                  <label for="vblock-end">End Date</label>
+                  <input type="date" id="vblock-end">
                 </div>
-                <div>
-                  <label style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;color:#666">Reason (optional)</label>
-                  <input type="text" id="vblock-reason" placeholder="e.g. Rented on Turo, Maintenance" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;font-size:13px">
+                <div class="vblock-field">
+                  <label for="vblock-reason">Reason (optional)</label>
+                  <input type="text" id="vblock-reason" placeholder="e.g. Rented on Turo, Maintenance">
                 </div>
-                <div>
-                  <button id="vblock-add-btn" class="btn-primary" style="padding:10px 20px;background:#FF6B00;color:#fff;border:none;border-radius:4px;font-weight:600;cursor:pointer;font-size:13px">Add Block</button>
+                <div class="vblock-field">
+                  <button id="vblock-add-btn" class="vblock-add-btn">Add Block</button>
                 </div>
               </div>
             </div>
@@ -359,7 +362,7 @@
 
           <!-- Fleet-Wide Blocked Dates Section -->
           <div class="panel-section">
-            <h3 style="font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:1px;margin-bottom:12px">Fleet-Wide Blocked Dates</h3>
+            <h3 class="panel-section-title">Fleet-Wide Blocked Dates</h3>
             <div class="panel-intro">
               <p>Block entire fleet for holidays, business closures, etc. Click any date to block or unblock all vehicles for that day.</p>
             </div>
@@ -454,7 +457,7 @@
         <input type="password" id="cp-confirm" placeholder="Confirm new password" autocomplete="new-password">
       </div>
       <p id="cp-error" class="login-error hidden"></p>
-      <p id="cp-success" class="login-error hidden" style="color:#4ade80"></p>
+      <p id="cp-success" class="login-error bd-success hidden"></p>
       <div class="modal-actions">
         <button id="cp-cancel" type="button" class="btn-secondary-admin">Cancel</button>
         <button id="cp-save" type="submit" class="btn-primary-admin">Update Password</button>
@@ -493,33 +496,33 @@
       </div>
 
       <!-- Refundable reservation deposit -->
-      <div id="bd-deposit-section" class="booking-detail-section hidden" style="border:2px solid #4ade80;border-radius:8px;padding:16px;margin-bottom:16px;background:rgba(74,222,128,0.06);">
-        <h4 style="margin:0 0 8px 0;color:#4ade80;">💵 Refundable Reservation Deposit</h4>
+      <div id="bd-deposit-section" class="booking-detail-section bd-callout bd-callout-success hidden">
+        <h4>💵 Refundable Reservation Deposit</h4>
         <div id="bd-deposit-status" style="font-size:14px;margin-bottom:12px;"></div>
-        <button id="bd-refund-deposit" type="button" class="btn-primary-admin" style="background:#4ade80;color:#000;">
+        <button id="bd-refund-deposit" type="button" class="btn-inline-success">
           ✓ Vehicle returned — refund deposit
         </button>
-        <p style="font-size:12px;color:#888;margin:10px 0 0 0;">
+        <p class="bd-callout-note">
           Refunds go back to the customer's original card. It usually appears on their
           statement within 5–10 business days.
         </p>
       </div>
 
-      <div id="bd-delivery-section" class="booking-detail-section hidden" style="background:#fef3c7;border:2px solid #fbbf24;border-radius:8px;padding:16px;margin-bottom:16px;">
-        <h4 style="color:#000;margin:0 0 8px 0;">🚚 Delivery Service Requested</h4>
-        <div id="bd-delivery-info" style="color:#000;font-size:14px;"></div>
+      <div id="bd-delivery-section" class="booking-detail-section bd-callout bd-callout-warn hidden">
+        <h4>🚚 Delivery Service Requested</h4>
+        <div id="bd-delivery-info" style="font-size:14px;"></div>
       </div>
 
       <!-- Can-Am manual M-endorsement check — shown for Can-Am bookings -->
-      <div id="bd-canam-section" class="booking-detail-section hidden" style="border:2px solid #f87171;border-radius:8px;padding:16px;margin-bottom:16px;background:rgba(248,113,113,0.08);">
-        <h4 style="margin:0 0 8px 0;color:#f87171;">⚠️ Can-Am — Manual M-Endorsement Check Required</h4>
-        <p style="font-size:13px;color:#ccc;margin:0 0 12px 0;">
+      <div id="bd-canam-section" class="booking-detail-section bd-callout bd-callout-danger hidden">
+        <h4>⚠️ Can-Am — Manual M-Endorsement Check Required</h4>
+        <p style="margin:0 0 12px 0;">
           The system does <strong>not</strong> read the license. Before releasing the vehicle,
           open the driver's license image below and confirm it shows a motorcycle (M) endorsement.
           A state ID card is <strong>not</strong> acceptable for the Can-Am.
         </p>
         <div id="bd-canam-status" style="font-size:14px;margin-bottom:12px;"></div>
-        <button id="bd-verify-canam" type="button" class="btn-primary-admin" style="background:#f87171;">
+        <button id="bd-verify-canam" type="button" class="btn-inline-danger">
           ✓ I confirmed the M endorsement
         </button>
       </div>
@@ -527,18 +530,18 @@
       <!-- Uploaded government ID (private storage, signed URLs) -->
       <div id="bd-id-section" class="booking-detail-section hidden">
         <h4>Uploaded ID &amp; Rental Agreement</h4>
-        <div id="bd-id-meta" style="font-size:13px;color:#aaa;margin-bottom:10px;"></div>
-        <div id="bd-id-images" style="display:flex;gap:12px;flex-wrap:wrap;"></div>
+        <div id="bd-id-meta" class="bd-id-meta"></div>
+        <div id="bd-id-images" class="bd-id-images"></div>
         <details style="margin-top:12px;">
-          <summary style="cursor:pointer;font-size:13px;color:#aaa;">Rental agreement accepted by customer</summary>
-          <div id="bd-agreement-meta" style="font-size:12px;color:#888;margin:8px 0;"></div>
-          <pre id="bd-agreement-text" style="white-space:pre-wrap;font-size:12px;color:#bbb;background:#111;border:1px solid #333;border-radius:6px;padding:12px;max-height:220px;overflow:auto;"></pre>
+          <summary class="bd-agreement-summary">Rental agreement accepted by customer</summary>
+          <div id="bd-agreement-meta" class="bd-agreement-meta"></div>
+          <pre id="bd-agreement-text" class="bd-agreement-text"></pre>
         </details>
       </div>
 
-      <div class="booking-detail-section" style="border:2px solid #FF6B00;border-radius:8px;padding:16px;background:rgba(255,107,0,0.06);">
-        <h4 style="margin:0 0 8px 0;">📅 Reschedule</h4>
-        <p style="font-size:12px;color:#888;margin:0 0 10px 0;">
+      <div class="booking-detail-section bd-callout bd-callout-brand">
+        <h4>📅 Reschedule</h4>
+        <p class="bd-callout-note" style="margin:0 0 10px 0;">
           Pick new dates and click Reschedule. Vehicle availability is checked automatically —
           a conflicting booking or blocked date is refused. The amount paid is never changed by
           this action; if the new dates would price differently you'll get a warning instead of
@@ -555,7 +558,7 @@
             <input type="date" id="bd-end-date">
           </div>
           <div class="login-field" style="flex:0;">
-            <button type="button" id="bd-reschedule" class="btn-primary-admin" style="background:#FF6B00;white-space:nowrap;">
+            <button type="button" id="bd-reschedule" class="btn-inline-brand">
               Reschedule
             </button>
           </div>
@@ -612,7 +615,7 @@
       </div>
 
       <p id="bd-error" class="login-error hidden"></p>
-      <p id="bd-success" class="login-error hidden" style="color:#4ade80"></p>
+      <p id="bd-success" class="login-error bd-success hidden"></p>
       <div class="modal-actions">
         <button id="bd-cancel" type="button" class="btn-secondary-admin">Cancel</button>
         <button id="bd-save" class="btn-primary-admin">Save Details</button>
