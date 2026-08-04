@@ -63,12 +63,23 @@ transaction, the column existing proves the `CREATE OR REPLACE` ran too);
 `{"ok":true,"skipped":"test-data"}`, proving the new code is deployed and that
 the guard short-circuits before both Resend and Stripe.
 
-**⚠️ CI fragility found:** the first run of this deploy **failed** at
-`supabase/setup-cli@v1` with `Failed to resolve latest Supabase CLI release:
-rate limit exceeded`. Nothing deployed (all later steps skipped, so no partial
-state); a plain re-run went green. `version: latest` makes every deploy of the
-checkout/webhook/money-path functions one GitHub API rate limit away from
-failing. **Pinning the CLI version is recommended and not yet done.**
+**CI fragility found and FIXED (commit b098284, run 30915448277, 20/20 green):**
+the first run of this deploy **failed** at `supabase/setup-cli@v1` with
+`Failed to resolve latest Supabase CLI release: rate limit exceeded`. Nothing
+deployed (all later steps skipped, so no partial state) and a plain re-run went
+green, but `version: latest` made every deploy of the checkout/webhook money-path
+functions one GitHub API rate limit away from failing unattended, with a failure
+email as the only signal. **The CLI is now pinned to `2.111.0`** — the exact
+stable release `latest` resolved to on the run that succeeded, so the pin is
+behaviour-neutral. **Do not change it back to `latest`;** see the comment block
+in `deploy-supabase.yml`. Bump deliberately and re-run to confirm.
+
+**Still open (not done):** `actions/checkout@v3` and `supabase/setup-cli@v1` both
+target Node 20, which GitHub now force-runs on Node 24 and will eventually drop.
+Also `webhook/index.ts` (3) and `leads/index.ts` (5) still contain **em dashes in
+customer-facing email copy**, which violates the blanket no-em-dash rule;
+`follow-up` was cleaned in c1427f9 but those two were left alone because the
+booking-confirmation email is money-path adjacent and deserves its own pass.
 
 ## 🎨 ADMIN THEME - FORCED LIGHT, DO NOT REVERT (2026-08-04, commit 54928eb, LIVE)
 
