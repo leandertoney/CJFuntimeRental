@@ -46,6 +46,12 @@
     .id-drop-label { font-weight:600; font-size:14px; }
     .id-drop input[type=file] { font-size:12px; color:var(--muted); }
     .id-file-name { font-size:12px; color:var(--muted); word-break:break-all; }
+    /* Additional driver (optional, free) */
+    .add-driver-block { margin-top:20px; padding-top:18px; border-top:1px solid var(--border); }
+    .driver2-fields { margin:14px 0 0 28px; padding-left:14px; border-left:2px solid rgba(255,107,0,0.35); }
+    .driver2-name-label { display:block; font-weight:600; font-size:14px; margin-bottom:6px; }
+    .driver2-name-input { width:100%; box-sizing:border-box; background:var(--dark); border:1px solid var(--border); border-radius:8px; padding:12px 14px; color:var(--white); font-size:15px; }
+    .driver2-name-input:focus { outline:none; border-color:var(--orange); }
     /* Agreement */
     .agreement-box { max-height:200px; overflow-y:auto; white-space:pre-wrap; font-size:13px; line-height:1.6; color:var(--muted); background:var(--dark); border:1px solid var(--border); border-radius:8px; padding:16px; margin-bottom:14px; }
     .agreement-check { display:flex; align-items:flex-start; gap:10px; font-size:14px; cursor:pointer; }
@@ -367,6 +373,32 @@
             + '<input type="file" id="id-back" accept="image/*,application/pdf" capture="environment">'
             + '<span class="id-file-name" id="id-back-name">' + uploadPrompt + '</span></label>';
       html += '</div>';
+
+      // ── Additional driver (optional, free) ──────────────────────────────────
+      // Someone else may be driving too. Same ID rules as the primary renter,
+      // and no extra charge. Everything here is optional: leaving the box
+      // unticked keeps the flow exactly as it was.
+      html += '<div class="add-driver-block">';
+      html += '  <label class="agreement-check" style="margin-bottom:4px;">'
+            + '<input type="checkbox" id="add-driver-check"> '
+            + '<span>Someone else will drive too (add an additional driver)</span></label>';
+      html += '  <p class="id-help" style="color:var(--muted);font-size:13px;margin:6px 0 0 28px;">'
+            + 'Free of charge. We just need their name and the same photo ID.</p>';
+      html += '  <div id="driver2-fields" class="driver2-fields" style="display:none;">';
+      html += '    <label class="driver2-name-label" for="driver2-name">Additional Driver\'s Full Name</label>';
+      html += '    <input type="text" id="driver2-name" class="driver2-name-input" placeholder="Full name as it appears on their ID" autocomplete="off">';
+      html += '    <p class="id-help" style="margin-top:10px;">' + idRuleText + '</p>';
+      html += '    <div class="id-uploads">';
+      html += '      <label class="id-drop"><span class="id-drop-label">Front of Their ID</span>'
+            + '<input type="file" id="driver2-front" accept="image/*,application/pdf" capture="environment">'
+            + '<span class="id-file-name" id="driver2-front-name">' + uploadPrompt + '</span></label>';
+      html += '      <label class="id-drop"><span class="id-drop-label">Back of Their ID</span>'
+            + '<input type="file" id="driver2-back" accept="image/*,application/pdf" capture="environment">'
+            + '<span class="id-file-name" id="driver2-back-name">' + uploadPrompt + '</span></label>';
+      html += '    </div>';
+      html += '  </div>';
+      html += '</div>';
+
       html += '</div>';
 
       // ── Rental agreement (contract) ─────────────────────────────────────────
@@ -396,6 +428,9 @@
       if (depositAmount > 0) {
         html += '<div class="summary-row"><span class="summary-label">Refundable Deposit</span><span class="summary-value" style="font-weight:600;color:var(--white);">' + formatCurrency(depositAmount * 100) + '</span></div>';
       }
+      // Additional driver is free. This row is display only and is deliberately
+      // NOT added into any total below.
+      html += '<div class="summary-row" id="summary-driver2-row" style="display:none;"><span class="summary-label">Additional Driver</span><span class="summary-value" style="font-weight:600;color:var(--white);">Free</span></div>';
       html += '<div class="summary-row" style="margin-top:16px;padding-top:20px;"><span class="summary-label" style="color:var(--white);font-weight:600;">Total Due Today</span><span class="summary-value" style="font-size:1.5rem;font-weight:700;color:var(--orange);">' + formatCurrency((bookingData.total + depositAmount) * 100) + '</span></div>';
       if (depositAmount > 0) {
         html += '<div style="font-size:12px;color:var(--muted);line-height:1.5;margin-top:8px;">The ' + formatCurrency(depositAmount * 100) + ' deposit is fully refunded to your card after the vehicle is returned in good condition.</div>';
@@ -421,9 +456,26 @@
       var completeBtn = document.getElementById('complete-booking-btn');
       var DEFAULT_BTN_LABEL = 'Complete Booking →';
 
-      // Gate the button until both ID images are chosen and the agreement is accepted.
+      var addDriverCheck = document.getElementById('add-driver-check');
+      var driver2Fields  = document.getElementById('driver2-fields');
+      var driver2Name    = document.getElementById('driver2-name');
+      var driver2Front   = document.getElementById('driver2-front');
+      var driver2Back    = document.getElementById('driver2-back');
+      var summaryD2Row   = document.getElementById('summary-driver2-row');
+
+      function driver2Requested() { return addDriverCheck.checked; }
+      function driver2Complete() {
+        return driver2Name.value.trim().length > 0 &&
+               driver2Front.files.length > 0 &&
+               driver2Back.files.length > 0;
+      }
+
+      // Gate the button until both ID images are chosen and the agreement is
+      // accepted. If an additional driver was requested, their name and both
+      // ID images are required too.
       function refreshGate() {
         var ready = frontInput.files.length > 0 && backInput.files.length > 0 && agreeCheck.checked;
+        if (ready && driver2Requested() && !driver2Complete()) ready = false;
         completeBtn.disabled = !ready;
         completeBtn.textContent = ready ? DEFAULT_BTN_LABEL : 'Continue →';
         // Visual disabled state styling
@@ -456,7 +508,16 @@
       }
       wireFileInput(frontInput, 'id-front-name');
       wireFileInput(backInput, 'id-back-name');
+      wireFileInput(driver2Front, 'driver2-front-name');
+      wireFileInput(driver2Back, 'driver2-back-name');
       agreeCheck.addEventListener('change', refreshGate);
+      driver2Name.addEventListener('input', refreshGate);
+      addDriverCheck.addEventListener('change', function () {
+        var on = addDriverCheck.checked;
+        driver2Fields.style.display = on ? '' : 'none';
+        summaryD2Row.style.display = on ? '' : 'none';
+        refreshGate();
+      });
       refreshGate();
 
       function readAsDataURL(file) {
@@ -521,6 +582,15 @@
         if (!front || !back) { showModal('Please upload both the front and back of your ID.'); return; }
         if (!agreeCheck.checked) { showModal('Please accept the Rental Agreement to continue.'); return; }
 
+        // Additional driver, if requested. Free, so nothing below touches price.
+        var wantsDriver2 = driver2Requested();
+        var d2Front = wantsDriver2 ? driver2Front.files[0] : null;
+        var d2Back  = wantsDriver2 ? driver2Back.files[0] : null;
+        if (wantsDriver2) {
+          if (!driver2Name.value.trim()) { showModal("Please enter the additional driver's full name."); return; }
+          if (!d2Front || !d2Back) { showModal("Please upload both the front and back of the additional driver's ID."); return; }
+        }
+
         // Images get auto-shrunk below, so only guard non-image files (e.g. PDF).
         var MAX = 10 * 1024 * 1024;
         function isImage(f) { return f.type && f.type.indexOf('image/') === 0; }
@@ -528,9 +598,14 @@
           showModal('Each file must be 10 MB or smaller.');
           return;
         }
+        if (wantsDriver2 &&
+            ((!isImage(d2Front) && d2Front.size > MAX) || (!isImage(d2Back) && d2Back.size > MAX))) {
+          showModal('Each file must be 10 MB or smaller.');
+          return;
+        }
 
         btn.disabled = true;
-        btn.textContent = 'Uploading your ID…';
+        btn.textContent = wantsDriver2 ? 'Uploading both IDs…' : 'Uploading your ID…';
 
         // A client-generated reference links this upload to the booking that the
         // Stripe webhook will create after payment.
@@ -544,22 +619,33 @@
         var days = 1;
         if (bookingData.durationType === 'multi' && bookingData.days) days = bookingData.days;
 
-        Promise.all([prepareFile(front), prepareFile(back)])
+        var prepJobs = [prepareFile(front), prepareFile(back)];
+        if (wantsDriver2) prepJobs.push(prepareFile(d2Front), prepareFile(d2Back));
+
+        Promise.all(prepJobs)
           .then(function (prepped) {
+            var payload = {
+              bookingRef: bookingRef,
+              vehicleKey: bookingData.vehicleKey,
+              vehicleType: bookingData.vehicleType,
+              front: prepped[0].dataUrl,
+              back: prepped[1].dataUrl,
+              frontType: prepped[0].type,
+              backType: prepped[1].type,
+              agreementAccepted: true,
+              agreementVersion: AGREEMENT_VERSION
+            };
+            if (wantsDriver2) {
+              payload.driver2Name      = driver2Name.value.trim();
+              payload.driver2Front     = prepped[2].dataUrl;
+              payload.driver2Back      = prepped[3].dataUrl;
+              payload.driver2FrontType = prepped[2].type;
+              payload.driver2BackType  = prepped[3].type;
+            }
             return fetch(SUPABASE_FUNCTIONS + '/id-upload', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                bookingRef: bookingRef,
-                vehicleKey: bookingData.vehicleKey,
-                vehicleType: bookingData.vehicleType,
-                front: prepped[0].dataUrl,
-                back: prepped[1].dataUrl,
-                frontType: prepped[0].type,
-                backType: prepped[1].type,
-                agreementAccepted: true,
-                agreementVersion: AGREEMENT_VERSION
-              })
+              body: JSON.stringify(payload)
             });
           })
           .then(function (res) { return res.json().then(function (d) { return { ok: res.ok, data: d }; }); })

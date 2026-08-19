@@ -527,9 +527,50 @@
         </button>
       </div>
 
+      <!-- Additional driver: Can-Am M-endorsement check (separate from the primary) -->
+      <div id="bd-canam2-section" class="booking-detail-section bd-callout bd-callout-danger hidden">
+        <h4>⚠️ Can-Am Manual M-Endorsement Check Required (Additional Driver)</h4>
+        <p style="margin:0 0 12px 0;">
+          Same check as the primary renter, for the second driver. Open their licence image
+          below and confirm it shows a motorcycle (M) endorsement before releasing the vehicle.
+          A state ID card is <strong>not</strong> acceptable for the Can-Am.
+        </p>
+        <div id="bd-canam2-status" style="font-size:14px;margin-bottom:12px;"></div>
+        <button id="bd-verify-canam2" type="button" class="btn-inline-danger">
+          ✓ I confirmed the additional driver's M endorsement
+        </button>
+      </div>
+
+      <!-- Additional driver: add after booking + show their ID -->
+      <div id="bd-driver2-section" class="booking-detail-section">
+        <h4>👥 Additional Driver</h4>
+        <p class="bd-callout-note" style="margin:0 0 10px 0;">
+          An additional driver is free and never changes the amount paid. Add a name and email
+          and we send them a private link to upload their ID from their phone. The link is
+          single use and expires in 7 days.
+        </p>
+        <div id="bd-driver2-status" style="font-size:14px;margin-bottom:12px;"></div>
+        <div id="bd-driver2-images" class="bd-id-images"></div>
+        <div id="bd-driver2-form" style="display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin-top:12px;">
+          <div class="login-field" style="flex:1;min-width:160px;">
+            <label for="bd-driver2-name">Driver's Full Name</label>
+            <input type="text" id="bd-driver2-name" placeholder="Full name as it appears on their ID">
+          </div>
+          <div class="login-field" style="flex:1;min-width:180px;">
+            <label for="bd-driver2-email">Email for the Upload Link</label>
+            <input type="email" id="bd-driver2-email" placeholder="name@example.com">
+          </div>
+          <div class="login-field" style="flex:0;">
+            <button type="button" id="bd-add-driver2" class="btn-inline-brand">
+              Send Upload Link
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Uploaded government ID (private storage, signed URLs) -->
       <div id="bd-id-section" class="booking-detail-section hidden">
-        <h4>Uploaded ID &amp; Rental Agreement</h4>
+        <h4>Uploaded ID &amp; Rental Agreement <span style="font-weight:400;color:var(--text-3);font-size:13px;">(primary renter)</span></h4>
         <div id="bd-id-meta" class="bd-id-meta"></div>
         <div id="bd-id-images" class="bd-id-images"></div>
         <details style="margin-top:12px;">

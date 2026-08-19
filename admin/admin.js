@@ -1384,12 +1384,29 @@
               deliveryBadges += '<span class="source-badge" style="background:var(--success-soft);color:var(--success);border-color:var(--success-line);margin-left:4px;font-size:10px;">💵 Deposit held</span>';
             }
           }
-          // Can-Am manual M-endorsement check badge
-          if (b.requires_canam_license_check) {
-            if (b.canam_license_verified) {
+          // Additional driver badge (free, no price impact)
+          if (b.additional_driver_name) {
+            if (b.driver2_id_upload_status === 'received') {
+              deliveryBadges += '<span class="source-badge" style="background:var(--surface-3);color:var(--text-2);border-color:var(--border-strong);margin-left:4px;font-size:10px;">👥 2 drivers</span>';
+            } else {
+              deliveryBadges += '<span class="source-badge" style="background:var(--warn-soft);color:var(--warn);border-color:var(--warn-line);margin-left:4px;font-size:10px;">👥 2nd driver ID pending</span>';
+            }
+          }
+          // Can-Am manual M-endorsement check badge.
+          // Covers BOTH drivers: the warning stays lit until every driver who
+          // needs an M-endorsement check has been confirmed, so an unverified
+          // second driver cannot be missed from the list view.
+          var canamNeeded = b.requires_canam_license_check || b.driver2_requires_canam_license_check;
+          if (canamNeeded) {
+            var primaryOk = !b.requires_canam_license_check || b.canam_license_verified;
+            var secondOk  = !b.driver2_requires_canam_license_check || b.driver2_canam_license_verified;
+            if (primaryOk && secondOk) {
               deliveryBadges += '<span class="source-badge" style="background:var(--success-soft);color:var(--success);border-color:var(--success-line);margin-left:4px;font-size:10px;">✓ M verified</span>';
             } else {
-              deliveryBadges += '<span class="source-badge" style="background:var(--danger-soft);color:var(--danger);border-color:var(--danger-line);margin-left:4px;font-size:10px;">⚠️ Verify M endorsement</span>';
+              var whoLabel = (!primaryOk && !secondOk) ? 'both drivers'
+                           : (!secondOk ? '2nd driver' : '');
+              deliveryBadges += '<span class="source-badge" style="background:var(--danger-soft);color:var(--danger);border-color:var(--danger-line);margin-left:4px;font-size:10px;">⚠️ Verify M endorsement'
+                + (whoLabel ? ' (' + whoLabel + ')' : '') + '</span>';
             }
           }
 
@@ -1846,14 +1863,27 @@
     var agrTextEl    = document.getElementById('bd-agreement-text');
     var canamStatus  = document.getElementById('bd-canam-status');
 
+    var canam2Section = document.getElementById('bd-canam2-section');
+    var canam2Status  = document.getElementById('bd-canam2-status');
+    var d2Status      = document.getElementById('bd-driver2-status');
+    var d2Images      = document.getElementById('bd-driver2-images');
+    var d2Form        = document.getElementById('bd-driver2-form');
+
     // Reset
     idSection.classList.add('hidden');
     canamSection.classList.add('hidden');
+    canam2Section.classList.add('hidden');
     imagesEl.innerHTML = '';
     metaEl.textContent = '';
     agrMetaEl.textContent = '';
     agrTextEl.textContent = '';
     canamStatus.textContent = '';
+    canam2Status.textContent = '';
+    d2Status.textContent = 'Loading…';
+    d2Images.innerHTML = '';
+    d2Form.style.display = '';
+    document.getElementById('bd-driver2-name').value = '';
+    document.getElementById('bd-driver2-email').value = '';
 
     apiFetch(ADMIN_API + '/bookings/' + encodeURIComponent(booking.id) + '/id')
       .then(function (r) { return r.json(); })
@@ -1861,6 +1891,8 @@
         if (!data || !data.hasUpload) {
           metaEl.textContent = 'No ID on file for this booking.';
           idSection.classList.remove('hidden');
+          d2Status.textContent = 'This booking has no ID record, so an additional driver cannot be attached to it.';
+          d2Form.style.display = 'none';
           return;
         }
 
@@ -1900,10 +1932,104 @@
             document.getElementById('bd-verify-canam').style.display = '';
           }
         }
+
+        // ── Additional driver (free) ─────────────────────────────────────────
+        var d2 = data.additionalDriver;
+        if (!d2) {
+          d2Status.innerHTML = '<span style="color:var(--text-2);">No additional driver on this booking.</span>';
+          d2Form.style.display = '';
+        } else {
+          var d2TypeLabel = d2.requiredIdType === 'drivers_license'
+            ? "Driver's license (required for Can-Am)"
+            : 'Government photo ID';
+
+          if (d2.uploadStatus === 'received') {
+            d2Status.innerHTML = '<strong>' + esc(d2.name) + '</strong> '
+              + '<span style="color:var(--success);">· ID received</span> '
+              + '<span style="color:var(--text-3);">· ' + esc(d2TypeLabel) + ' · no charge</span>';
+            d2Images.innerHTML = imgTile('Additional driver front', d2.frontUrl)
+                               + imgTile('Additional driver back', d2.backUrl);
+            d2Form.style.display = 'none';
+          } else if (d2.uploadLinkPending) {
+            var expTxt = d2.linkExpiresAt ? ' Link expires ' + new Date(d2.linkExpiresAt).toLocaleDateString() + '.' : '';
+            d2Status.innerHTML = '<strong>' + esc(d2.name) + '</strong> '
+              + '<span style="color:var(--warn);">· waiting on their ID upload.</span> '
+              + '<span style="color:var(--text-3);">Upload link sent.' + esc(expTxt)
+              + ' Re-send below if they need it again. No charge.</span>';
+            d2Form.style.display = '';
+          } else {
+            d2Status.innerHTML = '<strong>' + esc(d2.name) + '</strong> '
+              + '<span style="color:var(--danger);">· no ID on file and no live upload link.</span> '
+              + '<span style="color:var(--text-3);">Send a new link below.</span>';
+            d2Form.style.display = '';
+          }
+
+          // Per-driver Can-Am M-endorsement check for the additional driver
+          if (d2.requiresCanamCheck && d2.uploadStatus === 'received') {
+            canam2Section.classList.remove('hidden');
+            if (d2.canamVerified) {
+              canam2Status.innerHTML = '<span style="color:var(--success);">✓ M endorsement confirmed for '
+                + esc(d2.name)
+                + (d2.canamVerifiedBy ? ' by ' + esc(d2.canamVerifiedBy) : '')
+                + (d2.canamVerifiedAt ? ' on ' + esc(new Date(d2.canamVerifiedAt).toLocaleString()) : '')
+                + '</span>';
+              document.getElementById('bd-verify-canam2').style.display = 'none';
+            } else {
+              canam2Status.innerHTML = '<span style="color:var(--danger);">Not yet confirmed for '
+                + esc(d2.name) + '. Open their license image above, verify the M endorsement, then confirm below.</span>';
+              document.getElementById('bd-verify-canam2').style.display = '';
+            }
+          }
+        }
       })
       .catch(function () {
         metaEl.textContent = 'Could not load ID for this booking.';
         idSection.classList.remove('hidden');
+        d2Status.textContent = 'Could not load additional-driver details.';
+      });
+  }
+
+  // Add a second driver to an existing booking and email them an upload link.
+  // This is the pickup-counter case: the person who booked is not the person
+  // who wants to drive. It is free and never changes the amount paid.
+  function addAdditionalDriver() {
+    if (!currentBooking) return;
+    var nameEl  = document.getElementById('bd-driver2-name');
+    var emailEl = document.getElementById('bd-driver2-email');
+    var btn     = document.getElementById('bd-add-driver2');
+    var name    = (nameEl.value || '').trim();
+    var email   = (emailEl.value || '').trim();
+
+    if (!name)  { alert("Enter the additional driver's full name."); return; }
+    if (!email) { alert('Enter an email address so we can send them the upload link.'); return; }
+
+    btn.disabled = true;
+    btn.textContent = 'Sending…';
+
+    apiFetch(ADMIN_API + '/bookings/' + encodeURIComponent(currentBooking.id) + '/additional-driver', {
+      method: 'POST',
+      body: JSON.stringify({ name: name, email: email })
+    })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+      .then(function (r) {
+        if (!r.ok || !r.data.ok) throw new Error(r.data.error || 'Could not add the driver');
+        currentBooking.additional_driver_name = r.data.driverName;
+        currentBooking.driver2_id_upload_status = 'pending';
+        currentBooking.driver2_requires_canam_license_check = !!r.data.requiresCanamCheck;
+        btn.disabled = false;
+        btn.textContent = 'Send Upload Link';
+        if (r.data.emailed) {
+          showToast('success', 'Upload link sent', r.data.driverName + ' can now upload their ID from their phone. No charge was added.');
+        } else {
+          showToast('warning', 'Driver added, email failed', 'The driver was saved but the upload link email did not send. Try Send Upload Link again.');
+        }
+        loadBookingIdSection(currentBooking);
+        try { renderBookingsPanel(); } catch (e) {}
+      })
+      .catch(function (err) {
+        btn.disabled = false;
+        btn.textContent = 'Send Upload Link';
+        alert(err.message || 'Could not add the additional driver. Please try again.');
       });
   }
 
@@ -1956,25 +2082,37 @@
       });
   }
 
-  function verifyCanamEndorsement() {
+  // Each driver is confirmed separately. `which` is 'primary' or 'additional'.
+  function verifyCanamEndorsement(which) {
     if (!currentBooking) return;
-    var btn = document.getElementById('bd-verify-canam');
+    var isSecond = which === 'additional';
+    var btnId    = isSecond ? 'bd-verify-canam2' : 'bd-verify-canam';
+    var label    = isSecond
+      ? "✓ I confirmed the additional driver's M endorsement"
+      : '✓ I confirmed the M endorsement';
+    var btn = document.getElementById(btnId);
     btn.disabled = true;
     btn.textContent = 'Saving…';
     apiFetch(ADMIN_API + '/bookings/' + encodeURIComponent(currentBooking.id) + '/verify-canam', {
-      method: 'POST'
+      method: 'POST',
+      body: JSON.stringify({ driver: isSecond ? 'additional' : 'primary' })
     })
       .then(function (r) {
         if (!r.ok) throw new Error('Failed');
         return r.json();
       })
       .then(function () {
-        currentBooking.canam_license_verified = true;
+        if (isSecond) {
+          currentBooking.driver2_canam_license_verified = true;
+        } else {
+          currentBooking.canam_license_verified = true;
+        }
         loadBookingIdSection(currentBooking);
+        try { renderBookingsPanel(); } catch (e) {}
       })
       .catch(function () {
         btn.disabled = false;
-        btn.textContent = '✓ I confirmed the M endorsement';
+        btn.textContent = label;
         alert('Could not save the confirmation. Please try again.');
       });
   }
@@ -2114,7 +2252,9 @@
   document.getElementById('bd-close-x').addEventListener('click', closeBookingDetailModal);
   document.getElementById('bd-cancel').addEventListener('click', closeBookingDetailModal);
   document.getElementById('bd-save').addEventListener('click', saveBookingDetails);
-  document.getElementById('bd-verify-canam').addEventListener('click', verifyCanamEndorsement);
+  document.getElementById('bd-verify-canam').addEventListener('click', function () { verifyCanamEndorsement('primary'); });
+  document.getElementById('bd-verify-canam2').addEventListener('click', function () { verifyCanamEndorsement('additional'); });
+  document.getElementById('bd-add-driver2').addEventListener('click', addAdditionalDriver);
   document.getElementById('bd-refund-deposit').addEventListener('click', refundDeposit);
   document.getElementById('booking-detail-modal').addEventListener('click', function (e) {
     if (e.target === this) closeBookingDetailModal();

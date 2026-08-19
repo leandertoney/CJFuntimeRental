@@ -85,6 +85,21 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
+      # Idempotent (ADD COLUMN IF NOT EXISTS) — safe to run on every deploy. Must
+      # run BEFORE the webhook/admin/id-upload functions deploy, since all three
+      # read/write the additional-driver columns. This repo's CI does NOT
+      # auto-apply everything in supabase/migrations/ — only the steps listed
+      # here — so a new migration without a step here would never be applied.
+      - name: Apply additional driver migration
+        run: |
+          SQL=$(jq -Rs . < supabase/migrations/20260819000001_additional_driver.sql)
+          curl -sf -X POST "https://api.supabase.com/v1/projects/yzdtevrwystezhbmgcwn/database/query" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"query\": $SQL}"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
       - name: Deploy Config Function
         run: supabase functions deploy config --project-ref yzdtevrwystezhbmgcwn
         env:

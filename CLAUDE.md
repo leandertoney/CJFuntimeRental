@@ -1,4 +1,84 @@
-# CJ Funtime Rentals - Project State (Updated 2026-08-04)
+# CJ Funtime Rentals - Project State (Updated 2026-08-19)
+
+## Session 2026-08-19: ADDITIONAL DRIVER support (one optional second driver)
+
+**Why:** a customer booked online for her father as a surprise; at pickup he
+wanted to drive and it had to be handled by hand. Milonda asked for a real
+feature (Aug 18 email, same thread as the deposit question).
+
+**Shape: flat `driver2_*` columns on the existing `id_uploads` row, NOT a child
+table.** The checkout hard gate guarantees exactly one `id_uploads` row per
+booking_ref and the cap is ONE additional driver, so flat columns match both the
+requirement and the existing flat `canam_*` idiom. Migration
+`20260819000001_additional_driver.sql`.
+
+**No new bucket and no new storage policies.** Driver 2 images live in the same
+PRIVATE `booking-ids` bucket at `<booking_ref>/driver2-front.<ext>`. The bucket
+has RLS enabled with ZERO policies for anon/authenticated, so driver 2 images
+are unreadable to those roles for exactly the same reason the primary's are.
+**Verified against the LIVE bucket on a real driver2-path object:** public CDN
+path 400, anon key 400, anon signed-URL mint 403, anon list 403, admin-minted
+signed URL **200**, tampered signature 400. The 200 is the load-bearing half of
+that proof - it shows the object was really there, so the denials are not a
+false pass. Test object deleted after.
+
+**FREE, and that is enforced by construction.** `supabase/functions/checkout/index.ts`
+is NOT in this change at all. No pricing math, no `baseCents` verification, no
+Stripe line item was touched. The checkout summary shows an "Additional Driver:
+Free" row that is display-only and deliberately never added into any total. The
+admin add-driver endpoint writes no money fields, so the date-edit money
+guardrail is preserved because nothing in this feature can reach `total`.
+
+**Two ways to add a driver:**
+1. During booking - optional toggle in `checkout.html` (name + front/back), sent
+   as optional fields on the existing `id-upload` call.
+2. After booking (the real case) - `POST /bookings/:id/additional-driver` on the
+   admin function stores a single-use base64url token (7-day expiry) and emails
+   a link to `upload-driver.html?token=...`. `id-upload` gained a token mode
+   (GET resolves the token to vehicle type + name; POST accepts the images,
+   then clears the token). **The booking id is a `cs_live_...` Stripe session
+   id and is never put in a URL.**
+
+**Post-booking writes use `.update().eq('booking_ref', ...)`, never the existing
+upsert.** That row holds the primary renter's ID paths and signed agreement; an
+upsert with only driver2 fields would clobber them. Verified on a throwaway
+Postgres: after the full add-driver -> token -> upload sequence the primary's
+front/back paths and `agreement_version` were still intact, and `total` /
+`deposit_cents` were unchanged at every step.
+
+**Per-driver Can-Am M-endorsement check.** `verify-canam` takes an optional
+`{driver: 'primary'|'additional'}` body (absent = primary, so an old cached
+admin.js still works). **The bookings-LIST badge now covers BOTH drivers** - it
+stays lit until every driver needing a check is confirmed, and names who is
+outstanding ("2nd driver" / "both drivers"). This is a deliberate semantics
+change to the list badge, decided so an unverified second driver cannot be
+missed at the counter. `bookings.requires_canam_license_check` keeps its
+original primary-only meaning; the driver2 pair is read alongside it.
+
+**Backward compatibility was tested, not assumed.** An old cached
+`checkout.html` sends no driver2 fields and takes the identical legacy path; an
+old cached `admin.js` sends no verify body and still verifies the primary.
+Migration applied 3x on a seeded copy of the production schema: idempotent, zero
+errors, existing bookings came out with driver2 columns NULL/false and money
+untouched.
+
+**Migration needed its own CI step.** `deploy-supabase.yml` does NOT auto-apply
+everything in `supabase/migrations/` - only the steps explicitly listed. Added
+"Apply additional driver migration" BEFORE the function deploys, same shape as
+the four existing ones. This gap already bit the deposit feature once.
+
+**Known deploy-ordering race (accepted, not fixed):** Netlify (static) and CI
+(functions) deploy independently. In the window where the new `checkout.html` is
+live but the old `id-upload` is not, driver2 fields are silently dropped and the
+customer believes the second ID was stored. Degrades to today's status quo
+(single-driver booking, handled at pickup); this site sees roughly one booking a
+week, so exposure is small. Same class of issue as the Phase 2 checkout-outage
+ordering note.
+
+**NOT in this change:** deposit/fuel policy text or enforcement - the owner has
+not provided wording or amounts, so none was invented. No second agreement
+signature for driver 2 (requirements were name + ID only; the primary renter
+signs).
 
 ## Session 2026-08-04 (part 2): post-rental REVIEW EMAIL was dead for 6 weeks - FIXED & LIVE
 

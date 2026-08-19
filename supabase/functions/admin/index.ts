@@ -528,7 +528,7 @@ Deno.serve(async (req) => {
 
     const { data: booking } = await supabase
       .from('bookings')
-      .select('id, id_ref, requires_canam_license_check, canam_license_verified, canam_verified_by, canam_verified_at, agreement_version, agreement_text, agreed_at')
+      .select('id, id_ref, requires_canam_license_check, canam_license_verified, canam_verified_by, canam_verified_at, agreement_version, agreement_text, agreed_at, additional_driver_name, driver2_requires_canam_license_check, driver2_canam_license_verified, driver2_canam_verified_by, driver2_canam_verified_at, driver2_id_upload_status')
       .eq('id', bookingId)
       .maybeSingle();
 
@@ -537,16 +537,30 @@ Deno.serve(async (req) => {
 
     const { data: upload } = await supabase
       .from('id_uploads')
-      .select('front_path, back_path, required_id_type, vehicle_type')
+      .select('front_path, back_path, required_id_type, vehicle_type, driver2_name, driver2_front_path, driver2_back_path, driver2_required_id_type, driver2_upload_token, driver2_token_expires_at')
       .eq('booking_ref', booking.id_ref)
       .maybeSingle();
 
     if (!upload) return json({ hasUpload: false });
 
-    const [frontSigned, backSigned] = await Promise.all([
-      supabase.storage.from('booking-ids').createSignedUrl(upload.front_path, 900),
-      supabase.storage.from('booking-ids').createSignedUrl(upload.back_path, 900)
-    ]);
+    // Sign every image we actually have. Driver 2 may be absent entirely, or
+    // added but not yet uploaded (link sent, customer has not completed it).
+    const toSign = [upload.front_path, upload.back_path];
+    if (upload.driver2_front_path) toSign.push(upload.driver2_front_path);
+    if (upload.driver2_back_path) toSign.push(upload.driver2_back_path);
+
+    const signed = await Promise.all(
+      toSign.map((path) => supabase.storage.from('booking-ids').createSignedUrl(path, 900))
+    );
+    const urlFor = (path: string | null) => {
+      if (!path) return null;
+      const i = toSign.indexOf(path);
+      return i === -1 ? null : (signed[i].data?.signedUrl || null);
+    };
+
+    const hasDriver2 = !!(upload.driver2_name || booking.additional_driver_name);
+    const linkPending = !!upload.driver2_upload_token &&
+      (!upload.driver2_token_expires_at || new Date(upload.driver2_token_expires_at) > new Date());
 
     return json({
       hasUpload: true,
@@ -559,8 +573,22 @@ Deno.serve(async (req) => {
       agreementVersion: booking.agreement_version || null,
       agreementText: booking.agreement_text || null,
       agreedAt: booking.agreed_at || null,
-      frontUrl: frontSigned.data?.signedUrl || null,
-      backUrl: backSigned.data?.signedUrl || null
+      frontUrl: urlFor(upload.front_path),
+      backUrl: urlFor(upload.back_path),
+      // ── Additional driver (free, no price impact) ─────────────────────────
+      additionalDriver: hasDriver2 ? {
+        name: upload.driver2_name || booking.additional_driver_name || '',
+        requiredIdType: upload.driver2_required_id_type || null,
+        uploadStatus: upload.driver2_front_path ? 'received' : (booking.driver2_id_upload_status || 'pending'),
+        uploadLinkPending: linkPending,
+        linkExpiresAt: linkPending ? upload.driver2_token_expires_at : null,
+        requiresCanamCheck: !!booking.driver2_requires_canam_license_check,
+        canamVerified: !!booking.driver2_canam_license_verified,
+        canamVerifiedBy: booking.driver2_canam_verified_by || null,
+        canamVerifiedAt: booking.driver2_canam_verified_at || null,
+        frontUrl: urlFor(upload.driver2_front_path),
+        backUrl: urlFor(upload.driver2_back_path)
+      } : null
     });
   }
 
@@ -571,13 +599,27 @@ Deno.serve(async (req) => {
     const bookingId = path.split('/')[2];
     const verifiedAt = new Date().toISOString();
 
+    // Each driver is confirmed independently: the primary renter and the
+    // optional additional driver each need their own M-endorsement check.
+    // Body is optional so an old cached admin.js keeps verifying the primary.
+    const vcBody = await req.json().catch(() => ({}));
+    const isDriver2 = vcBody && vcBody.driver === 'additional';
+
+    const bookingUpdate = isDriver2
+      ? {
+          driver2_canam_license_verified: true,
+          driver2_canam_verified_by: authedUser.email,
+          driver2_canam_verified_at: verifiedAt
+        }
+      : {
+          canam_license_verified: true,
+          canam_verified_by: authedUser.email,
+          canam_verified_at: verifiedAt
+        };
+
     const { data: booking, error } = await supabase
       .from('bookings')
-      .update({
-        canam_license_verified: true,
-        canam_verified_by: authedUser.email,
-        canam_verified_at: verifiedAt
-      })
+      .update(bookingUpdate)
       .eq('id', bookingId)
       .select('id, id_ref')
       .maybeSingle();
@@ -586,16 +628,150 @@ Deno.serve(async (req) => {
     if (!booking) return json({ error: 'Booking not found' }, 404);
 
     if (booking.id_ref) {
+      const uploadUpdate = isDriver2
+        ? {
+            driver2_canam_license_verified: true,
+            driver2_canam_verified_by: authedUser.email,
+            driver2_canam_verified_at: verifiedAt
+          }
+        : {
+            canam_license_verified: true,
+            canam_verified_by: authedUser.email,
+            canam_verified_at: verifiedAt
+          };
       await supabase.from('id_uploads')
-        .update({
-          canam_license_verified: true,
-          canam_verified_by: authedUser.email,
-          canam_verified_at: verifiedAt
-        })
+        .update(uploadUpdate)
         .eq('booking_ref', booking.id_ref);
     }
 
-    return json({ ok: true, verifiedBy: authedUser.email, verifiedAt });
+    return json({ ok: true, driver: isDriver2 ? 'additional' : 'primary', verifiedBy: authedUser.email, verifiedAt });
+  }
+
+  // ── POST /bookings/:id/additional-driver — add a second driver after booking ─
+  // The real case this exists for: a customer books for someone else and that
+  // person turns up wanting to drive. The admin records the name and email; we
+  // email a single-use link so the driver uploads their own ID from their phone.
+  //
+  // This endpoint deliberately writes NO money fields. An additional driver is
+  // free, so the amount paid can never change here.
+  if (path.match(/^\/bookings\/[^/]+\/additional-driver$/) && req.method === 'POST') {
+    const bookingId = path.split('/')[2];
+    const body = await req.json().catch(() => null);
+    if (!body || typeof body !== 'object') return json({ error: 'Invalid JSON body' }, 400);
+
+    const driverName = typeof body.name === 'string' ? body.name.replace(/[<>]/g, '').trim().slice(0, 120) : '';
+    const driverEmail = typeof body.email === 'string' ? body.email.trim().toLowerCase().slice(0, 200) : '';
+    if (!driverName) return json({ error: "Enter the additional driver's full name." }, 400);
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(driverEmail)) {
+      return json({ error: 'Enter a valid email address to send the upload link to.' }, 400);
+    }
+
+    const { data: booking } = await supabase
+      .from('bookings')
+      .select('id, id_ref, name, email, vehicle, vehicle_key, start_date')
+      .eq('id', bookingId)
+      .maybeSingle();
+    if (!booking) return json({ error: 'Booking not found' }, 404);
+    if (!booking.id_ref) {
+      return json({ error: 'This booking has no ID record to attach a driver to.' }, 409);
+    }
+
+    const { data: upload } = await supabase
+      .from('id_uploads')
+      .select('booking_ref, vehicle_type')
+      .eq('booking_ref', booking.id_ref)
+      .maybeSingle();
+    if (!upload) return json({ error: 'This booking has no ID record to attach a driver to.' }, 409);
+
+    const isCanam = upload.vehicle_type === 'canam' ||
+      (booking.vehicle_key || '').toLowerCase().includes('canam') ||
+      (booking.vehicle || '').toLowerCase().includes('can-am');
+
+    // Single-use token: 32 random bytes, base64url. Valid 7 days, cleared by
+    // the id-upload function the moment the images land.
+    const raw = crypto.getRandomValues(new Uint8Array(32));
+    const token = btoa(String.fromCharCode(...raw))
+      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+    // Targeted update, never an upsert: this row holds the primary renter's ID
+    // and signed agreement and must not be replaced.
+    const { error: updErr } = await supabase.from('id_uploads')
+      .update({
+        driver2_name: driverName,
+        driver2_email: driverEmail,
+        driver2_required_id_type: isCanam ? 'drivers_license' : 'photo_id',
+        driver2_canam_license_check_required: isCanam,
+        driver2_added_at: new Date().toISOString(),
+        driver2_added_by: authedUser.email,
+        driver2_upload_token: token,
+        driver2_token_expires_at: expiresAt
+      })
+      .eq('booking_ref', booking.id_ref);
+    if (updErr) return json({ error: updErr.message }, 500);
+
+    await supabase.from('bookings')
+      .update({
+        additional_driver_name: driverName,
+        driver2_id_upload_status: 'pending',
+        driver2_requires_canam_license_check: isCanam,
+        driver2_canam_license_verified: false
+      })
+      .eq('id', bookingId);
+
+    // Email the upload link.
+    const uploadUrl = `https://cjfuntimerentals.com/upload-driver.html?token=${token}`;
+    const idRule = isCanam
+      ? "For the Can-Am Spyder you must upload a valid driver's license. A state ID card is not accepted."
+      : 'Upload any valid government photo ID, such as a driver\'s license or a state ID card.';
+
+    let emailed = true;
+    try {
+      const resend = new Resend(Deno.env.get('RESEND_API_KEY')!);
+      const { error: mailErr } = await resend.emails.send({
+        from: 'CJ Funtime Rentals <bookings@cjfuntimerentals.com>',
+        to: driverEmail,
+        subject: `Upload your ID to drive on the ${booking.start_date} rental`,
+        html: `
+          <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#222;">
+            <h1 style="font-size:22px;margin:0 0 16px;color:#FF6B00;">One quick step before pickup</h1>
+            <p style="font-size:15px;line-height:1.6;">Hi ${driverName},</p>
+            <p style="font-size:15px;line-height:1.6;">
+              You have been added as an additional driver on the CJ Funtime Rentals booking
+              for ${booking.vehicle || 'your rental'} on ${booking.start_date}.
+              There is no extra charge for this.
+            </p>
+            <p style="font-size:15px;line-height:1.6;">
+              To drive, we need a photo of your ID. ${idRule}
+              You can do this from your phone in about a minute.
+            </p>
+            <p style="margin:28px 0;">
+              <a href="${uploadUrl}" style="background:#FF6B00;color:#fff;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:bold;font-size:16px;display:inline-block;">Upload my ID</a>
+            </p>
+            <p style="font-size:13px;line-height:1.6;color:#666;">
+              This link is private to you and expires in 7 days. If the button does not work,
+              copy and paste this address into your browser:<br>
+              <span style="word-break:break-all;">${uploadUrl}</span>
+            </p>
+            <p style="font-size:13px;line-height:1.6;color:#666;">
+              Questions? Call us at (717) 203-5778.
+            </p>
+          </div>
+        `
+      });
+      if (mailErr) emailed = false;
+    } catch {
+      emailed = false;
+    }
+
+    return json({
+      ok: true,
+      driverName,
+      driverEmail,
+      requiresCanamCheck: isCanam,
+      emailed,
+      expiresAt
+    });
   }
 
   // ── POST /bookings/:id/refund-deposit — vehicle returned, refund the $100 ──

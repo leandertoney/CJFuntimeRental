@@ -124,7 +124,7 @@ Deno.serve(async (req) => {
     if (bookingRef) {
       const { data: idUpload } = await supabase
         .from('id_uploads')
-        .select('vehicle_type, canam_license_check_required, agreement_version, agreement_text, agreed_at')
+        .select('vehicle_type, canam_license_check_required, agreement_version, agreement_text, agreed_at, driver2_name, driver2_front_path, driver2_canam_license_check_required')
         .eq('booking_ref', bookingRef)
         .maybeSingle();
       if (idUpload) {
@@ -139,6 +139,16 @@ Deno.serve(async (req) => {
           agreement_text: idUpload.agreement_text || null,
           agreed_at: idUpload.agreed_at || null
         };
+
+        // Optional additional driver added during the booking flow. Free, so
+        // nothing here touches price, total or any Stripe field.
+        if (idUpload.driver2_name) {
+          idFields.additional_driver_name = idUpload.driver2_name;
+          idFields.driver2_id_upload_status = idUpload.driver2_front_path ? 'received' : 'pending';
+          idFields.driver2_requires_canam_license_check =
+            idUpload.driver2_canam_license_check_required || isCanam;
+          idFields.driver2_canam_license_verified = false;
+        }
       }
     }
 
@@ -210,6 +220,7 @@ Deno.serve(async (req) => {
           ${emailRow('Type', meta.durationType === 'hourly' ? (meta.hours || '3') + ' hours' : (meta.durationType === '10hr' || meta.durationType === '9hr') ? '9 hours' : meta.durationType === '24hr' ? '24 hours' : meta.days + ' day' + (Number(meta.days) === 1 ? '' : 's'))}
           ${meta.deliveryDropoff === 'true' || meta.deliveryPickup === 'true' ? emailRow('Delivery', [meta.deliveryDropoff === 'true' ? 'Drop-off' : '', meta.deliveryPickup === 'true' ? 'Pickup' : ''].filter(Boolean).join(' + ')) : ''}
           ${depositCents > 0 ? emailRow('Deposit Held', '$' + depositDollars + ' <span style="color:#888;font-size:12px;">(refund from admin panel after return)</span>') : ''}
+          ${idFields.additional_driver_name ? emailRow('Additional Driver', String(idFields.additional_driver_name) + ' <span style="color:#888;font-size:12px;">(free, ID on file)</span>') : ''}
           ${emailRow('Total', '$' + total)}
         </table>
       </div>
