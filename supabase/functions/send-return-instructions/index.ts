@@ -18,6 +18,7 @@ interface Booking {
   email: string;
   name: string;
   vehicle: string;
+  vehicle_key?: string | null;
   end_date: string;
   return_location?: string;
   return_address?: string;
@@ -41,6 +42,22 @@ Deno.serve(async (req) => {
       .single();
 
     const defaultPickup = configData?.config?.default_pickup_details || {};
+
+    // Two fleet vehicles share the exact display name "2016 Polaris Slingshot"
+    // (slingshot_2020 = gray, slingshot_2016_red = red). Resolve through
+    // vehicle_key, the customer's actual selection, and append the color so the
+    // email names one specific car. Bookings created before 2026-07-15 have
+    // vehicle_key = NULL and fall back to the stored name unchanged.
+    const fleet = configData?.config?.vehicles || {};
+    const vehicleLabel = (b: Booking) => {
+      const stored = b.vehicle || '';
+      if (!b.vehicle_key) return stored;
+      const v = fleet[b.vehicle_key];
+      if (!v) return stored || b.vehicle_key;
+      const base = v.name || stored || b.vehicle_key;
+      return v.color ? `${base} (${v.color})` : base;
+    };
+
 
     // Calculate target date (24 hours from now)
     const targetDate = new Date();
@@ -117,10 +134,10 @@ Deno.serve(async (req) => {
           body: JSON.stringify({
             from: "CJ's Fun Time Rental <bookings@cjfuntimerentals.com>",
             to: booking.email,
-            subject: `Return instructions for your ${booking.vehicle} rental`,
+            subject: `Return instructions for your ${vehicleLabel(booking)} rental`,
             html: buildReturnInstructionsEmail({
               firstName,
-              vehicleName: booking.vehicle,
+              vehicleName: vehicleLabel(booking),
               endDate: booking.end_date,
               returnLocation,
               returnAddress,

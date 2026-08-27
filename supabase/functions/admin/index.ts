@@ -687,6 +687,21 @@ Deno.serve(async (req) => {
       (booking.vehicle_key || '').toLowerCase().includes('canam') ||
       (booking.vehicle || '').toLowerCase().includes('can-am');
 
+    // Two fleet vehicles share the exact display name "2016 Polaris Slingshot"
+    // (slingshot_2020 = gray, slingshot_2016_red = red), so name the specific
+    // car in the invite. Falls back to the stored name for pre-2026-07-15
+    // bookings, which have vehicle_key = NULL.
+    let vehicleLabel = booking.vehicle || 'your rental';
+    if (booking.vehicle_key) {
+      const { data: cfgRow } = await supabase
+        .from('site_config').select('config').eq('id', 1).single();
+      const v = cfgRow?.config?.vehicles?.[booking.vehicle_key];
+      if (v) {
+        const base = v.name || booking.vehicle || booking.vehicle_key;
+        vehicleLabel = v.color ? `${base} (${v.color})` : base;
+      }
+    }
+
     // Single-use token: 32 random bytes, base64url. Valid 7 days, cleared by
     // the id-upload function the moment the images land.
     const raw = crypto.getRandomValues(new Uint8Array(32));
@@ -738,7 +753,7 @@ Deno.serve(async (req) => {
             <p style="font-size:15px;line-height:1.6;">Hi ${driverName},</p>
             <p style="font-size:15px;line-height:1.6;">
               You have been added as an additional driver on the CJ Funtime Rentals booking
-              for ${booking.vehicle || 'your rental'} on ${booking.start_date}.
+              for ${vehicleLabel} on ${booking.start_date}.
               There is no extra charge for this.
             </p>
             <p style="font-size:15px;line-height:1.6;">
