@@ -636,7 +636,7 @@
     var dateRange = b.startDate + (b.endDate && b.endDate !== b.startDate ? ' → ' + b.endDate : '');
     return '<div class="ov-row">'
       + '<div class="ov-row-main">' + esc(b.name || b.email) + '</div>'
-      + '<div class="ov-row-vehicle">' + esc(b.vehicle) + '</div>'
+      + '<div class="ov-row-vehicle">' + esc(bookingVehicleName(b)) + '</div>'
       + '<div class="ov-row-meta">' + dateRange + ' &middot; ' + b.days + 'd</div>'
       + '<div class="ov-badge ov-badge-revenue">$' + (b.total || 0).toLocaleString() + '</div>'
       + '</div>';
@@ -1100,6 +1100,27 @@
     return (v && v.color) ? base + ' — ' + v.color : base;
   }
 
+  // Display name for a BOOKING's vehicle.
+  //
+  // Two fleet vehicles share the exact display name "2016 Polaris Slingshot"
+  // (slingshot_2020 = gray, slingshot_2016_red = red), so the stored
+  // booking.vehicle name alone cannot tell them apart. Resolve through
+  // vehicle_key, which is the customer's actual selection, and append the
+  // color so the owner knows which physical car to hand over.
+  //
+  // Bookings created before 2026-07-15 have vehicle_key = NULL; those fall
+  // back to the stored name unchanged.
+  function bookingVehicleName(b) {
+    if (!b) return '—';
+    var stored = b.vehicle || '';
+    var key    = b.vehicle_key;
+    if (!key) return stored || '—';
+    var v = cfg && cfg.vehicles && cfg.vehicles[key];
+    if (!v) return stored || key;
+    var base = v.name || stored || key;
+    return v.color ? base + ' (' + v.color + ')' : base;
+  }
+
   function renderVehicleBlocksPanel() {
     // Populate vehicle dropdown
     var vehSelect = document.getElementById('vblock-vehicle');
@@ -1413,7 +1434,7 @@
           html += '<tr data-booking-id="' + esc(b.id) + '">'
             + '<td class="lead-num">' + (idx + 1) + '</td>'
             + '<td class="lead-email"><strong>' + esc(b.name || '—') + '</strong><br><span style="color:var(--text-3);font-size:11px;">' + esc(b.email) + '</span></td>'
-            + '<td>' + esc(b.vehicle || '—') + deliveryBadges + '</td>'
+            + '<td>' + esc(bookingVehicleName(b)) + deliveryBadges + '</td>'
             + '<td>' + esc(b.start_date || '—') + '</td>'
             + '<td>' + esc(b.end_date || '—') + '</td>'
             + '<td style="text-align:center;">' + (b.days || '—') + '</td>'
@@ -1437,7 +1458,7 @@
           bookings.forEach(function (b, i) {
             rows.push([
               i + 1, b.name || '', b.email, b.phone || '',
-              b.vehicle, b.start_date, b.end_date, b.days,
+              bookingVehicleName(b), b.start_date, b.end_date, b.days,
               '$' + (b.total || 0), b.status,
               new Date(b.created_at).toLocaleString()
             ]);
@@ -1779,7 +1800,7 @@
     document.getElementById('bd-name').textContent = booking.name || '—';
     document.getElementById('bd-email').textContent = booking.email || '—';
     document.getElementById('bd-phone').textContent = booking.phone || '—';
-    document.getElementById('bd-vehicle').textContent = booking.vehicle || '—';
+    document.getElementById('bd-vehicle').textContent = bookingVehicleName(booking);
     document.getElementById('bd-dates').textContent = (booking.start_date || '') + ' to ' + (booking.end_date || '');
     document.getElementById('bd-total').textContent = '$' + (booking.total || 0).toLocaleString();
 

@@ -219,6 +219,14 @@
         vehicleInfo = window.SITE_CONFIG.vehicles[bookingData.vehicleKey];
       }
 
+      // Two fleet vehicles share the display name "2016 Polaris Slingshot"
+      // (gray vs red), so append the color to confirm which car was booked.
+      function vehicleLabel() {
+        if (!vehicleInfo) return bookingData.vehicleKey;
+        var base = vehicleInfo.name || bookingData.vehicleKey;
+        return vehicleInfo.color ? base + ' (' + vehicleInfo.color + ')' : base;
+      }
+
       // Format dates
       function formatDate(dateStr) {
         if (!dateStr) return '—';
@@ -300,7 +308,7 @@
       html += '<div>';
       html += '<div class="details-section">';
       html += '<h2>📋 Trip Details</h2>';
-      html += '<div class="detail-row"><span class="detail-label">Vehicle</span><span style="font-weight:600;color:var(--white);">' + (vehicleInfo ? vehicleInfo.name : bookingData.vehicleKey) + '</span></div>';
+      html += '<div class="detail-row"><span class="detail-label">Vehicle</span><span style="font-weight:600;color:var(--white);">' + vehicleLabel() + '</span></div>';
       html += '<div class="detail-row"><span class="detail-label">Duration</span><span style="font-weight:600;color:var(--white);">' + getDurationLabel() + '</span></div>';
       html += '<div class="detail-row"><span class="detail-label">Pickup Date</span><span style="font-weight:600;color:var(--white);">' + formatDate(bookingData.startDate) + '</span></div>';
       html += '<div class="detail-row"><span class="detail-label">Pickup Time</span><span style="font-weight:600;color:var(--white);">' + (bookingData.pickupTime || bookingData.startTime || '9:00 AM') + '</span></div>';

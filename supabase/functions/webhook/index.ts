@@ -109,11 +109,21 @@ Deno.serve(async (req) => {
     const amountDiscount = (obj.total_details as Record<string, number>)?.amount_discount || 0;
     const savings = amountDiscount ? (amountDiscount / 100).toFixed(2) : null;
 
-    // Get vehicle name from config
+    // Get vehicle name from config.
+    //
+    // Two fleet vehicles share the exact display name "2016 Polaris Slingshot"
+    // (slingshot_2020 = gray, slingshot_2016_red = red). `vehicleName` stays the
+    // bare name because it is written to bookings.vehicle, where the legacy
+    // fuzzy name matching still depends on it. `vehicleLabel` adds the color and
+    // is what every human-facing email shows, so neither the customer nor the
+    // owner has to guess which of the two cars a booking is for.
     let vehicleName = meta.vehicleKey || 'Vehicle';
+    let vehicleLabel = vehicleName;
     try {
       const { data } = await supabase.from('site_config').select('config').eq('id', 1).single();
-      vehicleName = data?.config?.vehicles?.[meta.vehicleKey]?.name || vehicleName;
+      const v = data?.config?.vehicles?.[meta.vehicleKey];
+      vehicleName = v?.name || vehicleName;
+      vehicleLabel = v?.color ? `${vehicleName} (${v.color})` : vehicleName;
     } catch { /* use key as fallback */ }
 
     // Look up the ID upload + rental-agreement acceptance for this booking.
@@ -190,7 +200,7 @@ Deno.serve(async (req) => {
       <div style="background:#1a1a1a;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:24px;margin-bottom:32px;">
         <div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#FF6B00;margin-bottom:16px;">Booking Summary</div>
         <table width="100%" cellpadding="0" cellspacing="0">
-          ${emailRow('Vehicle', vehicleName)}
+          ${emailRow('Vehicle', vehicleLabel)}
           ${emailRow('Pick-up', meta.startDate + (pickupTimeFormatted ? ' at ' + pickupTimeFormatted : ''))}
           ${emailRow('Return', meta.endDate || meta.startDate)}
           ${emailRow('Duration', meta.durationType === 'hourly' ? (meta.hours || '3') + ' hours' : (meta.durationType === '10hr' || meta.durationType === '9hr') ? '9 hours' : meta.durationType === '24hr' ? '24 hours' : meta.days + ' day' + (Number(meta.days) === 1 ? '' : 's'))}
@@ -214,7 +224,7 @@ Deno.serve(async (req) => {
           ${emailRow('Customer', name)}
           ${emailRow('Email', email)}
           ${emailRow('Phone', phone || '—')}
-          ${emailRow('Vehicle', vehicleName)}
+          ${emailRow('Vehicle', vehicleLabel)}
           ${emailRow('Pick-up', meta.startDate + (pickupTimeFormatted ? ' at ' + pickupTimeFormatted : ''))}
           ${emailRow('Return', meta.endDate || meta.startDate)}
           ${emailRow('Type', meta.durationType === 'hourly' ? (meta.hours || '3') + ' hours' : (meta.durationType === '10hr' || meta.durationType === '9hr') ? '9 hours' : meta.durationType === '24hr' ? '24 hours' : meta.days + ' day' + (Number(meta.days) === 1 ? '' : 's'))}
@@ -227,8 +237,8 @@ Deno.serve(async (req) => {
     `);
 
     await Promise.all([
-      resend.emails.send({ from: FROM, to: email, subject: `✅ Booking confirmed — ${vehicleName} · ${meta.startDate}`, html: customerHtml }),
-      resend.emails.send({ from: FROM, to: [Deno.env.get('OWNER_EMAIL') || 'chrisjohnson839@gmail.com', 'johnsonmilonda37@gmail.com'], subject: `🔔 New booking — ${name} · ${vehicleName} · ${meta.startDate}`, html: ownerHtml })
+      resend.emails.send({ from: FROM, to: email, subject: `✅ Booking confirmed — ${vehicleLabel} · ${meta.startDate}`, html: customerHtml }),
+      resend.emails.send({ from: FROM, to: [Deno.env.get('OWNER_EMAIL') || 'chrisjohnson839@gmail.com', 'johnsonmilonda37@gmail.com'], subject: `🔔 New booking — ${name} · ${vehicleLabel} · ${meta.startDate}`, html: ownerHtml })
     ]);
   }
 
