@@ -227,6 +227,23 @@
         return vehicleInfo.color ? base + ' (' + vehicleInfo.color + ')' : base;
       }
 
+      // Transmission comes straight from the fleet `specs` string, the same
+      // source the vehicle pages and fleet cards read, so a config change flows
+      // here without a code edit. Both 2016 Slingshots are 5-speed manuals; the
+      // 2024 is AutoDrive. Nothing downstream of the vehicle page mentioned this
+      // before, so anyone deep-linked into checkout could buy a manual without
+      // ever being told.
+      function isManualVehicle() {
+        var specs = (vehicleInfo && vehicleInfo.specs ? vehicleInfo.specs : '').toLowerCase();
+        return specs.indexOf('manual') !== -1 || specs.indexOf('5-speed') !== -1;
+      }
+
+      function transmissionLabel() {
+        var specs = (vehicleInfo && vehicleInfo.specs ? vehicleInfo.specs : '');
+        var m = specs.match(/([0-9]+-Speed Manual|AutoDrive|Manual)/i);
+        return m ? m[1] : '';
+      }
+
       // Format dates
       function formatDate(dateStr) {
         if (!dateStr) return '—';
@@ -309,6 +326,9 @@
       html += '<div class="details-section">';
       html += '<h2>📋 Trip Details</h2>';
       html += '<div class="detail-row"><span class="detail-label">Vehicle</span><span style="font-weight:600;color:var(--white);">' + vehicleLabel() + '</span></div>';
+      if (transmissionLabel()) {
+        html += '<div class="detail-row"><span class="detail-label">Transmission</span><span style="font-weight:600;color:var(--white);">' + transmissionLabel() + '</span></div>';
+      }
       html += '<div class="detail-row"><span class="detail-label">Duration</span><span style="font-weight:600;color:var(--white);">' + getDurationLabel() + '</span></div>';
       html += '<div class="detail-row"><span class="detail-label">Pickup Date</span><span style="font-weight:600;color:var(--white);">' + formatDate(bookingData.startDate) + '</span></div>';
       html += '<div class="detail-row"><span class="detail-label">Pickup Time</span><span style="font-weight:600;color:var(--white);">' + (bookingData.pickupTime || bookingData.startTime || '9:00 AM') + '</span></div>';
@@ -337,6 +357,24 @@
         html += '<div>';
         html += '<div style="font-weight:600;color:var(--amber);margin-bottom:6px;">Motorcycle License Required</div>';
         html += '<div style="font-size:14px;color:rgba(255,255,255,0.8);line-height:1.5;">This vehicle requires a valid motorcycle license. Please bring your license to pickup. You will be asked to verify your license before departure.</div>';
+        html += '</div>';
+        html += '</div>';
+        html += '</div>';
+        html += '</div>';
+      }
+
+      // Manual transmission notice. Mirrors the Can-Am motorcycle-license box
+      // above: same shape, same amber treatment. The red Slingshot's own page
+      // already recommends the AutoDrive model to anyone who has not driven a
+      // stick, but that advice never carried through to the point of payment.
+      if (isManualVehicle()) {
+        html += '<div class="details-section">';
+        html += '<div style="background:rgba(255,183,0,0.1);border:1px solid rgba(255,183,0,0.3);border-radius:8px;padding:16px;margin-bottom:16px;">';
+        html += '<div style="display:flex;align-items:start;gap:12px;">';
+        html += '<div style="font-size:24px;">⚙️</div>';
+        html += '<div>';
+        html += '<div style="font-weight:600;color:var(--amber);margin-bottom:6px;">Manual Transmission</div>';
+        html += '<div style="font-size:14px;color:rgba(255,255,255,0.8);line-height:1.5;">This Slingshot has a 5-speed manual transmission and requires experience driving a stick shift. If you have not driven a manual before, our 2024 Slingshot has AutoDrive (automatic) instead. Contact us before your pickup date if you would like to switch.</div>';
         html += '</div>';
         html += '</div>';
         html += '</div>';

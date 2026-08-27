@@ -119,11 +119,17 @@ Deno.serve(async (req) => {
     // owner has to guess which of the two cars a booking is for.
     let vehicleName = meta.vehicleKey || 'Vehicle';
     let vehicleLabel = vehicleName;
+    // Transmission, read from the same fleet `specs` string the vehicle pages
+    // use. Both 2016 Slingshots are 5-speed manuals. Until now no email said so,
+    // so a renter who booked one only found out at handoff.
+    let isManual = false;
     try {
       const { data } = await supabase.from('site_config').select('config').eq('id', 1).single();
       const v = data?.config?.vehicles?.[meta.vehicleKey];
       vehicleName = v?.name || vehicleName;
       vehicleLabel = v?.color ? `${vehicleName} (${v.color})` : vehicleName;
+      const specs = (v?.specs || '').toLowerCase();
+      isManual = specs.includes('manual') || specs.includes('5-speed');
     } catch { /* use key as fallback */ }
 
     // Look up the ID upload + rental-agreement acceptance for this booking.
@@ -210,6 +216,15 @@ Deno.serve(async (req) => {
         </table>
         ${depositCents > 0 ? '<p style="font-size:12px;color:#888;margin:14px 0 0;line-height:1.6;">Your $' + depositDollars + ' reservation deposit is fully refunded to your card after the vehicle is returned in good condition.</p>' : ''}
       </div>
+      ${isManual ? `
+      <div style="background:rgba(255,183,0,0.08);border:1px solid rgba(255,183,0,0.3);border-radius:10px;padding:20px;margin-bottom:32px;">
+        <div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#ffb700;margin-bottom:10px;">Manual Transmission</div>
+        <p style="font-size:14px;color:rgba(255,255,255,0.8);line-height:1.7;margin:0;">
+          Heads up: this Slingshot has a 5-speed manual transmission and requires experience driving a stick shift.
+          If you have not driven a manual before, reply to this email before your pickup date and we will get you
+          into our 2024 Slingshot with AutoDrive instead, at no charge.
+        </p>
+      </div>` : ''}
       <div style="text-align:center;">
         <p style="font-size:13px;color:#555;">Questions? Reply to this email and Chris will get back to you.</p>
       </div>
@@ -224,7 +239,7 @@ Deno.serve(async (req) => {
           ${emailRow('Customer', name)}
           ${emailRow('Email', email)}
           ${emailRow('Phone', phone || '—')}
-          ${emailRow('Vehicle', vehicleLabel)}
+          ${emailRow('Vehicle', vehicleLabel + (isManual ? ' <span style="color:#ffb700;">(manual)</span>' : ''))}
           ${emailRow('Pick-up', meta.startDate + (pickupTimeFormatted ? ' at ' + pickupTimeFormatted : ''))}
           ${emailRow('Return', meta.endDate || meta.startDate)}
           ${emailRow('Type', meta.durationType === 'hourly' ? (meta.hours || '3') + ' hours' : (meta.durationType === '10hr' || meta.durationType === '9hr') ? '9 hours' : meta.durationType === '24hr' ? '24 hours' : meta.days + ' day' + (Number(meta.days) === 1 ? '' : 's'))}
