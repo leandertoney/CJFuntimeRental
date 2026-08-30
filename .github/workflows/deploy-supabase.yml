@@ -188,7 +188,10 @@ jobs:
       # the owner + Leander. No payment path: deposits are a manual Stripe link.
       - name: Deploy Tour Request Function
         run: supabase functions deploy tour-request --project-ref yzdtevrwystezhbmgcwn
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
+      # Direct tour booking: charges the $250 deposit for the published tiers.
       - name: Deploy Tour Checkout Function
         run: supabase functions deploy tour-checkout --project-ref yzdtevrwystezhbmgcwn
         env:
