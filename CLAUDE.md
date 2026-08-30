@@ -255,29 +255,35 @@ domain outside this repo, that is still open.
 link carried an em dash on **18 files**, violating the blanket no-em-dash rule.
 Replaced with a comma everywhere rather than propagated into the new pages.
 
-**AI SCENERY BANDS added 2026-08-30 (Higgsfield Soul 2.0, `soul_2`).** The three
-guest photos are real and stay, but none of them depicts a tour: two are night
-phone snapshots of a lit-up rental downtown and one is a grey strip-mall parking
-lot with guests in winter coats. They read as "night rental in Lancaster" while
-the pages sell a daytime golden-hour ride. Six 3:2 landscape bands now carry that
-mood: `open-road-golden` + `lancaster-overlook` on the hub,
-`gettysburg-fence-road` + `gettysburg-meadow` on the Gettysburg page,
-`northeast-marina` + `northeast-pier` on the North East page.
+**HERO IMAGE on `/tours` is AI scenery as of 2026-08-30 (Higgsfield Soul 2.0,
+`soul_2`): `open-road-golden.jpg`.** It replaced `hero-orange-sling.jpg`, which
+is still on disk but is now UNREFERENCED by any page.
 
-**Hard constraints learned by actually looking at the renders (8 generated, 2
-rejected):** a "crab house dock" came back with the sign reading
-**"MEAON HOSE KHACA"** plus a second garbled sign, and a Gettysburg prompt
-invented a fake granite monument with an unidentifiable dark cylinder standing in
-for the cannon. Both would have put fabricated landmarks on pages that link to
-the REAL Woody's Crab House and describe REAL memorials. So: **no buildings, no
-signage, no text, no monuments, no statues, and no vehicles in any tours scenery
-prompt** - state each as an explicit negative, and open every render before
-shipping it. Same rule the Wikimedia `dest/` photos already proved.
+**Why:** the three guest photos are real but none of them depicts a tour. Two are
+night phone snapshots of a lit-up rental downtown, one is a grey strip-mall
+parking lot with guests in winter coats. They read as "night rental in Lancaster"
+while the pages sell a daytime golden-hour ride. The hero now sets that mood.
 
-**Honesty:** each band carries a `.scene-cap` reading "Illustrative scenery ...
-not a photograph of one of our tours", matching the `dest/` credit line's
-"Photos of the destinations, not of our tours." Alt text describes the landscape
-and never claims it is one of our tours. **Do not remove these captions.**
+**ONE image, deliberately.** Six scenery bands were built and then removed the
+same day on owner instruction: full-width strips on all three pages were too
+large and too many. Do not reintroduce them. If another tours image is ever
+wanted, it is one image with a clear job, not a set.
+
+**Hard constraints learned by looking at the renders (8 generated, 2 rejected):**
+a "crab house dock" came back with its sign reading **"MEAON HOSE KHACA"** plus a
+second garbled sign, and a Gettysburg prompt invented a fake granite monument
+with an unidentifiable dark cylinder standing in for the cannon. Both would have
+put fabricated landmarks on pages that link to the REAL Woody's Crab House and
+describe REAL memorials. So: **no buildings, no signage, no text, no monuments,
+no statues and no vehicles in any tours scenery prompt** - state each as an
+explicit negative, and open every render before shipping it. Scenery only: the
+moment a Slingshot needs to appear, use a real photo, because AI renders that
+vehicle's three-wheel geometry badly and the fleet colours are drift-prone.
+
+**The hero alt text says "the kind of road these tours run on", not that it is a
+photograph of one of our tours.** Keep that distinction in any replacement, the
+same way the Wikimedia `dest/` cards say "Photos of the destinations, not of our
+tours."
 
 **Post-deploy verification, 2026-08-30 (all done except the admin UI):**
 - Prod E2E passed. Validation rejects group_size 9, an unknown route, and a
