@@ -76,12 +76,17 @@ premium service that needs its own landing-page treatment. What changed:
   it is just no longer *shown* all at once.
 - **Repeating CTA bands** every couple of sections, all pointing at the
   availability checker.
-- **Real photos only.** `images/tours/` holds optimized copies of existing site
-  photos (real customers, real cars). Instagram and Facebook were checked and
-  BOTH are login-walled to logged-out sessions, so nothing was scraped - and
-  photos on those pages are not automatically the client's to republish
-  commercially anyway. One deliberate `.photo-slot` placeholder awaits Chris's
-  North East run group photo; swapping it is a `src` change only.
+- **Real photos of PEOPLE AND CARS.** `images/tours/` holds optimized copies of
+  existing site photos (real customers, real cars). Instagram and Facebook were
+  checked and BOTH are login-walled to logged-out sessions, so nothing was
+  scraped - and photos on those pages are not automatically the client's to
+  republish commercially anyway. One deliberate `.photo-slot` placeholder awaits
+  Chris's North East run group photo; swapping it is a `src` change only.
+  **Correction 2026-08-30: an earlier version of this note read "real photos
+  only" and attributed it to the owner's "looks AI-built" feedback. That was a
+  misreading.** Chris's criticism was about the UI/UX of the page, not about
+  photography. AI SCENERY is allowed and is now shipped (see below); real photos
+  remain required wherever a person or one of our vehicles appears.
 - **Darkness softened** via tours-scoped tokens (`--dark:#141312`,
   `--surface:#1e1d1c`, warmer borders, ~88px section padding). The rest of the
   site is untouched.
@@ -249,6 +254,30 @@ domain outside this repo, that is still open.
 **Site-wide em dash cleanup:** the shared footer's "Amish Country - Route 340"
 link carried an em dash on **18 files**, violating the blanket no-em-dash rule.
 Replaced with a comma everywhere rather than propagated into the new pages.
+
+**AI SCENERY BANDS added 2026-08-30 (Higgsfield Soul 2.0, `soul_2`).** The three
+guest photos are real and stay, but none of them depicts a tour: two are night
+phone snapshots of a lit-up rental downtown and one is a grey strip-mall parking
+lot with guests in winter coats. They read as "night rental in Lancaster" while
+the pages sell a daytime golden-hour ride. Six 3:2 landscape bands now carry that
+mood: `open-road-golden` + `lancaster-overlook` on the hub,
+`gettysburg-fence-road` + `gettysburg-meadow` on the Gettysburg page,
+`northeast-marina` + `northeast-pier` on the North East page.
+
+**Hard constraints learned by actually looking at the renders (8 generated, 2
+rejected):** a "crab house dock" came back with the sign reading
+**"MEAON HOSE KHACA"** plus a second garbled sign, and a Gettysburg prompt
+invented a fake granite monument with an unidentifiable dark cylinder standing in
+for the cannon. Both would have put fabricated landmarks on pages that link to
+the REAL Woody's Crab House and describe REAL memorials. So: **no buildings, no
+signage, no text, no monuments, no statues, and no vehicles in any tours scenery
+prompt** - state each as an explicit negative, and open every render before
+shipping it. Same rule the Wikimedia `dest/` photos already proved.
+
+**Honesty:** each band carries a `.scene-cap` reading "Illustrative scenery ...
+not a photograph of one of our tours", matching the `dest/` credit line's
+"Photos of the destinations, not of our tours." Alt text describes the landscape
+and never claims it is one of our tours. **Do not remove these captions.**
 
 **Post-deploy verification, 2026-08-30 (all done except the admin UI):**
 - Prod E2E passed. Validation rejects group_size 9, an unknown route, and a

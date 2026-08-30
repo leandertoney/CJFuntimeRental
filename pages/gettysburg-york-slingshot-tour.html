@@ -386,6 +386,14 @@
     .split-photo { border-radius:14px; overflow:hidden; border:1px solid var(--border); }
     .split-photo img { width:100%; height:auto; display:block; }
 
+    /* Wide scenery band. Illustrative landscape of the region the route covers,
+       not a photograph of one of our tours; alt text and the caption both stay
+       honest about that. */
+    .scene-band { margin:44px 0 0; border-radius:16px; overflow:hidden;
+                  border:1px solid var(--border); position:relative; }
+    .scene-band img { width:100%; aspect-ratio:3/2; object-fit:cover; display:block; }
+    .scene-cap { font-size:11px; color:#6b6764; margin-top:10px; line-height:1.6; }
+
     .photo-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:22px; margin-top:36px; }
     .photo-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden; }
     .photo-card img { width:100%; aspect-ratio:4/5; object-fit:cover; display:block; }
@@ -612,6 +620,16 @@
 
   <section class="lp-section">
     <div class="container">
+      <div class="scene-band">
+        <img src="/images/tours/gettysburg-fence-road.jpg" width="1600" height="1066" loading="lazy" decoding="async"
+             alt="Open farmland and a split rail fence along a country road at golden hour, the kind of ground the Gettysburg route crosses">
+      </div>
+      <p class="scene-cap">Illustrative scenery of the countryside this route runs through, not a photograph of one of our tours.</p>
+    </div>
+  </section>
+
+  <section class="lp-section">
+    <div class="container">
       <h2>What You'll See</h2>
       <div class="photo-grid">
         <div class="photo-card">
@@ -637,6 +655,16 @@
         <div class="lp-card"><h3>York County Ridge Roads</h3><p>The best pure driving in the region. Long curves, real elevation, and in October the hardwood along it turns hard enough to be its own reason to book.</p></div>
         <div class="lp-card"><h3>Downtown Gettysburg</h3><p>Lincoln Square and the streets around it, with buildings that stood through the battle and a solid row of places to eat.</p></div>
       </div>
+    </div>
+  </section>
+
+  <section class="lp-section">
+    <div class="container">
+      <div class="scene-band">
+        <img src="/images/tours/gettysburg-meadow.jpg" width="1600" height="1066" loading="lazy" decoding="async"
+             alt="Wide battlefield meadow at golden hour with a weathered fence line and distant ridges">
+      </div>
+      <p class="scene-cap">Illustrative scenery of the battlefield country around Gettysburg, not a photograph of one of our tours.</p>
     </div>
   </section>
 
