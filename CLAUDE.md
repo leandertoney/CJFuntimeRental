@@ -250,9 +250,30 @@ domain outside this repo, that is still open.
 link carried an em dash on **18 files**, violating the blanket no-em-dash rule.
 Replaced with a comma everywhere rather than propagated into the new pages.
 
-**Still open / next:** request indexing for the three new URLs in GSC after
-deploy; a post-deploy prod E2E (submit -> row -> emails -> delete the test row);
-no admin UI for `tour_requests` yet, so leads live only in email and the DB.
+**Post-deploy verification, 2026-08-30 (all done except the admin UI):**
+- Prod E2E passed. Validation rejects group_size 9, an unknown route, and a
+  missing email; a real POST inserted a row; the `e2e-test` guard skipped the
+  emails as designed; both templates were then sent through Resend and verified
+  in the received headers (DKIM pass on cjfuntimerentals.com, SPF pass,
+  `Reply-To` correct on both). Every test row has been deleted; the table is
+  empty again.
+- Indexing requested in GSC for all three URLs. Each was "URL is unknown to
+  Google" beforehand and is now in the priority crawl queue.
+- **The sitemap had NEVER been submitted to Search Console.** GSC listed zero
+  sitemaps for this property, which is why every URL inspection reported "No
+  referring sitemaps detected" and why the property sits at 8 indexed vs 196 not
+  indexed. `sitemap.xml` itself was fine all along (200, valid XML, 17 URLs,
+  referenced from robots.txt) - it was simply never registered. Submitted
+  2026-08-30: Status Success, 17 pages discovered. Note this is a DOMAIN
+  property, so the field needs the full `https://cjfuntimerentals.com/sitemap.xml`,
+  not a relative path.
+- Watch the Pages report over the next couple of weeks: if the indexed count
+  does not climb off 8 now that a sitemap is registered, the cause is something
+  other than discovery.
+
+**Still open:** no admin UI for `tour_requests`, so leads surface only in the
+owner email and the DB. If a lead email is ever missed there is no second place
+to look; a read-only admin view is the natural next piece.
 
 ## Session 2026-08-19: ADDITIONAL DRIVER support (one optional second driver)
 
