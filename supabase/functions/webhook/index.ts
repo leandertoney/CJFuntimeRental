@@ -16,6 +16,19 @@ const supabase = createClient(
 );
 const resend = new Resend(Deno.env.get('RESEND_API_KEY')!);
 const FROM = "CJ's Fun Time Rental <bookings@cjfuntimerentals.com>";
+// Same pair the new-booking alert uses (Chris + Milonda), read from env so the
+// owner address stays configurable.
+const OWNER_EMAILS = [
+  Deno.env.get('OWNER_EMAIL') || 'chrisjohnson839@gmail.com',
+  'johnsonmilonda37@gmail.com'
+];
+
+// resend@2 forwards keys verbatim and the API reads `reply_to`, not `replyTo`,
+// so a camelCase-only send silently loses the reply address. Both spellings go
+// out; the cast is only to satisfy the SDK's narrower type.
+function replyTo(addr: string) {
+  return { reply_to: addr, replyTo: addr } as unknown as { reply_to: string };
+}
 
 function emailRow(label: string, value: string) {
   return `<tr>
@@ -91,6 +104,196 @@ Deno.serve(async (req) => {
     event = JSON.parse(body);
   } catch {
     return new Response('Invalid JSON', { status: 400 });
+  }
+
+  // ── Guided tour deposit ─────────────────────────────────────────────────────
+  //
+  // MUST come before the rental handler below. Both a rental and a tour arrive
+  // as `checkout.session.completed` on this one endpoint, and the rental path
+  // does a vehicle lookup, writes a `bookings` row and sends rental emails
+  // (pickup instructions, agreements, deposit-refund language). Letting a tour
+  // fall through would write a garbage booking and mail the guest instructions
+  // for a rental they never made. This branch returns before any of that.
+  const _obj = ((event.data as Record<string, unknown>)?.object || {}) as Record<string, unknown>;
+  const _meta = (_obj.metadata || {}) as Record<string, string>;
+
+  if (event.type === 'checkout.session.completed' && _meta.kind === 'tour-deposit') {
+    const obj = _obj;
+    const meta = _meta;
+    const customer = (obj.customer_details || {}) as Record<string, string>;
+    const tourId = meta.tourRequestId;
+    const sessionId = obj.id as string;
+    const paymentIntent = (obj.payment_intent as string) || null;
+
+    if (!tourId) {
+      console.error('[webhook] tour-deposit with no tourRequestId, session', sessionId);
+      return new Response('ok', { status: 200 });
+    }
+
+    // Stripe delivers at-least-once. Only act if this row is not already paid,
+    // so a retry cannot double-block the fleet or send a second email.
+    const { data: existing } = await supabase
+      .from('tour_requests')
+      .select('id, status, deposit_paid_at, name, email, phone, route, preferred_date, group_size, notes')
+      .eq('id', tourId).single();
+
+    if (!existing) {
+      console.error('[webhook] tour-deposit for unknown request', tourId);
+      return new Response('ok', { status: 200 });
+    }
+    if (existing.deposit_paid_at) {
+      return new Response('ok', { status: 200 }); // already handled
+    }
+
+    await supabase.from('tour_requests').update({
+      status: 'paid',
+      deposit_paid_at: new Date().toISOString(),
+      stripe_session_id: sessionId,
+      stripe_payment_intent: paymentIntent
+    }).eq('id', tourId);
+
+    // A paid tour must consume fleet inventory, or a renter could book a car
+    // that is already committed to it. Hold ceil(guests/2) vehicles for the day
+    // by writing the same vehicle_blocks rows the admin panel and the
+    // availability checks already read.
+    const needed = Number(meta.vehiclesNeeded) || Math.ceil(Number(existing.group_size) / 2);
+    const tourDate = meta.tourDate || existing.preferred_date;
+    try {
+      const { data: cfgRow } = await supabase
+        .from('site_config').select('config').eq('id', 1).single();
+      const fleet = Object.keys(cfgRow?.config?.vehicles || {});
+
+      const taken = new Set<string>();
+      const { data: bk } = await supabase
+        .from('bookings').select('vehicle, vehicle_key, start_date, end_date').eq('status', 'confirmed');
+      (bk || []).forEach((b: Record<string, string>) => {
+        if (b.start_date && b.start_date <= tourDate && (b.end_date || b.start_date) >= tourDate) {
+          taken.add(b.vehicle_key || b.vehicle);
+        }
+      });
+      const { data: vb } = await supabase
+        .from('vehicle_blocks').select('vehicle_key, start_date, end_date');
+      (vb || []).forEach((b: Record<string, string>) => {
+        if (b.start_date && b.start_date <= tourDate && (b.end_date || b.start_date) >= tourDate) {
+          taken.add(b.vehicle_key);
+        }
+      });
+
+      const free = fleet.filter(k => !taken.has(k)).slice(0, needed);
+      if (free.length === needed) {
+        await supabase.from('vehicle_blocks').insert(free.map(key => ({
+          vehicle_key: key,
+          start_date: tourDate,
+          end_date: tourDate,
+          reason: 'guided tour',
+          created_by: 'tour-checkout',
+          tour_request_id: tourId
+        })));
+      } else {
+        // Paid but the fleet moved underneath them. The money is real, so the
+        // booking stands and Chris resolves it by hand; loud log, no silent drop.
+        console.error('[webhook] tour ' + tourId + ' paid but only ' + free.length +
+                      ' of ' + needed + ' vehicles free on ' + tourDate);
+      }
+    } catch (err) {
+      console.error('[webhook] tour vehicle blocks failed:', (err as Error).message);
+    }
+
+    // Emails: owner alert + guest confirmation. Failure must not fail the
+    // webhook, or Stripe retries a payment that already succeeded.
+    const ROUTE_LABELS: Record<string, string> = {
+      'north-east-md': 'North East, MD Run (Woody’s Crab House)',
+      'gettysburg-york': 'Gettysburg / York History Route'
+    };
+    const TIERS: Record<number, number> = { 2: 450, 4: 700, 6: 900, 8: 1100 };
+    const guests = Number(existing.group_size);
+    const price = TIERS[guests] || 0;
+    const paid = (Number(meta.depositCents) || 25000) / 100;
+    const balance = price - paid;
+    const routeLabel = ROUTE_LABELS[existing.route] || existing.route;
+    const guestName = existing.name || customer.name || 'there';
+    const esc = (s: unknown) => String(s ?? '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+    try {
+      await resend.emails.send({
+        from: FROM,
+        to: OWNER_EMAILS,
+        ...replyTo(existing.email),
+        subject: `TOUR BOOKED and PAID: ${existing.name}, ${guests} guests, ${routeLabel}, ${tourDate}`,
+        html: `<!DOCTYPE html><html><body style="font-family:Helvetica,Arial,sans-serif;color:#111;background:#f6f6f6;padding:32px;">
+  <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:10px;padding:28px;">
+    <p style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#FF6B00;margin:0 0 8px;">Tour Booked and Paid</p>
+    <h1 style="font-size:22px;margin:0 0 20px;">${esc(existing.name)} paid the deposit</h1>
+    <table style="width:100%;font-size:14px;line-height:1.9;">
+      <tr><td style="color:#666;width:150px;">Date</td><td><strong>${esc(tourDate)}</strong></td></tr>
+      <tr><td style="color:#666;">Route</td><td><strong>${esc(routeLabel)}</strong></td></tr>
+      <tr><td style="color:#666;">Group size</td><td><strong>${guests} guests</strong></td></tr>
+      <tr><td style="color:#666;">Vehicles held</td><td><strong>${needed}</strong></td></tr>
+      <tr><td style="color:#666;">Deposit PAID</td><td><strong>$${paid.toLocaleString()}</strong></td></tr>
+      <tr><td style="color:#666;">Balance due on the day</td><td><strong>$${balance.toLocaleString()}</strong></td></tr>
+      <tr><td style="color:#666;">Email</td><td><a href="mailto:${esc(existing.email)}">${esc(existing.email)}</a></td></tr>
+      <tr><td style="color:#666;">Phone</td><td><a href="tel:${esc(existing.phone)}">${esc(existing.phone)}</a></td></tr>
+    </table>
+    ${existing.notes ? `<p style="font-size:14px;background:#f6f6f6;border-radius:6px;padding:14px;margin:18px 0 0;"><strong>Notes:</strong><br>${esc(existing.notes)}</p>` : ''}
+    <p style="font-size:13px;color:#666;line-height:1.8;margin:22px 0 0;border-top:1px solid #eee;padding-top:18px;">
+      The vehicles for this date are already blocked on the calendar. This is a confirmed tour, not a request.
+    </p>
+  </div></body></html>`
+      });
+    } catch (err) {
+      console.error('[webhook] tour owner email failed:', (err as Error).message);
+    }
+
+    try {
+      await resend.emails.send({
+        from: FROM,
+        to: existing.email,
+        ...replyTo(OWNER_EMAILS[0]),
+        subject: 'Your guided tour is booked',
+        html: `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#0f0f0f;font-family:Helvetica,Arial,sans-serif;color:#fff;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f0f0f;padding:40px 0;"><tr><td align="center">
+  <table width="580" cellpadding="0" cellspacing="0" style="max-width:580px;width:100%;">
+    <tr><td style="padding:0 0 32px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.07);">
+      <a href="https://cjfuntimerentals.com"><img src="https://cjfuntimerentals.com/cj_funtime_logo.png" alt="CJ's Fun Time Rental" width="140" style="display:block;height:auto;margin:0 auto;"></a>
+    </td></tr>
+    <tr><td style="padding:36px 0;">
+      <h1 style="font-family:Impact,Arial,sans-serif;font-size:32px;letter-spacing:2px;margin:0 0 16px;">Your Tour Is Booked</h1>
+      <p style="font-size:15px;color:rgba(255,255,255,0.65);line-height:1.8;margin:0 0 24px;">
+        Thanks ${esc(guestName)}. Your deposit came through and your date is locked in. Chris guides every tour personally and will be in touch before the day with the meeting details.
+      </p>
+      <div style="background:#1a1a1a;border:1px solid rgba(255,107,0,0.3);border-radius:10px;padding:24px;margin-bottom:24px;">
+        <table style="width:100%;font-size:14px;line-height:2;color:rgba(255,255,255,0.85);">
+          <tr><td style="color:#888;width:150px;">Date</td><td>${esc(tourDate)}</td></tr>
+          <tr><td style="color:#888;">Route</td><td>${esc(routeLabel)}</td></tr>
+          <tr><td style="color:#888;">Group size</td><td>${guests} guests</td></tr>
+          <tr><td style="color:#888;">Tour total</td><td>$${price.toLocaleString()}</td></tr>
+          <tr><td style="color:#888;">Deposit paid</td><td style="color:#4ade80;font-weight:700;">$${paid.toLocaleString()}</td></tr>
+          <tr><td style="color:#888;">Due on the day</td><td style="color:#FF6B00;font-weight:700;">$${balance.toLocaleString()}</td></tr>
+        </table>
+      </div>
+      ${guests === 8 ? `<p style="font-size:14px;color:rgba(255,255,255,0.6);line-height:1.8;margin:0 0 20px;background:#1a1a1a;border-radius:8px;padding:16px;">
+        <strong style="color:#fff;">One thing for an 8 guest tour:</strong> it uses our whole fleet, which includes the Can-Am Spyder. Whoever drives that one needs a motorcycle endorsement on their license. Reply and let us know who is driving it and we will sort out the pairing.
+      </p>` : ''}
+      <p style="font-size:14px;color:rgba(255,255,255,0.6);line-height:1.8;margin:0 0 24px;">
+        Rained out? You reschedule free. We would rather move your date than run a tour in the wet. Just reply to this email.
+      </p>
+      <p style="font-size:13px;color:rgba(255,255,255,0.45);line-height:1.8;margin:0;">
+        Questions before the day? Reply here and it reaches us directly.
+      </p>
+    </td></tr>
+    <tr><td style="padding:28px 0 0;border-top:1px solid rgba(255,255,255,0.07);text-align:center;">
+      <p style="font-size:11px;color:#555;margin:0;">CJ's Fun Time Rental &nbsp;&middot;&nbsp; Lancaster, PA &nbsp;&middot;&nbsp; Guided Slingshot Tours</p>
+    </td></tr>
+  </table></td></tr></table>
+</body></html>`
+      });
+    } catch (err) {
+      console.error('[webhook] tour guest email failed:', (err as Error).message);
+    }
+
+    return new Response('ok', { status: 200 });
   }
 
   if (event.type === 'checkout.session.completed') {

@@ -464,7 +464,8 @@
     discounts: 'Discounts',
     calendar:  'Blocked Dates',
     bookings:  'Bookings',
-    leads:     'Leads'
+    leads:     'Leads',
+    tours:     'Tour Requests'
   };
 
   function renderPanel(name) {
@@ -483,7 +484,8 @@
       discounts: renderDiscountsPanel,
       calendar:  renderCalendarPanel,
       bookings:  renderBookingsPanel,
-      leads:     renderLeadsPanel
+      leads:     renderLeadsPanel,
+      tours:     renderTourRequestsPanel
     };
     if (map[name]) map[name]();
   }
@@ -524,6 +526,24 @@
     }
   }
 
+  // Tour requests still needing action. Unlike leads this is NOT a 7-day
+  // window: an unactioned tour request stays outstanding until Chris marks it
+  // paid or closed, because it represents a booking nobody has answered yet.
+  function updateTourBadge(tours) {
+    var badge = document.getElementById('tours-badge');
+    if (!badge) return;
+    var open = (tours || []).filter(function (t) {
+      var s = t.status || 'new';
+      return s !== 'paid' && s !== 'closed';
+    }).length;
+    if (open > 0) {
+      badge.textContent = open;
+      badge.style.display = '';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
   // ── Overview panel ───────────────────────────────────────────
   function renderOverviewPanel() {
     var container = document.getElementById('overview-content');
@@ -531,11 +551,16 @@
 
     Promise.all([
       apiFetch(ADMIN_API + '/bookings').then(function (r) { return r.json(); }),
-      apiFetch(ADMIN_API + '/leads').then(function (r) { return r.json(); })
+      apiFetch(ADMIN_API + '/leads').then(function (r) { return r.json(); }),
+      // Tour requests must not be able to break the overview: this panel
+      // predates them, so a failure here degrades to an empty badge.
+      apiFetch(ADMIN_API + '/tour-requests').then(function (r) { return r.json(); }).catch(function () { return []; })
     ]).then(function (results) {
       var bookings = results[0];
       var leads    = results[1];
+      var tours    = Array.isArray(results[2]) ? results[2] : [];
       updateNotificationBadges(bookings, leads);
+      updateTourBadge(tours);
       container.innerHTML = buildOverviewHTML(bookings, leads);
     }).catch(function () {
       container.innerHTML = '<div class="overview-loading">Could not load data.</div>';
@@ -1549,6 +1574,146 @@
       })
       .catch(function () {
         tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--danger)">Failed to load leads.</td></tr>';
+      });
+  }
+
+  // ── Tour requests panel ──────────────────────────────────────
+  //
+  // Read + triage only. Nothing here charges anyone: V1 tour payment is a
+  // manual Stripe deposit link Chris sends by hand. Before this panel existed
+  // a tour lead lived ONLY in the owner email, so a filtered or deleted email
+  // was a silently lost booking.
+  var TOUR_ROUTES = {
+    'north-east-md':   'North East, MD',
+    'gettysburg-york': 'Gettysburg / York'
+  };
+  var TOUR_STATUSES = ['new', 'confirmed', 'deposit_sent', 'paid', 'closed'];
+  var TOUR_STATUS_LABELS = {
+    'new': 'New', 'confirmed': 'Confirmed', 'deposit_sent': 'Deposit sent',
+    'paid': 'Paid', 'closed': 'Closed'
+  };
+  // Owner-set tiers, mirrored from /tours. Odd group sizes have no published
+  // price, so we show the nearest tier rather than inventing one.
+  var TOUR_TIERS = { 2: 450, 4: 700, 6: 900, 8: 1100 };
+
+  function tourQuote(size) {
+    var n = Number(size);
+    if (TOUR_TIERS[n]) return '$' + TOUR_TIERS[n].toLocaleString();
+    var vehicles = Math.ceil(n / 2);
+    var nearest = TOUR_TIERS[vehicles * 2] || TOUR_TIERS[8];
+    return 'TBC (near $' + nearest.toLocaleString() + ')';
+  }
+
+  function renderTourRequestsPanel() {
+    var tbody  = document.getElementById('tours-tbody');
+    var empty  = document.getElementById('tours-empty');
+    var count  = document.getElementById('tours-count');
+    var expBtn = document.getElementById('tours-export-btn');
+
+    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:32px;color:var(--text-3)">Loading…</td></tr>';
+    empty.classList.add('hidden');
+
+    apiFetch(ADMIN_API + '/tour-requests')
+      .then(function (r) { return r.json(); })
+      .then(function (rows) {
+        if (!Array.isArray(rows)) throw new Error('bad payload');
+        count.textContent = rows.length + ' request' + (rows.length !== 1 ? 's' : '');
+
+        if (!rows.length) {
+          tbody.innerHTML = '';
+          empty.classList.remove('hidden');
+          expBtn.disabled = true;
+          return;
+        }
+        expBtn.disabled = false;
+
+        var html = '';
+        rows.forEach(function (t, idx) {
+          var d = new Date(t.created_at);
+          var dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+          var timeStr = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+          var status = t.status || 'new';
+
+          var opts = TOUR_STATUSES.map(function (v) {
+            return '<option value="' + v + '"' + (v === status ? ' selected' : '') + '>'
+                 + TOUR_STATUS_LABELS[v] + '</option>';
+          }).join('');
+
+          html += '<tr>'
+            + '<td class="lead-num">' + (idx + 1) + '</td>'
+            + '<td><strong>' + esc(t.name) + '</strong>'
+              + (t.notes ? '<br><span class="lead-time">' + esc(t.notes) + '</span>' : '')
+            + '</td>'
+            + '<td class="lead-email"><a href="mailto:' + esc(t.email) + '">' + esc(t.email) + '</a>'
+              + '<br><a href="tel:' + esc(t.phone) + '" class="lead-time">' + esc(t.phone) + '</a></td>'
+            + '<td>' + esc(TOUR_ROUTES[t.route] || t.route) + '</td>'
+            + '<td>' + esc(t.preferred_date || 'Flexible') + '</td>'
+            + '<td>' + esc(String(t.group_size)) + '</td>'
+            + '<td>' + tourQuote(t.group_size) + '</td>'
+            + '<td><select class="tour-status-sel" data-id="' + esc(t.id) + '">' + opts + '</select></td>'
+            + '<td class="lead-date">' + dateStr + ' <span class="lead-time">' + timeStr + '</span></td>'
+            + '<td><button class="btn-icon-danger tour-delete-btn" data-id="' + esc(t.id) + '" title="Delete">✕</button></td>'
+            + '</tr>';
+        });
+        tbody.innerHTML = html;
+
+        tbody.querySelectorAll('.tour-status-sel').forEach(function (sel) {
+          sel.addEventListener('change', function () {
+            var id = this.getAttribute('data-id');
+            var prev = this.getAttribute('data-prev') || '';
+            var next = this.value;
+            var el = this;
+            apiFetch(ADMIN_API + '/tour-requests/' + id, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ status: next })
+            })
+              .then(function (r) { return r.json(); })
+              .then(function (data) {
+                if (!data.ok) { alert(data.error || 'Could not update the status.'); if (prev) el.value = prev; }
+              })
+              .catch(function () { alert('Could not update the status.'); if (prev) el.value = prev; });
+          });
+          sel.setAttribute('data-prev', sel.value);
+        });
+
+        tbody.querySelectorAll('.tour-delete-btn').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var id = this.getAttribute('data-id');
+            if (!confirm('Delete this tour request? This cannot be undone.')) return;
+            apiFetch(ADMIN_API + '/tour-requests/' + id, { method: 'DELETE' })
+              .then(function (r) { return r.json(); })
+              .then(function (data) { if (data.ok) renderTourRequestsPanel(); });
+          });
+        });
+
+        expBtn.onclick = function () {
+          var head = [['#','Name','Email','Phone','Route','Preferred date','Group size','Price','Status','Received','Notes']];
+          rows.forEach(function (t, i) {
+            head.push([
+              i + 1, t.name, t.email, t.phone,
+              TOUR_ROUTES[t.route] || t.route,
+              t.preferred_date || 'Flexible',
+              t.group_size, tourQuote(t.group_size),
+              TOUR_STATUS_LABELS[t.status || 'new'],
+              new Date(t.created_at).toLocaleString(),
+              t.notes || ''
+            ]);
+          });
+          var csv = head.map(function (r) {
+            return r.map(function (v) { return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; }).join(',');
+          }).join('\n');
+          var blob = new Blob([csv], { type: 'text/csv' });
+          var url  = URL.createObjectURL(blob);
+          var a    = document.createElement('a');
+          a.href = url;
+          a.download = 'cjfr-tour-requests-' + new Date().toISOString().slice(0,10) + '.csv';
+          a.click();
+          URL.revokeObjectURL(url);
+        };
+      })
+      .catch(function () {
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:32px;color:var(--danger)">Failed to load tour requests.</td></tr>';
       });
   }
 

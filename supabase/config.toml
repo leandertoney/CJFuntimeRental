@@ -108,3 +108,9 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/tour-request/deno.json"
 entrypoint = "./functions/tour-request/index.ts"
+
+[functions.tour-checkout]
+enabled = true
+verify_jwt = false
+import_map = "./functions/tour-checkout/deno.json"
+entrypoint = "./functions/tour-checkout/index.ts"

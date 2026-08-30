@@ -645,8 +645,8 @@
   <!-- REQUEST FORM -->
   <section class="lp-section" id="request">
     <div class="container">
-      <h2>Request a Date</h2>
-      <p>Pick a date and we will tell you right here whether the vehicles are free. Nothing is charged on this form.</p>
+      <h2>Book Your Date</h2>
+      <p>Pick a date and we will tell you right here whether the vehicles are free. Groups of 2, 4, 6 or 8 can book on the spot with a $250 deposit. Any other size sends a request and Chris quotes you by hand.</p>
       <form class="tour-form" id="tourForm" novalidate>
         <div class="form-grid">
           <div class="field">
@@ -692,10 +692,11 @@
           </div>
           <div class="field full">
             <button type="submit" class="btn btn-primary" id="tf-submit" style="font-size:15px;padding:15px 32px;">Send Tour Request &rarr;</button>
+            <p class="quote-line" id="tf-pay-note" style="margin-top:12px;"></p>
           </div>
         </div>
         <div class="form-status" id="tf-status" role="status" aria-live="polite"></div>
-        <p class="form-note">No payment is taken on this form. Availability is live, so if your date shows as open it is yours to book. Chris sends a secure link for the $250 deposit, the balance is due the day of the ride, and rain means a free reschedule.</p>
+        <p class="form-note">Availability is live, so a date that shows as open is genuinely open. Groups of 2, 4, 6 or 8 pay a $250 deposit now and the balance on the day of the ride. Odd group sizes are quoted by hand, so those send a request and nothing is charged. Rain means a free reschedule either way.</p>
       </form>
     </div>
   </section>
@@ -768,6 +769,30 @@
     var form = document.getElementById('tourForm');
     var statusEl = document.getElementById('tf-status');
     var submit = document.getElementById('tf-submit');
+    // Group sizes that can pay online. Mirrors TIERS in tour-checkout; the
+    // server re-derives the price, this only decides which button to show.
+    var DIRECT_TIERS = { 2: 450, 4: 700, 6: 900, 8: 1100 };
+
+    function syncButton() {
+      if (!submit.disabled) submit.textContent = buttonLabel();
+      var note = document.getElementById('tf-pay-note');
+      if (!note) return;
+      var n = parseInt(sizeEl.value, 10);
+      note.textContent = DIRECT_TIERS[n]
+        ? (dateEl.value
+            ? 'Groups of ' + n + ' book instantly: $250 deposit now, $' +
+              (DIRECT_TIERS[n] - 250).toLocaleString() + ' due the day of the ride.'
+            : 'Pick a date and you can book this group size instantly.')
+        : 'Groups of ' + n + ' are quoted by hand, so this sends a request rather than charging you.';
+    }
+
+    function buttonLabel() {
+      var n = parseInt(sizeEl.value, 10);
+      var hasDate = !!dateEl.value;
+      return (DIRECT_TIERS[n] && hasDate)
+        ? 'Book and Pay $250 Deposit \u2192'
+        : 'Send Tour Request \u2192';
+    }
     var sizeEl = document.getElementById('tf-size');
     var quoteEl = document.getElementById('tf-quote');
     var dateEl = document.getElementById('tf-date');
@@ -846,7 +871,7 @@
           needed + '. Try another date or a smaller group.';
       }
     }
-    dateEl.addEventListener('change', renderAvailability);
+    dateEl.addEventListener('change', function () { renderAvailability(); syncButton(); });
 
     function renderQuote() {
       var size = parseInt(sizeEl.value, 10);
@@ -858,8 +883,9 @@
         quoteEl.innerHTML = 'Needs ' + vehicles + ' vehicles. Chris confirms your exact quote, nearest tier <strong>' + money(TIERS[vehicles * 2]) + '</strong>';
       }
     }
-    sizeEl.addEventListener('change', function () { renderQuote(); renderAvailability(); });
+    sizeEl.addEventListener('change', function () { renderQuote(); renderAvailability(); syncButton(); });
     renderQuote();
+    syncButton();
 
     function show(kind, msg) {
       statusEl.className = 'form-status ' + kind;
@@ -911,24 +937,44 @@
       if (!payload.email || payload.email.indexOf('@') === -1) { return show('error', 'Please enter a valid email address.'); }
       if (!payload.phone) { return show('error', 'Please enter a phone number so Chris can reach you.'); }
 
-      submit.disabled = true;
-      submit.textContent = 'Sending...';
-      show('success', 'Sending your request...');
+      // Two paths. The published tiers (2/4/6/8) have a price, so those book and
+      // pay the $250 deposit on the spot. Odd sizes have NO published price, so
+      // they stay a request and Chris quotes by hand. Never invent a price.
+      var canBookNow = DIRECT_TIERS[payload.group_size] && payload.preferred_date;
 
-      fetch('https://yzdtevrwystezhbmgcwn.supabase.co/functions/v1/tour-request', {
+      submit.disabled = true;
+      submit.textContent = canBookNow ? 'Taking you to checkout...' : 'Sending...';
+      show('success', canBookNow ? 'Holding your date...' : 'Sending your request...');
+
+      var endpoint = canBookNow ? 'tour-checkout' : 'tour-request';
+      fetch('https://yzdtevrwystezhbmgcwn.supabase.co/functions/v1/' + endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       })
         .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
         .then(function (res) {
+          // The server can send an even-size booking back to the request form
+          // (date gone, config unreadable). Honour that rather than failing.
+          if (res.d && res.d.useRequestForm) {
+            return fetch('https://yzdtevrwystezhbmgcwn.supabase.co/functions/v1/tour-request', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            }).then(function (r2) { return r2.json(); }).then(function (d2) {
+              if (d2.error) throw new Error(d2.error);
+              form.querySelector('.form-grid').style.display = 'none';
+              show('success', 'Request received. Chris will confirm your date and price shortly. Check your email for a copy.');
+            });
+          }
           if (!res.ok || res.d.error) { throw new Error(res.d.error || 'Something went wrong.'); }
+          if (res.d.url) { window.location.href = res.d.url; return; }
           form.querySelector('.form-grid').style.display = 'none';
           show('success', 'Request received. Chris will be in touch shortly to confirm your date. Check your email for a copy.');
         })
         .catch(function (err) {
           submit.disabled = false;
-          submit.textContent = 'Send Tour Request \u2192';
+          submit.textContent = buttonLabel();
           show('error', err.message + ' You can also call us directly.');
         });
     });

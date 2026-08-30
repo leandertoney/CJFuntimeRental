@@ -255,6 +255,70 @@ domain outside this repo, that is still open.
 link carried an em dash on **18 files**, violating the blanket no-em-dash rule.
 Replaced with a comma everywhere rather than propagated into the new pages.
 
+## Session 2026-08-30 (part 2): TOUR ADMIN PANEL + DIRECT TOUR BOOKING
+
+**Two things shipped together: tour leads are now visible in the admin, and the
+published tiers can pay their deposit online instead of waiting for a manual
+Stripe link.**
+
+### Admin panel: Tour Requests
+`GET/PUT/DELETE /tour-requests` on the admin function, and a panel cloned from
+the Leads idiom. PUT accepts **status only**, validated against the same five
+values as the DB CHECK, so a bad write is a 400 rather than a Postgres 500. The
+nav badge counts anything not `paid`/`closed` - deliberately NOT a 7-day window
+like Leads, because an unanswered tour request stays outstanding until someone
+actions it. The overview's `/tour-requests` fetch has its own `.catch` returning
+`[]`: this panel postdates the overview and must not be able to break it.
+
+### Direct booking: the design decisions that matter
+**Even group sizes only.** 2/4/6/8 have published tiers, so they pay a $250
+deposit online. Odd sizes have NO published price (`quoteFor()` says "to be
+confirmed"), so they still send a request and Chris quotes by hand. The server
+rejects an odd size with `useRequestForm: true` and the page silently falls back
+to the request endpoint rather than erroring. **Never invent a price for 3, 5 or 7.**
+
+**`tour-checkout` is a SEPARATE function and `checkout/index.ts` was not
+touched.** The rental checkout has a hard gate requiring a completed
+`id_uploads` row plus baseCents verification against rental duration math. A
+tour has neither, so routing tours through it would mean carving holes in the
+rental money path. Keep them apart.
+
+**The webhook branch is the highest-risk piece in this change.** Rentals and
+tours both arrive as `checkout.session.completed` on the one endpoint. The tour
+branch keys off `metadata[kind] === 'tour-deposit'`, sits BEFORE the rental
+handler and returns early. Without it a tour payment would run the rental path:
+vehicle lookup, a garbage `bookings` row, and pickup/agreement emails for a
+rental the guest never made. **Do not move it below the rental handler.**
+
+**A paid tour consumes fleet inventory.** On payment the webhook writes
+`ceil(guests/2)` `vehicle_blocks` rows for the date, tagged `tour_request_id`,
+so the existing availability reads (rental widget, admin, tour form) all see the
+cars as taken. Without this a renter could book a car already committed to a
+tour. If the fleet moved between checkout and webhook the payment still stands
+and the shortfall is logged loudly for Chris rather than silently dropped.
+
+**Idempotency:** Stripe delivers at-least-once. `deposit_paid_at` gates the
+whole branch, and a partial unique index on `stripe_session_id` means a retry
+cannot double-block the fleet or send a second confirmation.
+
+**Availability is re-checked server side in `tour-checkout`** before a session is
+created, mirroring `vehiclesFreeOn()` in `pages/tours.html`. It deliberately does
+NOT call `check-availability`, which is a documented permanent no-op with a fuzzy
+vehicle-name bug. Verified against live data: correctly returns 0 free on
+fleet-wide blocked dates, 1/2/3 on partially booked days and 4 on an open date.
+
+**8-guest tours are bookable directly**, and the confirmation email states that
+the full fleet includes the Can-Am Spyder whose driver needs an M endorsement.
+That requirement is never hidden behind the payment.
+
+**Migration `20260830000001_tour_deposits.sql` has its OWN CI step, placed before
+every function deploy.** Same gap that has now bitten four features.
+
+**Known deploy-ordering race (accepted, not fixed):** Netlify and CI deploy
+independently, so there is a window where the new `tours.html` posts to
+`tour-checkout` before it exists. It fails closed with an error message and the
+guest can still call; same class as the additional-driver note.
+
 **HERO IMAGE on `/tours` is AI scenery as of 2026-08-30 (Higgsfield Soul 2.0,
 `soul_2`): `open-road-golden.jpg`.** It replaced `hero-orange-sling.jpg`, which
 is still on disk but is now UNREFERENCED by any page.

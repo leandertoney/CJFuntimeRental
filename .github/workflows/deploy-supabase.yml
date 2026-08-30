@@ -115,6 +115,16 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
+      - name: Apply tour deposits migration
+        run: |
+          SQL=$(jq -Rs . < supabase/migrations/20260830000001_tour_deposits.sql)
+          curl -sf -X POST "https://api.supabase.com/v1/projects/yzdtevrwystezhbmgcwn/database/query" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"query\": $SQL}"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
       - name: Deploy Config Function
         run: supabase functions deploy config --project-ref yzdtevrwystezhbmgcwn
         env:
@@ -178,5 +188,8 @@ jobs:
       # the owner + Leander. No payment path: deposits are a manual Stripe link.
       - name: Deploy Tour Request Function
         run: supabase functions deploy tour-request --project-ref yzdtevrwystezhbmgcwn
+
+      - name: Deploy Tour Checkout Function
+        run: supabase functions deploy tour-checkout --project-ref yzdtevrwystezhbmgcwn
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}

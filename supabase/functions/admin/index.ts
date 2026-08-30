@@ -339,6 +339,41 @@ Deno.serve(async (req) => {
     return json({ ok: true });
   }
 
+  // ── Tour requests ───────────────────────────────────────────────────────────
+  //
+  // Guided-tour leads. Until this panel existed a tour request surfaced ONLY in
+  // the owner email, so a missed or filtered email meant a silently lost
+  // booking. This is the second place to look.
+  if (path === '/tour-requests' && req.method === 'GET') {
+    const { data, error } = await supabase
+      .from('tour_requests').select('*').order('created_at', { ascending: false });
+    if (error) return json({ error: error.message }, 500);
+    return json(data);
+  }
+
+  // Status only. The DB CHECK constraint pins the allowed values; mirroring the
+  // list here turns a bad client write into a 400 instead of a 500 from Postgres.
+  if (path.match(/^\/tour-requests\/[^/]+$/) && req.method === 'PUT') {
+    const id = path.replace('/tour-requests/', '');
+    const body = await req.json().catch(() => ({}));
+    const status = String(body.status || '');
+    const ALLOWED = ['new', 'confirmed', 'deposit_sent', 'paid', 'closed'];
+    if (!ALLOWED.includes(status)) {
+      return json({ error: 'Status must be one of: ' + ALLOWED.join(', ') }, 400);
+    }
+    const { error } = await supabase
+      .from('tour_requests').update({ status }).eq('id', id);
+    if (error) return json({ error: error.message }, 500);
+    return json({ ok: true });
+  }
+
+  if (path.match(/^\/tour-requests\/[^/]+$/) && req.method === 'DELETE') {
+    const id = path.replace('/tour-requests/', '');
+    const { error } = await supabase.from('tour_requests').delete().eq('id', id);
+    if (error) return json({ error: error.message }, 500);
+    return json({ ok: true });
+  }
+
   // ── Bookings ────────────────────────────────────────────────────────────────
   if (path === '/bookings' && req.method === 'GET') {
     const { data, error } = await supabase.from('bookings').select('*').order('created_at', { ascending: false });

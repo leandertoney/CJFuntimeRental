@@ -87,6 +87,10 @@
           <svg viewBox="0 0 20 20" fill="currentColor"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/></svg>
           <span>Leads<span id="leads-badge" class="nav-badge" style="display:none;"></span></span>
         </a>
+        <a href="#" class="nav-link" data-section="tours">
+          <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/></svg>
+          <span>Tour Requests<span id="tours-badge" class="nav-badge" style="display:none;"></span></span>
+        </a>
         <a href="#" class="nav-link" data-section="emails">
           <svg viewBox="0 0 20 20" fill="currentColor"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/></svg>
           <span>Email Templates</span>
@@ -318,6 +322,37 @@
               <tbody id="leads-tbody"></tbody>
             </table>
             <div id="leads-empty" class="leads-empty hidden">No leads yet. They'll appear here when visitors submit the discount form.</div>
+          </div>
+        </section>
+
+        <!-- PANEL: Tour Requests -->
+        <section id="panel-tours" class="admin-panel">
+          <div class="panel-intro">
+            <p>Guided group tour requests from /tours. Nothing here is charged automatically: confirm the date, send the deposit link, then mark the status as you go.</p>
+          </div>
+          <div id="tours-toolbar" class="leads-toolbar">
+            <span id="tours-count" class="leads-count"></span>
+            <button id="tours-export-btn" class="btn-export">Export CSV</button>
+          </div>
+          <div id="tours-table-wrap" class="leads-table-wrap table-scroll-wrapper">
+            <table class="leads-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Name</th>
+                  <th>Contact</th>
+                  <th>Route</th>
+                  <th>Date</th>
+                  <th>Group</th>
+                  <th>Price</th>
+                  <th>Status</th>
+                  <th>Received</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="tours-tbody"></tbody>
+            </table>
+            <div id="tours-empty" class="leads-empty hidden">No tour requests yet. They'll appear here when someone submits the form on /tours.</div>
           </div>
         </section>
 
