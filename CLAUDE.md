@@ -1,4 +1,258 @@
-# CJ Funtime Rentals - Project State (Updated 2026-08-19)
+# CJ Funtime Rentals - Project State (Updated 2026-08-29)
+
+## Session 2026-08-29: GUIDED TOURS product (built, NOT deployed - awaiting approval)
+
+**New product line: owner-guided group Slingshot tours.** Distinct from the
+rental business: the customer still drives, but Chris plans and leads the whole
+day. Built in full and verified end to end; **nothing is pushed**, because in
+this repo push = deploy on both Netlify (static) and CI (functions).
+
+**Pricing, owner-set. Do not derive, discount or recompute these:**
+
+| Guests | Vehicles | Guide logistics | Price |
+|---|---|---|---|
+| 2 | 1 | Chris guides from his own separate vehicle | **$450** (marketed "Private Tour") |
+| 4 | 2 | Chris guides from his own separate vehicle | **$700** |
+| 6 | 3 | Chris leads driving the 4th vehicle | **$900** |
+| 8 | 4 (full fleet) | Chris guides from his own separate vehicle | **$1,100** |
+
+Guide, route, coordination and **fuel for the guide vehicle are included in
+these prices and must never appear as a separate line item.**
+
+**HARD RULE: every tour is a minimum of ONE HOUR of riding EACH WAY.** No
+in-county loops are ever sold as tours; that is what the rental product and
+`/scenic-routes-lancaster-pa` are for. Every route page states its ride time.
+
+**Exactly two routes are live.** North East, MD (about 1 hr each way, anchored
+at Woody's Crab House) and Gettysburg / York (1 hr+ each way, historical stops).
+**Michaux and Brandywine are deliberately NOT built** - they are pending the
+owner road-testing them. Do not create pages for them, and do not add a route
+until Chris has personally ridden it.
+
+**LIVE AVAILABILITY, no manual date confirmation.** Owner decision 2026-08-29:
+there is no separate tour calendar and Chris does not "check whether he is
+free." **If a vehicle is available to rent that day it is available to tour**,
+because he runs the pickups and drop-offs either way. So the form reads the same
+public `window.SITE_CONFIG` the rental widget uses (fleet-wide `blockedDates`,
+confirmed `bookings`, per-vehicle `vehicleBlocks`) and tells the guest on the
+spot. A tour needs `ceil(guests / 2)` vehicles free on the date; the overlap
+rules mirror `booking-widget.js` `isDateRangeAvailable()`. **If SITE_CONFIG
+fails to load it says "we will confirm this date with you directly" rather than
+guessing either way.** Verified against live data: a fleet-wide blocked date
+returns 0 free, and a single blocked vehicle correctly rules out only the
+8-guest full-fleet tour while leaving 2/4/6 bookable.
+
+**V1 payment is still MANUAL. There is NO tour checkout and no automated charging.**
+The request form creates a lead; a Stripe deposit link ($250, balance due day of
+ride) is sent separately by a human.
+`tour_requests` therefore has **no money column at all**, and the tour flow does
+not touch `checkout/index.ts`, the price-verification math, or the webhook. Keep
+it that way unless tour payments are scoped as their own task.
+
+**Weather policy:** free reschedule for rain, stated on all three pages.
+
+**The fleet is 3 Slingshots + 1 Can-Am Spyder, so "every tour vehicle is a
+Slingshot" is FALSE at 8 guests.** The brief's phrase "Chris leads driving the
+4th Slingshot" describes a vehicle that does not exist; at full fleet one guest
+pair is necessarily in the Spyder, which requires a motorcycle endorsement (the
+repo already has per-driver M-endorsement verification for exactly this). Copy
+now says: no endorsement needed up to 6 guests (Slingshots only), and the
+8-guest full-fleet tour includes the Spyder whose driver needs an M endorsement.
+The pricing table's logistics column says "the fourth vehicle", not "the fourth
+Slingshot". **Do not restore the Slingshot-only claim.**
+
+**REDESIGNED 2026-08-29 for conversion, not documentation.** The first build was
+accurate but read like a spec sheet: a wall of dark, ~2000 words of prose per
+page, one CTA at the very bottom. Owner feedback was that it looked
+functionality-first and AI-built, with no glanceability, and that this is a
+premium service that needs its own landing-page treatment. What changed:
+- **Photo-led heroes** with a "glance bar" of chips (price / group size / ride
+  time / owner-guided / free reschedule) and the primary CTA **above the fold**.
+  The hub uses `cj_orange_sling.jpg`; each route page uses **its own route map as
+  the hero**, which also satisfies "map should be near the top."
+- **Copy roughly halved.** The 8-9 stop itineraries became a compact `<details>`
+  timeline: every stop scannable in seconds, full prose one tap away. The word
+  counts barely moved because that text still exists in the DOM (good for SEO) -
+  it is just no longer *shown* all at once.
+- **Repeating CTA bands** every couple of sections, all pointing at the
+  availability checker.
+- **Real photos only.** `images/tours/` holds optimized copies of existing site
+  photos (real customers, real cars). Instagram and Facebook were checked and
+  BOTH are login-walled to logged-out sessions, so nothing was scraped - and
+  photos on those pages are not automatically the client's to republish
+  commercially anyway. One deliberate `.photo-slot` placeholder awaits Chris's
+  North East run group photo; swapping it is a `src` change only.
+- **Darkness softened** via tours-scoped tokens (`--dark:#141312`,
+  `--surface:#1e1d1c`, warmer borders, ~88px section padding). The rest of the
+  site is untouched.
+- **Google reviews strip** rendered from `SITE_CONFIG.googleReviews`, which was
+  already loading on the hub; the section stays `hidden` if none load.
+
+**Headless Chrome has a ~500px MINIMUM viewport.** Screenshots taken with
+`--window-size=390,...` render a **500px-wide page cropped to 390**, which looks
+exactly like a horizontal-overflow bug and is not one. Verified with an injected
+probe: at 390 the page reported `vw=500 scrollW=500`, zero offending elements.
+**Do not "fix" phantom mobile overflow found this way** - test at >=500px, or
+measure `scrollWidth` vs `clientWidth` rather than trusting the image.
+
+**GROUP-INTENT SEO, and what GSC actually showed (2026-08-29).** Owner asked to
+rank for "things groups can do" / "group slingshot rentals". **Pulled the real
+Search Console data rather than guessing** (3 months, 477 clicks, 3.67K
+impressions, 267 queries, avg position 9.6):
+- **Every single top query is a vehicle-name search** ("slingshot rental" 13
+  clicks/159 impr, "slingshot rental near me", "rent a slingshot near me",
+  "can am rental", "can am spyder rental"). **ZERO group or occasion queries
+  appear anywhere in the 267.** GSC only reports queries the site already
+  appears for, so this is proof of *absence of coverage*, not absence of demand.
+  There was no keyword list to mine; targeting had to be created, then measured.
+- **Avg position 9.6 is a blended average across 267 queries, NOT page-one
+  standing.** The site ranks 1-3 for brand terms ("cj rentals", "cjs rental")
+  and much deeper for competitive ones. Do not quote 9.6 to the client as
+  "we're on page one."
+- Monthly: clicks/impressions/CTR all climbed May -> July then flattened into
+  August; position improved (line trending down) and held. One spike,
+  **Saturday Aug 1: 15 clicks / 87 impressions**, roughly 3x a normal day, most
+  likely summer-weekend rental intent, not attributable to a site change.
+
+**Occasion targeting went INTO the three existing pages. No occasion pages were
+created** (`/tours/bachelorette-party`, `/tours/team-building` etc.) - that is
+exactly the thin-doorway pattern the `slingshot-rental-near-*` set represents and
+the brief banned repeating it. What was added: "Group" leads all three titles; a
+"Built for Groups" section (bachelorette/bachelor, birthdays, team outings,
+visiting family) tied to real mechanics; **4 new FAQs, visible and mirrored in
+FAQPage schema** (incl. "Can we rent multiple Slingshots as a group?", answered
+honestly as "group bookings run as guided tours" rather than inventing an
+unguided multi-car product); `audience` / `PeopleAudience` on the LocalBusiness,
+Product and TouristTrip blocks; one occasion line per route page.
+
+**Expectation to keep setting with the client: broad terms like "group
+activities Lancaster PA" are owned by aggregator listicles** (Discover Lancaster,
+TripAdvisor, Yelp, Experience Lancaster). A 4-vehicle business does not outrank
+those with on-page work. **The real lever is getting CJ's LISTED ON those
+pages** - Discover Lancaster accepts submissions. That is owner outreach, not a
+code task. On-page targeting aims at the winnable modified terms instead
+("group slingshot rental lancaster pa", "slingshot tour bachelorette party").
+
+**Destination photos come from Wikimedia Commons, vetted one by one.**
+`images/tours/dest/` holds Conowingo Dam (CC0), the view from Little Round Top
+(CC BY-SA 4.0) and the Pennsylvania Memorial (CC BY-SA 4.0), each shown as a
+"What You'll See" card with a `.credit` attribution line beneath the grid, and
+labeled "photos of the destinations, not of our tours" so nothing implies they
+are Chris's own. **Three candidates were downloaded and REJECTED after actually
+looking at them:** a "Pennsylvania State Memorial" that turned out to be a
+vintage postcard illustration with an archive number scrawled on it; a
+replacement that was a washed-out slide scan with dust spots; and a Conowingo
+bald eagle that was photographed eating a bloody fish. **Always open a stock
+image before shipping it - the filename and license tell you nothing about
+whether it is usable.** Little Round Top also needed a bottom-anchored crop: a
+centered 4:5 crop of a landscape photo produced a card that was almost entirely
+empty sky. Attribution lines are a license condition on the CC BY-SA images and
+must not be removed.
+
+**Outbound links to Woody's Crab House and the NPS Gettysburg auto tour are
+deliberate** - useful to the reader and a legitimate pretext for partnership
+outreach. **Destination LOGOS were deliberately NOT used**: they are third-party
+trademarks and would imply an affiliation that does not exist. The Woody's
+mention is explicitly labeled "an independent restaurant, not affiliated with
+us." Same reason no destination photos were used: licensing.
+
+**New pieces:**
+- `supabase/migrations/20260829000001_tour_requests.sql` - the leads table. RLS
+  **ENABLED with ZERO policies**, same posture as the other customer tables:
+  all access is service-role. CHECK constraints pin `group_size` to 2-8 and
+  `route` to the two live slugs, so a bad route slug is rejected by the DB.
+- `supabase/functions/tour-request/index.ts` - validates, inserts, emails the
+  owner + Leander and a confirmation to the guest. Registered in `config.toml`
+  with `verify_jwt = false` like the other public functions.
+- `pages/tours.html` (`/tours`), `pages/north-east-md-slingshot-tour.html`
+  (`/tours/north-east-md-slingshot-tour`), `pages/gettysburg-york-slingshot-tour.html`
+  (`/tours/gettysburg-york-slingshot-tour`). Pretty URLs in `netlify.toml`.
+
+**`resend@2` is a PASSTHROUGH and silently drops `replyTo`.** Verified by
+intercepting the SDK's own fetch: whatever key you hand `emails.send()` goes
+into the API JSON verbatim, and the Resend API reads **`reply_to`**, not
+`replyTo`. A camelCase-only send loses the reply address entirely, which on this
+SEND-ONLY domain means customer replies vanish. `tour-request` sends **both
+spellings** via a `replyTo()` helper. **Confirmed in the raw headers of a
+received message: `Reply-To: leandertoney@gmail.com`, DKIM and SPF pass.**
+Any new Resend send on this project must do the same.
+
+**The test-data guard here is deliberately NARROWER than the scheduled emails.**
+The crons skip any address containing "test", which is fine for outbound. But
+the owner email is the **only** way a tour lead surfaces (there is no admin UI
+for `tour_requests` yet), so a real customer at `contestwinner@gmail.com` would
+be saved and then silently never reported. `tour-request` skips only
+`@example.com` or an explicit `source === 'e2e-test'`. **Do not "fix" this to
+match the cron idiom.**
+
+**`TOUR_OWNER_RECIPIENTS` env var exists solely so an E2E test can run without
+mailing the real client a fake booking.** Unset in production, which falls back
+to chrisjohnson839@gmail.com + leandertoney@gmail.com.
+
+**CI: both new steps were added, because this repo does NOT auto-apply
+migrations or auto-deploy new functions** - only explicitly listed steps. The
+migration step runs BEFORE the function deploys. This same gap has now bitten
+three features (deposit, review email, additional driver); the tours migration
+step is placed with the others above `Deploy Config Function`.
+
+**Route maps are STATIC IMAGES, not iframes, and that was forced by testing.**
+Three things were found in order, each killing the previous approach:
+1. `https://www.google.com/maps?q=...&output=embed` returns **404 with
+   `X-Frame-Options: SAMEORIGIN`** - Google refuses to be framed cross-origin
+   without a paid Maps Embed API key. It renders a blank white box, with no
+   console error. Every keyless Google variant behaves the same.
+2. OpenStreetMap's `/export/embed.html` frames fine (HTTP 200, no XFO) but its
+   current viewer **requires WebGL**, and without it paints a pale-blue
+   "your browser does not support WebGL" panel - glaring on a dark page, and a
+   real risk for older devices and privacy browsers.
+3. So both maps are now pre-rendered JPEGs in `images/tours/`, composed from raw
+   OSM raster tiles (`tile.openstreetmap.org`, plain PNGs, no JS/WebGL/API key)
+   with the route line drawn in brand orange. They render everywhere, need no
+   third-party runtime, and add no CSP surface.
+
+**Consequences: `netlify.toml`'s CSP stays `frame-src https://js.stripe.com`
+only** (no third-party frame source was ultimately needed), and OSM's licence
+requires the **"Map data (c) OpenStreetMap contributors" attribution that is
+under each map - do not remove it.** Each map also carries a plain link out to
+Google Maps directions, which needs no key because it is a normal link, not a
+frame. To regenerate a map, rebuild from tiles at zoom 10 rather than
+re-introducing an embed.
+
+**How it was verified before the gate** (no prod writes at any point): a
+throwaway local Postgres + a real PostgREST + a small proxy that mints a
+`service_role` JWT, with the actual Edge Function run under plain `deno run`
+against the real Resend key. Migration applied **3x, idempotent, zero errors**.
+RLS confirmed on with 0 policies. Constraints confirmed rejecting group_size 1
+and 9 and the route slug `michaux`. Full chain **submit -> 200 -> row in DB ->
+both emails delivered to the inbox** with correct tier pricing rendered. All six
+validation failure paths return 400 with a specific message. Prod
+`tour_requests` returned **404 before and after** the whole exercise, proving
+nothing shipped. Test infra torn down.
+
+**SEO:** `TouristTrip` + `Product` + `BreadcrumbList` + `FAQPage` on each route
+page, `LocalBusiness` + `BreadcrumbList` + `FAQPage` on the hub. All JSON-LD
+parse-checked. **No GSC or Keyword Planner CSV exports exist in the repo**, so
+targeting followed the keyword list in the task brief; `~/Downloads` could not
+be read (OS permission denied), so it is unverified rather than confirmed empty.
+
+**The route pages are NOT template clones.** Measured 8-gram overlap between the
+two route pages is **2.45%**, roughly 1,000+ body words each, with genuinely
+different itineraries, stop timings, FAQs and map embeds. The earlier
+`slingshot-rental-near-*` set is the thin-template pattern this deliberately
+avoids. (Note: the 2026-06-30 GSC cleanup in this repo was about **hacked spam
+URLs returning 410**, which is a different event from any thin-content filtering.)
+
+**No "Seasonal Activities Guide" content exists** anywhere in the repo, so there
+was nothing to repurpose and no domain to 301 into `/tours`. If it lives on a
+domain outside this repo, that is still open.
+
+**Site-wide em dash cleanup:** the shared footer's "Amish Country - Route 340"
+link carried an em dash on **18 files**, violating the blanket no-em-dash rule.
+Replaced with a comma everywhere rather than propagated into the new pages.
+
+**Still open / next:** request indexing for the three new URLs in GSC after
+deploy; a post-deploy prod E2E (submit -> row -> emails -> delete the test row);
+no admin UI for `tour_requests` yet, so leads live only in email and the DB.
 
 ## Session 2026-08-19: ADDITIONAL DRIVER support (one optional second driver)
 

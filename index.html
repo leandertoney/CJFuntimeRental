@@ -1969,6 +1969,7 @@
       transition: all 0.2s ease;
     }
     .fleet-card-book:hover { filter: brightness(1.1); transform: translateY(-1px); }
+    @media(max-width:768px){ .tours-cta-grid{grid-template-columns:1fr !important;gap:24px !important;padding:24px !important;} }
   </style>
 </head>
 <body>
@@ -1980,6 +1981,7 @@
         <img src="cj_funtime_logo.png" alt="CJ's Fun Time Rental">
       </a>
       <nav class="nav-links" id="nav-links">
+        <a href="/tours">Group Tours</a>
         <a href="/fleet.html">Our Fleet</a>
         <a href="#how-book">How It Works</a>
         <a href="#reviews">Reviews</a>
@@ -2063,6 +2065,39 @@
           <h2>No Motorcycle License Required</h2>
           <p>Explore Central PA on three wheels. No motorcycle experience needed — just a valid driver's license and a sense of adventure.</p>
           <div><a href="/fleet.html" class="btn btn-primary">Book Your Ride &rarr;</a></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- GUIDED TOURS -->
+  <section class="fleet" id="tours" style="padding-bottom:0;">
+    <div class="container">
+      <div class="fleet-header">
+        <h2>Guided<br>Group Tours</h2>
+        <p>New: a group activity for 2 to 8. You drive, Chris leads. From $450.</p>
+      </div>
+      <div class="tours-cta-grid" style="background:var(--surface,#171717);border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:32px;display:grid;grid-template-columns:1.4fr 1fr;gap:32px;align-items:center;">
+        <div>
+          <p style="font-size:15px;color:#888;line-height:1.8;margin:0 0 18px;">
+            A group activity that is not another escape room. Bachelorette and birthday groups, team outings, or friends in town: two per Slingshot, Chris leads the whole way, minimum one hour of riding each way. Two routes on sale now.
+          </p>
+          <p style="font-size:13px;color:#888;line-height:1.8;margin:0 0 22px;">
+            $250 deposit locks your date. Balance due the day of the ride. Rained out means a free reschedule.
+          </p>
+          <a href="/tours" class="btn btn-primary">See the Tours &rarr;</a>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <a href="/tours/north-east-md-slingshot-tour" style="display:block;background:#111;border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:18px 20px;text-decoration:none;">
+            <span style="display:block;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#FF6B00;margin-bottom:6px;">1 hr each way</span>
+            <span style="display:block;font-size:15px;color:#fff;font-weight:600;">North East, MD Run</span>
+            <span style="display:block;font-size:13px;color:#888;margin-top:4px;">Crabs on the Chesapeake</span>
+          </a>
+          <a href="/tours/gettysburg-york-slingshot-tour" style="display:block;background:#111;border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:18px 20px;text-decoration:none;">
+            <span style="display:block;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#FF6B00;margin-bottom:6px;">1 hr+ each way</span>
+            <span style="display:block;font-size:15px;color:#fff;font-weight:600;">Gettysburg &amp; York</span>
+            <span style="display:block;font-size:13px;color:#888;margin-top:4px;">The battlefield history route</span>
+          </a>
         </div>
       </div>
     </div>
@@ -2373,9 +2408,12 @@
         <div class="footer-col">
           <span class="footer-col-label">Rides &amp; Routes</span>
           <nav class="footer-nav">
+            <a href="/tours">Group Slingshot Tours</a>
+            <a href="/tours/north-east-md-slingshot-tour">North East, MD Tour</a>
+            <a href="/tours/gettysburg-york-slingshot-tour">Gettysburg &amp; York Tour</a>
             <a href="/scenic-routes-lancaster-pa">Scenic Routes from Lancaster</a>
             <a href="/scenic-routes-lancaster-pa#holtwood">Holtwood &amp; Susquehanna Loop</a>
-            <a href="/scenic-routes-lancaster-pa#amish">Amish Country — Route 340</a>
+            <a href="/scenic-routes-lancaster-pa#amish">Amish Country, Route 340</a>
             <a href="/scenic-routes-lancaster-pa#coveredbridge">Covered Bridge North Loop</a>
             <a href="/scenic-routes-lancaster-pa#fulllancaster">Full Lancaster County Loop</a>
           </nav>

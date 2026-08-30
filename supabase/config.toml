@@ -102,3 +102,9 @@ entrypoint = "./functions/health-check/index.ts"
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/id-upload/index.ts"
+
+[functions.tour-request]
+enabled = true
+verify_jwt = false
+import_map = "./functions/tour-request/deno.json"
+entrypoint = "./functions/tour-request/index.ts"

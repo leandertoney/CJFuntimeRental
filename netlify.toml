@@ -67,6 +67,22 @@
   to   = "/pages/slingshot-rental-near-wilmington-de.html"
   status = 200
 
+# Guided tours: hub + one page per route
+[[redirects]]
+  from = "/tours"
+  to   = "/pages/tours.html"
+  status = 200
+
+[[redirects]]
+  from = "/tours/north-east-md-slingshot-tour"
+  to   = "/pages/north-east-md-slingshot-tour.html"
+  status = 200
+
+[[redirects]]
+  from = "/tours/gettysburg-york-slingshot-tour"
+  to   = "/pages/gettysburg-york-slingshot-tour.html"
+  status = 200
+
 [[redirects]]
   from = "/admin"
   to   = "/admin/index.html"
