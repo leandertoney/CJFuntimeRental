@@ -887,6 +887,26 @@
     renderQuote();
     syncButton();
 
+    // Return trip from Stripe. Someone who just paid $250 must not land back on
+    // a blank form headed "Book Your Date" with no acknowledgement that money
+    // moved. tour-checkout sends ?booked=1 on success and ?canceled=1 on cancel.
+    (function handleReturn() {
+      var qs = new URLSearchParams(window.location.search);
+      if (qs.get('booked') === '1') {
+        var grid = form.querySelector('.form-grid');
+        if (grid) grid.style.display = 'none';
+        var note = document.querySelector('#request .form-note');
+        if (note) note.style.display = 'none';
+        show('success', 'Deposit received and your date is locked in. Chris will be in touch before the day with the meeting details. A confirmation is on its way to your email.');
+        var h = document.querySelector('#request h2');
+        if (h) h.textContent = 'Your Tour Is Booked';
+        document.getElementById('request').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else if (qs.get('canceled') === '1') {
+        show('error', 'No payment was taken and nothing was charged. Your date is still open, so pick it again whenever you are ready.');
+        document.getElementById('request').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    })();
+
     function show(kind, msg) {
       statusEl.className = 'form-status ' + kind;
       statusEl.textContent = msg;

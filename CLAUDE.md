@@ -314,6 +314,37 @@ That requirement is never hidden behind the payment.
 **Migration `20260830000001_tour_deposits.sql` has its OWN CI step, placed before
 every function deploy.** Same gap that has now bitten four features.
 
+**The webhook tour branch WAS tested before shipping, on a throwaway Postgres +
+real PostgREST + the actual webhook under `deno run`, with a bogus Resend key so
+no email could escape (Milonda is a hardcoded recipient on the paid-tour alert).
+Migration applied 3x, idempotent, zero errors. Four assertions, all passing:**
+1. Happy path: status -> `paid`, both Stripe ids stored, and exactly 3 of 4
+   vehicles blocked, **correctly excluding the one already booked that day**.
+   Zero `bookings` rows written.
+2. Stripe retry of the identical event: no-op, still 3 blocks not 6.
+3. A rental-shaped event falls PAST the tour branch and touches no tour rows.
+4. Fleet moved after payment (1 free, 3 needed): tour still `paid` because the
+   money is real, zero partial blocks, and the shortfall logged loudly.
+
+Production was verified untouched throughout: `tour_requests` empty and
+`vehicle_blocks.tour_request_id` still 404 before the deploy.
+
+**Harness gotcha for next time:** supabase-js calls `/rest/v1/<table>` but bare
+PostgREST serves `/<table>`, so the client gets `PGRST125 Invalid path` and every
+lookup silently returns nothing. A tiny path-rewriting proxy in front of
+PostgREST fixes it. The first run of this harness looked like a code bug and was
+not one.
+
+**STILL UNTESTED against Stripe:** no real Checkout session has been created.
+Post-deploy, follow the deposit-feature precedent: create one, load the
+Stripe-hosted page, confirm the single $250 line item, and do NOT click Pay.
+
+**Owner alert recipients differ by path, deliberately:** a paid tour alerts Chris
++ Milonda (it is a booking, same as a rental); an unpaid request alerts Chris +
+Leander. **An abandoned checkout leaves a `status='new'` row** that shows in the
+admin panel and counts in the badge. `source` distinguishes it
+(`direct-booking` vs `tours-page`) but the panel does not display that column yet.
+
 **Known deploy-ordering race (accepted, not fixed):** Netlify and CI deploy
 independently, so there is a window where the new `tours.html` posts to
 `tour-checkout` before it exists. It fails closed with an error message and the
