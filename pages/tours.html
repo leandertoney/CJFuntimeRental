@@ -410,6 +410,7 @@
 </style>
   <script src="https://yzdtevrwystezhbmgcwn.supabase.co/functions/v1/config"></script>
   <script src="/attribution.js"></script>
+  <script src="/ga4.js"></script>
 </head>
 <body>
 
@@ -894,6 +895,9 @@
     (function handleReturn() {
       var qs = new URLSearchParams(window.location.search);
       if (qs.get('booked') === '1') {
+        if (typeof window.CJFR_TRACK === 'function') {
+          window.CJFR_TRACK('purchase_tour_deposit', { currency: 'USD', value: 250 });
+        }
         var grid = form.querySelector('.form-grid');
         if (grid) grid.style.display = 'none';
         var note = document.querySelector('#request .form-note');
@@ -993,6 +997,9 @@
           }
           if (!res.ok || res.d.error) { throw new Error(res.d.error || 'Something went wrong.'); }
           if (res.d.url) { window.location.href = res.d.url; return; }
+          if (typeof window.CJFR_TRACK === 'function') {
+            window.CJFR_TRACK('tour_request_submitted', { group_size: payload.group_size });
+          }
           form.querySelector('.form-grid').style.display = 'none';
           show('success', 'Request received. Chris will be in touch shortly to confirm your date. Check your email for a copy.');
         })

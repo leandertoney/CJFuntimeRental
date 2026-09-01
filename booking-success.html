@@ -343,6 +343,16 @@
     }
   </style>
   <script src="/attribution.js"></script>
+  <script src="/ga4.js"></script>
+  <script>
+    // A rental was paid for. Fired once on the success page, which Stripe only
+    // reaches after a completed payment.
+    window.addEventListener('load', function () {
+      if (typeof window.CJFR_TRACK === 'function') {
+        window.CJFR_TRACK('purchase_rental', { currency: 'USD' });
+      }
+    });
+  </script>
 </head>
 <body>
 

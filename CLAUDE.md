@@ -255,6 +255,49 @@ domain outside this repo, that is still open.
 link carried an em dash on **18 files**, violating the blanket no-em-dash rule.
 Replaced with a comma everywhere rather than propagated into the new pages.
 
+## Session 2026-09-01: ANALYTICS AND BOOKING ATTRIBUTION
+
+**The question that started this: what is our conversion rate, and where do
+bookings come from? Neither could be answered.** The site had no analytics of
+any kind (no GA, no pixel) and `bookings` had 48 columns, none recording a
+source. 9 bookings and $1,845 since April, with no idea which channel earned any
+of them.
+
+**Two independent halves, and they answer different questions:**
+- `attribution.js` records WHICH CHANNEL a real paying booking came from, onto
+  the booking row itself. This is the reliable half: it survives ad blockers and
+  ties a channel to actual money.
+- `ga4.js` (property `G-75N54FRXFC`, account "CJ's Fun Time Rental") counts
+  VISITORS, which is the denominator a conversion rate needs.
+
+**FIRST TOUCH, and that is the whole design.** Attribution is captured on the
+visitor's FIRST page, because by checkout `document.referrer` is our own site and
+any `?utm_` tags are long gone. The stored value is only written when nothing is
+stored yet, so an internal click can never overwrite the real source. Someone who
+arrives from Facebook, leaves, and returns by typing the address still counts as
+Facebook. Order of precedence: utm tags, then `fbclid`/`gclid`, then the
+referring domain. Verified across seven arrival scenarios plus an internal click
+and a return visit.
+
+**Values are trimmed to 120 chars before they reach Stripe metadata.** Stripe
+rejects the ENTIRE session if any metadata value exceeds 500, so an untrimmed
+referrer would have failed checkouts. Attribution is browser-supplied input on a
+money-path request: treat it as untrusted, and never let it reach pricing math.
+
+**GA4 measurement id lives in exactly ONE place (`ga4.js`), not pasted into 26
+pages.** Same for `attribution.js`. Both load from `<head>` on all 26 pages.
+
+**Conversion events:** `purchase_rental` on booking-success (Stripe only reaches
+that page after payment), `purchase_tour_deposit` on the tours return, and
+`tour_request_submitted` for an unpaid request.
+
+**Analytics only measures FORWARD.** It says nothing about the existing 9
+bookings. The GA4 property was created 2026-09-01, so any comparison predating
+that has no visitor data.
+
+**Account structure:** CJ has his OWN GA account, deliberately not a property
+under Court Crowd, so it can be handed to him later without untangling.
+
 ## Session 2026-08-30 (part 2): TOUR ADMIN PANEL + DIRECT TOUR BOOKING
 
 **Two things shipped together: tour leads are now visible in the admin, and the
