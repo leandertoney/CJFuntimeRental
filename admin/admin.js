@@ -465,7 +465,8 @@
     calendar:  'Blocked Dates',
     bookings:  'Bookings',
     leads:     'Leads',
-    tours:     'Tour Requests'
+    tours:     'Tour Requests',
+    analytics: 'Analytics'
   };
 
   function renderPanel(name) {
@@ -485,7 +486,8 @@
       calendar:  renderCalendarPanel,
       bookings:  renderBookingsPanel,
       leads:     renderLeadsPanel,
-      tours:     renderTourRequestsPanel
+      tours:     renderTourRequestsPanel,
+      analytics: renderAnalyticsPanel
     };
     if (map[name]) map[name]();
   }
@@ -1715,6 +1717,178 @@
       .catch(function () {
         tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:32px;color:var(--danger)">Failed to load tour requests.</td></tr>';
       });
+  }
+
+  // ── Analytics panel ──────────────────────────────────────────
+  //
+  // Charts are hand-drawn inline SVG rather than a charting library: no
+  // external request, no CSP surface, nothing to break when a CDN moves, and
+  // it inherits the forced-light admin tokens for free.
+  //
+  // Everything here comes from OUR OWN records. Visitor counts live in Google
+  // Analytics, which cannot be read from the browser, so they are not shown.
+
+  function anMoney(n) {
+    return '$' + Number(n || 0).toLocaleString('en-US', { maximumFractionDigits: 0 });
+  }
+
+  // Grouped bar + line chart of revenue by month.
+  function anRevenueChart(months) {
+    if (!months.length) return '<p class="an-empty">No bookings yet.</p>';
+    var W = 640, H = 220, padL = 52, padR = 14, padT = 14, padB = 34;
+    var iw = W - padL - padR, ih = H - padT - padB;
+    var max = Math.max.apply(null, months.map(function (m) { return m.revenue; })) || 1;
+    // Round the axis up to something readable rather than the raw max.
+    var step = Math.pow(10, String(Math.floor(max)).length - 1);
+    var top = Math.ceil(max / step) * step || 1;
+
+    var bw = iw / months.length;
+    var bars = '', labels = '', grid = '';
+
+    for (var g = 0; g <= 4; g++) {
+      var gy = padT + ih - (ih * g / 4);
+      var gv = Math.round(top * g / 4);
+      grid += '<line x1="' + padL + '" y1="' + gy + '" x2="' + (W - padR) + '" y2="' + gy
+           + '" stroke="var(--border)" stroke-width="1"/>'
+           + '<text x="' + (padL - 8) + '" y="' + (gy + 4) + '" text-anchor="end" '
+           + 'font-size="10" fill="var(--text-3)">' + anMoney(gv) + '</text>';
+    }
+
+    months.forEach(function (m, i) {
+      var h = Math.max(2, (m.revenue / top) * ih);
+      var x = padL + i * bw + bw * 0.18;
+      var w = bw * 0.64;
+      var y = padT + ih - h;
+      bars += '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h
+           + '" rx="4" fill="var(--orange-ink)"><title>' + m.label + ': ' + anMoney(m.revenue)
+           + ' from ' + m.count + ' booking' + (m.count === 1 ? '' : 's') + '</title></rect>';
+      if (m.revenue > 0) {
+        bars += '<text x="' + (x + w / 2) + '" y="' + (y - 5) + '" text-anchor="middle" '
+             + 'font-size="10" font-weight="600" fill="var(--text-2)">' + anMoney(m.revenue) + '</text>';
+      }
+      labels += '<text x="' + (padL + i * bw + bw / 2) + '" y="' + (H - 12)
+             + '" text-anchor="middle" font-size="10.5" fill="var(--text-3)">' + m.label + '</text>';
+    });
+
+    return '<div class="an-chart"><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" '
+      + 'aria-label="Revenue by month">' + grid + bars + labels + '</svg></div>';
+  }
+
+  // Horizontal bars, used anywhere a category needs ranking.
+  function anBars(rows, fmt) {
+    if (!rows.length) return '<p class="an-empty">Nothing to show yet.</p>';
+    var max = Math.max.apply(null, rows.map(function (r) { return r.value; })) || 1;
+    var html = '<div class="an-bars">';
+    rows.forEach(function (r) {
+      var pct = Math.max(2, (r.value / max) * 100);
+      html += '<div class="an-bar-row">'
+        + '<span class="an-bar-label" title="' + esc(r.label) + '">' + esc(r.label) + '</span>'
+        + '<span class="an-bar-track"><span class="an-bar-fill" style="width:' + pct + '%"></span></span>'
+        + '<span class="an-bar-val">' + (fmt ? fmt(r) : r.value) + '</span>'
+        + '</div>';
+    });
+    return html + '</div>';
+  }
+
+  function renderAnalyticsPanel() {
+    var el = document.getElementById('analytics-content');
+    el.innerHTML = '<div class="overview-loading">Loading...</div>';
+
+    Promise.all([
+      apiFetch(ADMIN_API + '/bookings').then(function (r) { return r.json(); }),
+      apiFetch(ADMIN_API + '/tour-requests').then(function (r) { return r.json(); }).catch(function () { return []; })
+    ]).then(function (res) {
+      var bookings = Array.isArray(res[0]) ? res[0] : [];
+      var tours    = Array.isArray(res[1]) ? res[1] : [];
+
+      var confirmed = bookings.filter(function (b) { return (b.status || 'confirmed') === 'confirmed'; });
+
+      // Last 12 months, including empty ones so gaps are visible.
+      var now = new Date(), months = [];
+      for (var i = 11; i >= 0; i--) {
+        var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+        months.push({
+          key: key,
+          label: d.toLocaleString('en-US', { month: 'short' }),
+          revenue: 0, count: 0
+        });
+      }
+      var byKey = {};
+      months.forEach(function (m) { byKey[m.key] = m; });
+      confirmed.forEach(function (b) {
+        var k = (b.created_at || '').slice(0, 7);
+        if (byKey[k]) { byKey[k].revenue += Number(b.total) || 0; byKey[k].count += 1; }
+      });
+
+      var totalRev = confirmed.reduce(function (a, b) { return a + (Number(b.total) || 0); }, 0);
+      var avg = confirmed.length ? totalRev / confirmed.length : 0;
+
+      // Vehicle performance by revenue.
+      var vehAgg = {};
+      confirmed.forEach(function (b) {
+        var name = bookingVehicleName(b) || 'Unknown';
+        if (!vehAgg[name]) vehAgg[name] = { label: name, value: 0, count: 0 };
+        vehAgg[name].value += Number(b.total) || 0;
+        vehAgg[name].count += 1;
+      });
+      var vehRows = Object.keys(vehAgg).map(function (k) { return vehAgg[k]; })
+        .sort(function (a, b) { return b.value - a.value; });
+
+      // Where bookings came from. Only rows recorded since attribution shipped.
+      var srcAgg = {}, attributed = 0;
+      confirmed.forEach(function (b) {
+        if (!b.attr_source) return;
+        attributed++;
+        var k = b.attr_source;
+        if (!srcAgg[k]) srcAgg[k] = { label: k, value: 0, revenue: 0 };
+        srcAgg[k].value += 1;
+        srcAgg[k].revenue += Number(b.total) || 0;
+      });
+      var srcRows = Object.keys(srcAgg).map(function (k) { return srcAgg[k]; })
+        .sort(function (a, b) { return b.value - a.value; });
+
+      var paidTours = tours.filter(function (t) { return t.status === 'paid'; });
+
+      var html = '';
+      html += '<div class="ov-cards">'
+        + ovCard('Total Revenue', anMoney(totalRev), confirmed.length + ' bookings', 'green')
+        + ovCard('Average Booking', anMoney(avg), 'Per rental', 'blue')
+        + ovCard('Tour Requests', tours.length, paidTours.length + ' paid', 'orange')
+        + ovCard('Attributed', attributed + ' / ' + confirmed.length, 'Bookings with a known source', 'purple')
+        + '</div>';
+
+      html += '<div class="an-grid">';
+      html += '<div class="an-card an-wide"><h3>Revenue by month</h3>'
+        + '<p class="an-sub">Last 12 months. Hover a bar for the booking count.</p>'
+        + anRevenueChart(months) + '</div>';
+
+      html += '<div class="an-card"><h3>Revenue by vehicle</h3>'
+        + '<p class="an-sub">Which of the four earns most.</p>'
+        + anBars(vehRows, function (r) { return anMoney(r.value) + ' (' + r.count + ')'; })
+        + '</div>';
+
+      html += '<div class="an-card"><h3>Where bookings come from</h3>';
+      if (srcRows.length) {
+        html += '<p class="an-sub">Channel that first brought the customer to the site.</p>'
+             + anBars(srcRows, function (r) { return r.value + ' (' + anMoney(r.revenue) + ')'; });
+      } else {
+        html += '<p class="an-sub">Nothing recorded yet.</p>'
+             + '<p class="an-empty">Source tracking started on 1 September 2026. Bookings made before '
+             + 'then have no source, and it cannot be worked out after the fact. New bookings will '
+             + 'appear here as they come in.</p>';
+      }
+      html += '</div>';
+      html += '</div>';
+
+      html += '<p class="an-note">These numbers come from your own booking records. '
+        + 'Visitor counts and traffic sources live in Google Analytics, which cannot be read '
+        + 'directly by this page.</p>';
+
+      el.innerHTML = html;
+    }).catch(function () {
+      el.innerHTML = '<div class="overview-loading">Could not load analytics.</div>';
+    });
   }
 
   // ── collectFormData ──────────────────────────────────────────

@@ -87,6 +87,10 @@
           <svg viewBox="0 0 20 20" fill="currentColor"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/></svg>
           <span>Leads<span id="leads-badge" class="nav-badge" style="display:none;"></span></span>
         </a>
+        <a href="#" class="nav-link" data-section="analytics">
+          <svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/></svg>
+          <span>Analytics</span>
+        </a>
         <a href="#" class="nav-link" data-section="tours">
           <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/></svg>
           <span>Tour Requests<span id="tours-badge" class="nav-badge" style="display:none;"></span></span>
@@ -323,6 +327,14 @@
             </table>
             <div id="leads-empty" class="leads-empty hidden">No leads yet. They'll appear here when visitors submit the discount form.</div>
           </div>
+        </section>
+
+        <!-- PANEL: Analytics -->
+        <section id="panel-analytics" class="admin-panel">
+          <div class="panel-intro">
+            <p>Revenue and booking trends from your own records. Visitor numbers live in Google Analytics and are added here separately.</p>
+          </div>
+          <div id="analytics-content"></div>
         </section>
 
         <!-- PANEL: Tour Requests -->
