@@ -395,7 +395,10 @@ body.logged-in #admin-shell { display: flex; }
 /* ── PANELS ─────────────────────────────────────────────────── */
 .admin-panel { display: none; max-width: 900px; }
 .admin-panel.active { display: block; }
-#panel-overview { max-width: none; }
+/* Dashboards fill the viewport. The 900px cap suits forms and prose, where
+   long lines hurt readability, but on a data panel it wastes half a desktop
+   screen and forces scrolling for content that should fit at a glance. */
+#panel-overview, #panel-analytics { max-width: none; }
 
 .panel-intro {
   margin-bottom: 32px;
@@ -2410,17 +2413,18 @@ body.logged-in #admin-shell { display: flex; }
 /* Stat row: compact, so it costs a strip rather than a third of the view. */
 .an-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:14px; }
 .an-stat { background:var(--surface); border:1px solid var(--border); border-radius:10px;
-           padding:12px 14px; box-shadow:var(--shadow-sm); min-width:0; }
-.an-stat-value { font-size:22px; font-weight:700; line-height:1.15; color:var(--text); }
+           padding:14px 18px; box-shadow:var(--shadow-sm); min-width:0; }
+.an-stat-value { font-size:26px; font-weight:700; line-height:1.15; color:var(--text); }
 .an-stat-label { font-size:10.5px; letter-spacing:0.6px; text-transform:uppercase;
                  color:var(--text-3); margin-top:3px; }
 .an-stat-sub { font-size:11px; color:var(--text-3); margin-top:1px; }
 .an-stat-green .an-stat-value { color:var(--success); }
 
 /* Two columns: the trend chart is worth more width than the ranked lists. */
-.an-grid { display:grid; grid-template-columns:1.5fr 1fr; gap:14px; align-items:start; }
+.an-grid { display:grid; grid-template-columns:minmax(0,1.6fr) minmax(320px,1fr); gap:16px; align-items:stretch; }
 .an-card { background:var(--surface); border:1px solid var(--border); border-radius:12px;
-           padding:14px 16px; box-shadow:var(--shadow-sm); min-width:0; }
+           padding:16px 18px; box-shadow:var(--shadow-sm); min-width:0;
+           display:flex; flex-direction:column; }
 .an-card h3 { font-size:13px; font-weight:600; color:var(--text); margin:0 0 2px; }
 .an-card .an-sub { font-size:11px; color:var(--text-3); margin:0 0 10px; }
 .an-chart { width:100%; }
@@ -2429,15 +2433,18 @@ body.logged-in #admin-shell { display: flex; }
 /* The trend chart spans both rows on the left so the two ranked lists stack
    beside it and the whole thing lands in one screen. */
 .an-card-trend { grid-row:span 2; }
+/* The two right-hand cards share the trend card's height between them, so the
+   column has no dead space and the panel ends where the chart ends. */
+.an-grid > .an-card:not(.an-card-trend) { justify-content:flex-start; }
 
 .an-bars { display:flex; flex-direction:column; gap:7px; }
-.an-bar-row { display:grid; grid-template-columns:minmax(70px,34%) 1fr auto; align-items:center; gap:8px; }
-.an-bar-label { font-size:11.5px; color:var(--text-2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.an-bar-row { display:grid; grid-template-columns:minmax(120px,30%) 1fr auto; align-items:center; gap:10px; }
+.an-bar-label { font-size:12.5px; color:var(--text-2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 /* Both are spans, so they MUST be made block-level or width/height are ignored
    and the bars render as empty tracks. */
-.an-bar-track { display:block; background:var(--bg); border-radius:5px; height:16px; overflow:hidden; }
+.an-bar-track { display:block; background:var(--bg); border-radius:5px; height:18px; overflow:hidden; }
 .an-bar-fill { display:block; height:100%; border-radius:5px; background:var(--orange-ink); min-width:2px; }
-.an-bar-val { font-size:11.5px; font-weight:600; color:var(--text); white-space:nowrap; }
+.an-bar-val { font-size:12.5px; font-weight:600; color:var(--text); white-space:nowrap; }
 
 .an-empty { font-size:12px; color:var(--text-3); line-height:1.6; margin:0; }
 .an-note { font-size:11px; color:var(--text-3); line-height:1.6; margin-top:12px; }

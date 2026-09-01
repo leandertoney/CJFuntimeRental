@@ -1774,7 +1774,7 @@
   // Grouped bar + line chart of revenue by month.
   function anRevenueChart(months) {
     if (!months.length) return '<p class="an-empty">No bookings yet.</p>';
-    var W = 560, H = 300, padL = 48, padR = 12, padT = 16, padB = 30;
+    var W = 900, H = 210, padL = 52, padR = 14, padT = 18, padB = 30;
     var iw = W - padL - padR, ih = H - padT - padB;
     var max = Math.max.apply(null, months.map(function (m) { return m.revenue; })) || 1;
     // Round the axis up to something readable rather than the raw max.
@@ -1810,7 +1810,8 @@
     });
 
     return '<div class="an-chart"><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" '
-      + 'aria-label="Revenue by month">' + grid + bars + labels + '</svg></div>';
+      + 'aria-label="Revenue by month">'
+      + grid + bars + labels + '</svg></div>';
   }
 
   // Horizontal bars, used anywhere a category needs ranking.
@@ -1832,7 +1833,7 @@
   // Daily visitors as a filled sparkline.
   function anSparkline(daily) {
     if (!daily.length) return '';
-    var W = 560, H = 96, pad = 6;
+    var W = 900, H = 70, pad = 5;
     var max = Math.max.apply(null, daily.map(function (d) { return d.value; })) || 1;
     var stepX = (W - pad * 2) / Math.max(1, daily.length - 1);
     var pts = daily.map(function (d, i) {
@@ -1936,7 +1937,11 @@
       if (gaOn) {
         html += stat(anMoney(totalRev), 'Revenue', confirmed.length + ' bookings', 'an-stat-green')
               + stat(Number(ga.users).toLocaleString(), 'Visitors', 'Last 28 days')
-              + stat(convRate || 'n/a', 'Conversion', recentBookings + ' of ' + Number(ga.users).toLocaleString())
+              // With zero visitors recorded, "3 of 0" reads like a broken stat.
+              // Say why the number is missing instead of showing a ratio.
+              + stat(convRate || '--', 'Conversion',
+                     ga.users > 0 ? recentBookings + ' of ' + Number(ga.users).toLocaleString()
+                                  : 'Waiting on visitor data')
               + stat(anMoney(avg), 'Avg booking', 'Per rental');
       } else {
         html += stat(anMoney(totalRev), 'Revenue', confirmed.length + ' bookings', 'an-stat-green')
