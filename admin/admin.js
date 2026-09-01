@@ -436,6 +436,7 @@
 
   // ── Navigation ───────────────────────────────────────────────
   function bindNav() {
+    bindSetupGroup();
     document.querySelectorAll('.nav-link[data-section]').forEach(function (link) {
       link.addEventListener('click', function (e) {
         e.preventDefault();
@@ -451,6 +452,35 @@
     document.querySelectorAll('.nav-link[data-section]').forEach(function (a) {
       a.classList.toggle('active', a.getAttribute('data-section') === name);
     });
+    // If the active panel lives inside Setup, open the group. Otherwise a
+    // deep link or a reload would land on a panel whose nav item is hidden,
+    // which reads as the sidebar losing your place.
+    var group = document.getElementById('nav-setup');
+    if (group && group.querySelector('.nav-link[data-section="' + name + '"]')) {
+      setSetupOpen(true);
+    }
+  }
+
+  function setSetupOpen(open) {
+    var group  = document.getElementById('nav-setup');
+    var toggle = document.getElementById('nav-setup-toggle');
+    if (!group || !toggle) return;
+    group.hidden = !open;
+    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    try { localStorage.setItem('cjfr_admin_setup_open', open ? '1' : '0'); } catch (e) {}
+  }
+
+  function bindSetupGroup() {
+    var toggle = document.getElementById('nav-setup-toggle');
+    if (!toggle) return;
+    toggle.addEventListener('click', function () {
+      setSetupOpen(this.getAttribute('aria-expanded') !== 'true');
+    });
+    // Remember the choice, so someone who works in Setup all day is not
+    // reopening it on every load.
+    var remembered = null;
+    try { remembered = localStorage.getItem('cjfr_admin_setup_open'); } catch (e) {}
+    if (remembered === '1') setSetupOpen(true);
   }
 
   // ── Panel router ─────────────────────────────────────────────
