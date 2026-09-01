@@ -499,11 +499,20 @@
     analytics: 'Analytics'
   };
 
+  // Panels that edit site config are the only ones "Save & Publish" applies to.
+  // On a read-only panel the button implies unsaved work that does not exist.
+  var SAVEABLE = ['sections','pricing','copy','faq','emails','discounts'];
+
   function renderPanel(name) {
     document.querySelectorAll('.admin-panel').forEach(function (p) {
       p.classList.toggle('active', p.id === 'panel-' + name);
     });
     document.getElementById('panel-title').textContent = PANEL_TITLES[name] || '';
+
+    var saveBtn = document.getElementById('save-btn');
+    var saveMsg = document.getElementById('save-status');
+    if (saveBtn) saveBtn.hidden = SAVEABLE.indexOf(name) === -1;
+    if (saveMsg && SAVEABLE.indexOf(name) === -1) saveMsg.textContent = '';
 
     var map = {
       overview:  renderOverviewPanel,
@@ -1765,7 +1774,7 @@
   // Grouped bar + line chart of revenue by month.
   function anRevenueChart(months) {
     if (!months.length) return '<p class="an-empty">No bookings yet.</p>';
-    var W = 640, H = 220, padL = 52, padR = 14, padT = 14, padB = 34;
+    var W = 560, H = 300, padL = 48, padR = 12, padT = 16, padB = 30;
     var iw = W - padL - padR, ih = H - padT - padB;
     var max = Math.max.apply(null, months.map(function (m) { return m.revenue; })) || 1;
     // Round the axis up to something readable rather than the raw max.
@@ -1823,7 +1832,7 @@
   // Daily visitors as a filled sparkline.
   function anSparkline(daily) {
     if (!daily.length) return '';
-    var W = 640, H = 120, pad = 8;
+    var W = 560, H = 96, pad = 6;
     var max = Math.max.apply(null, daily.map(function (d) { return d.value; })) || 1;
     var stepX = (W - pad * 2) / Math.max(1, daily.length - 1);
     var pts = daily.map(function (d, i) {
@@ -1908,8 +1917,6 @@
 
       var paidTours = tours.filter(function (t) { return t.status === 'paid'; });
 
-      var html = '';
-
       // Conversion rate needs BOTH halves: bookings from us, visitors from GA.
       var gaOn = ga && ga.configured;
       var recentBookings = confirmed.filter(function (b) {
@@ -1918,68 +1925,64 @@
       var convRate = (gaOn && ga.users > 0)
         ? ((recentBookings / ga.users) * 100).toFixed(1) + '%' : null;
 
-      if (gaOn) {
-        html += '<div class="ov-cards">'
-          + ovCard('Visitors', Number(ga.users).toLocaleString(), 'Last 28 days', 'blue')
-          + ovCard('Sessions', Number(ga.sessions).toLocaleString(), 'Last 28 days', 'purple')
-          + ovCard('Page Views', Number(ga.pageviews).toLocaleString(), 'Last 28 days', 'blue')
-          + ovCard('Conversion Rate', convRate || 'n/a',
-                   recentBookings + ' of ' + Number(ga.users).toLocaleString() + ' booked', 'green')
-          + '</div>';
+      function stat(value, label, sub, cls) {
+        return '<div class="an-stat ' + (cls || '') + '">'
+          + '<div class="an-stat-value">' + value + '</div>'
+          + '<div class="an-stat-label">' + label + '</div>'
+          + '<div class="an-stat-sub">' + (sub || '') + '</div></div>';
       }
 
-      html += '<div class="ov-cards">'
-        + ovCard('Total Revenue', anMoney(totalRev), confirmed.length + ' bookings', 'green')
-        + ovCard('Average Booking', anMoney(avg), 'Per rental', 'blue')
-        + ovCard('Tour Requests', tours.length, paidTours.length + ' paid', 'orange')
-        + ovCard('Attributed', attributed + ' / ' + confirmed.length, 'Bookings with a known source', 'purple')
-        + '</div>';
+      var html = '<div class="an-stats">';
+      if (gaOn) {
+        html += stat(anMoney(totalRev), 'Revenue', confirmed.length + ' bookings', 'an-stat-green')
+              + stat(Number(ga.users).toLocaleString(), 'Visitors', 'Last 28 days')
+              + stat(convRate || 'n/a', 'Conversion', recentBookings + ' of ' + Number(ga.users).toLocaleString())
+              + stat(anMoney(avg), 'Avg booking', 'Per rental');
+      } else {
+        html += stat(anMoney(totalRev), 'Revenue', confirmed.length + ' bookings', 'an-stat-green')
+              + stat(anMoney(avg), 'Avg booking', 'Per rental')
+              + stat(tours.length, 'Tour requests', paidTours.length + ' paid')
+              + stat(attributed + ' / ' + confirmed.length, 'Attributed', 'Known source');
+      }
+      html += '</div>';
 
       html += '<div class="an-grid">';
 
-      if (gaOn) {
-        html += '<div class="an-card an-wide"><h3>Visitors per day</h3>'
-          + '<p class="an-sub">Last 28 days, from Google Analytics.</p>'
-          + anSparkline(ga.daily || []) + '</div>';
-        html += '<div class="an-card"><h3>Traffic sources</h3>'
-          + '<p class="an-sub">How people reached the site.</p>'
-          + anBars((ga.channels || []).map(function (c) { return { label: c.label, value: c.value }; }))
-          + '</div>';
-        html += '<div class="an-card"><h3>Most viewed pages</h3>'
-          + '<p class="an-sub">Where attention goes.</p>'
-          + anBars((ga.pages || []).map(function (p) { return { label: p.label, value: p.value }; }))
-          + '</div>';
-      }
-
-      html += '<div class="an-card an-wide"><h3>Revenue by month</h3>'
+      // Left column, spanning both rows: the trend that deserves the space.
+      html += '<div class="an-card an-card-trend"><h3>Revenue by month</h3>'
         + '<p class="an-sub">Last 12 months. Hover a bar for the booking count.</p>'
-        + anRevenueChart(months) + '</div>';
+        + anRevenueChart(months);
+      if (gaOn) {
+        html += '<h3 style="margin-top:14px;">Visitors per day</h3>'
+             + '<p class="an-sub">Last 28 days, from Google Analytics.</p>'
+             + anSparkline(ga.daily || []);
+      }
+      html += '</div>';
 
+      // Right column, two stacked cards.
       html += '<div class="an-card"><h3>Revenue by vehicle</h3>'
         + '<p class="an-sub">Which of the four earns most.</p>'
-        + anBars(vehRows, function (r) { return anMoney(r.value) + ' (' + r.count + ')'; })
+        + anBars(vehRows.slice(0, 6), function (r) { return anMoney(r.value) + ' (' + r.count + ')'; })
         + '</div>';
 
-      html += '<div class="an-card"><h3>Where bookings come from</h3>';
-      if (srcRows.length) {
-        html += '<p class="an-sub">Channel that first brought the customer to the site.</p>'
+      html += '<div class="an-card"><h3>' + (gaOn ? 'Traffic sources' : 'Where bookings come from') + '</h3>';
+      if (gaOn) {
+        html += '<p class="an-sub">How people reached the site.</p>'
+             + anBars((ga.channels || []).slice(0, 5));
+      } else if (srcRows.length) {
+        html += '<p class="an-sub">Channel that first brought the customer.</p>'
              + anBars(srcRows, function (r) { return r.value + ' (' + anMoney(r.revenue) + ')'; });
       } else {
         html += '<p class="an-sub">Nothing recorded yet.</p>'
-             + '<p class="an-empty">Source tracking started on 1 September 2026. Bookings made before '
-             + 'then have no source, and it cannot be worked out after the fact. New bookings will '
-             + 'appear here as they come in.</p>';
+             + '<p class="an-empty">Source tracking started 1 September 2026. Older bookings have '
+             + 'no source and it cannot be worked out after the fact.</p>';
       }
       html += '</div>';
       html += '</div>';
 
-      html += '<p class="an-note">'
-        + (gaOn
-            ? 'Revenue comes from your booking records. Visitor numbers come from Google Analytics '
-              + 'and can lag by a few hours.'
-            : 'Revenue comes from your booking records. Visitor numbers are not connected yet'
-              + (ga && ga.reason ? ': ' + esc(ga.reason) : '.'))
-        + '</p>';
+      html += '<p class="an-note">Revenue comes from your booking records. '
+        + (gaOn ? 'Visitor numbers come from Google Analytics and can lag a few hours.'
+                : 'Visitor numbers are not connected yet.') + '</p>';
 
       el.innerHTML = html;
     }).catch(function () {
