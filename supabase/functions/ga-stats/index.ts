@@ -48,7 +48,13 @@ async function validAdmin(auth: string | null): Promise<boolean> {
     for (const b of new Uint8Array(mac)) bin += String.fromCharCode(b);
     const expected = btoa(bin).replace(/=+$/, '');
     if (sig !== expected) return false;
-    const bytes = Uint8Array.from(atob(payload), c => c.charCodeAt(0));
+    // admin/index.ts base64-encodes the payload WITH padding and strips it only
+    // from the signature. Deno's atob() is strict about some padded input, and a
+    // throw here silently became a 401 that looked like a wrong secret. Normalise
+    // to base64url-safe chars and re-pad before decoding.
+    let b = payload.replace(/-/g, '+').replace(/_/g, '/');
+    while (b.length % 4) b += '=';
+    const bytes = Uint8Array.from(atob(b), c => c.charCodeAt(0));
     const data = JSON.parse(new TextDecoder().decode(bytes));
     return !!data.exp && data.exp > Date.now();
   } catch { return false; }
