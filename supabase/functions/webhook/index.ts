@@ -388,6 +388,14 @@ Deno.serve(async (req) => {
       stripe_payment_intent: paymentIntent,
       deposit_cents: depositCents,
       status: 'confirmed',
+      // First-touch channel, carried from the landing page through Stripe
+      // metadata. Empty string means the visitor had no recorded source, so
+      // store NULL rather than a blank that would look like a real channel.
+      attr_source: meta.attrSource || null,
+      attr_medium: meta.attrMedium || null,
+      attr_campaign: meta.attrCampaign || null,
+      attr_landing_page: meta.attrLanding || null,
+      attr_first_seen: meta.attrFirstSeen || null,
       ...idFields
     });
 

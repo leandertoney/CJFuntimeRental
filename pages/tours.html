@@ -409,6 +409,7 @@
     }
 </style>
   <script src="https://yzdtevrwystezhbmgcwn.supabase.co/functions/v1/config"></script>
+  <script src="/attribution.js"></script>
 </head>
 <body>
 
@@ -950,7 +951,10 @@
         group_size: parseInt(sizeEl.value, 10),
         route: document.getElementById('tf-route').value,
         notes: document.getElementById('tf-notes').value.trim(),
-        source: 'tours-page'
+        source: 'tours-page',
+        // First-touch channel from the landing page, for reporting only.
+        attribution: (typeof window.CJFR_ATTRIBUTION === 'function')
+          ? window.CJFR_ATTRIBUTION() : null
       };
 
       if (!payload.name) { return show('error', 'Please enter your name.'); }

@@ -66,6 +66,7 @@
     .modal-btn:hover { filter:brightness(1.1); transform:translateY(-1px); }
     @media(max-width:768px) { .checkout-grid{grid-template-columns:1fr;} .id-uploads{grid-template-columns:1fr;} }
   </style>
+  <script src="/attribution.js"></script>
 </head>
 <body>
 
@@ -714,7 +715,11 @@
                 deliveryDropoff: bookingData.deliveryDropoff,
                 deliveryPickup: bookingData.deliveryPickup,
                 deliveryFee: bookingData.deliveryFee ? Math.round(bookingData.deliveryFee * 100) : 0,
-                bookingRef: bookingRef
+                bookingRef: bookingRef,
+                // First-touch channel, captured on the visitor's landing page.
+                // Display/reporting only: never reaches any pricing math.
+                attribution: (typeof window.CJFR_ATTRIBUTION === 'function')
+                  ? window.CJFR_ATTRIBUTION() : null
               })
             });
           })

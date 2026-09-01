@@ -125,6 +125,16 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
+      - name: Apply booking attribution migration
+        run: |
+          SQL=$(jq -Rs . < supabase/migrations/20260901000001_booking_attribution.sql)
+          curl -sf -X POST "https://api.supabase.com/v1/projects/yzdtevrwystezhbmgcwn/database/query" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"query\": $SQL}"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
       - name: Deploy Config Function
         run: supabase functions deploy config --project-ref yzdtevrwystezhbmgcwn
         env:

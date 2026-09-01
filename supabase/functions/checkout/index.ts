@@ -27,6 +27,14 @@ const STRIPE_PRODUCTS: Record<string, string> = {
   canam_spyder:   'prod_UHai9cIGKdkLoW'
 };
 
+// Attribution values arrive from the browser, so they are untrusted input on a
+// money-path request. Coerce to a short plain string: Stripe rejects the entire
+// session if any metadata value exceeds 500 chars.
+function attrField(v: unknown): string {
+  if (v === null || v === undefined) return '';
+  return String(v).slice(0, 120);
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 });
@@ -38,7 +46,7 @@ Deno.serve(async (req) => {
       startDate, endDate, pickupTime,
       totalCents, baseCents,
       deliveryDropoff, deliveryPickup, deliveryFee,
-      promoCode, bookingRef
+      promoCode, bookingRef, attribution
     } = body;
 
     if (!vehicleKey || !durationType || !startDate) {
@@ -231,6 +239,14 @@ Deno.serve(async (req) => {
       'metadata[deliveryPickup]': String(!!deliveryPickup),
       'metadata[bookingRef]': bookingRef,
       'metadata[depositCents]': String(depositCents),
+      // First-touch channel, for reporting only. Stripe caps a metadata value
+      // at 500 chars and rejects the whole request if one is over, so each is
+      // trimmed hard. Never used in any pricing decision.
+      'metadata[attrSource]': attrField(attribution?.source),
+      'metadata[attrMedium]': attrField(attribution?.medium),
+      'metadata[attrCampaign]': attrField(attribution?.campaign),
+      'metadata[attrLanding]': attrField(attribution?.landing_page),
+      'metadata[attrFirstSeen]': attrField(attribution?.first_seen),
       'success_url': `https://cjfuntimerentals.com/booking-success?session_id={CHECKOUT_SESSION_ID}&vehicle=${encodeURIComponent(vehicleKey)}&date=${encodeURIComponent(startDate)}`,
       'cancel_url': 'https://cjfuntimerentals.com',
       'phone_number_collection[enabled]': 'true',

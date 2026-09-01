@@ -120,6 +120,18 @@ function guestEmail(r: Record<string, string>, quote: string): string {
 </body></html>`;
 }
 
+// First-touch channel from the browser. Untrusted input, so each  value is coerced
+// to a short string. Reporting only: never touches validation or price.
+function attrCols(a: unknown) {
+  const o = (a || {}) as Record<string, unknown>;
+  const f = (v: unknown) => (v === null || v === undefined || v === '') ? null : String(v).slice(0, 120);
+  return {
+    attr_source: f(o.source), attr_medium: f(o.medium),
+    attr_campaign: f(o.campaign), attr_landing_page: f(o.landing_page),
+    attr_first_seen: f(o.first_seen)
+  };
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 });
@@ -151,7 +163,8 @@ Deno.serve(async (req) => {
 
     const { data, error } = await supabase
       .from('tour_requests')
-      .insert({ name, email, phone, preferred_date, group_size, route, notes, source: body.source || 'tours-page' })
+      .insert({ name, email, phone, preferred_date, group_size, route, notes,
+                source: body.source || 'tours-page', ...attrCols(body.attribution) })
       .select('id')
       .single();
 
