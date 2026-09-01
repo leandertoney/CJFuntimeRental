@@ -206,3 +206,11 @@ jobs:
         run: supabase functions deploy tour-checkout --project-ref yzdtevrwystezhbmgcwn
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      # Reads Google Analytics for the admin dashboard. Inert until the
+      # GA_PROPERTY_ID and GA_SERVICE_ACCOUNT_JSON secrets are set; it returns
+      # configured:false rather than erroring, so the admin still renders.
+      - name: Deploy GA Stats Function
+        run: supabase functions deploy ga-stats --project-ref yzdtevrwystezhbmgcwn
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}

@@ -1790,16 +1790,44 @@
     return html + '</div>';
   }
 
+  // Daily visitors as a filled sparkline.
+  function anSparkline(daily) {
+    if (!daily.length) return '';
+    var W = 640, H = 120, pad = 8;
+    var max = Math.max.apply(null, daily.map(function (d) { return d.value; })) || 1;
+    var stepX = (W - pad * 2) / Math.max(1, daily.length - 1);
+    var pts = daily.map(function (d, i) {
+      var x = pad + i * stepX;
+      var y = pad + (H - pad * 2) * (1 - d.value / max);
+      return x.toFixed(1) + ',' + y.toFixed(1);
+    });
+    var area = 'M' + pad + ',' + (H - pad) + ' L' + pts.join(' L')
+             + ' L' + (pad + (daily.length - 1) * stepX).toFixed(1) + ',' + (H - pad) + ' Z';
+    return '<div class="an-chart"><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" '
+      + 'aria-label="Visitors per day">'
+      + '<path d="' + area + '" fill="var(--orange-ink)" opacity="0.12"/>'
+      + '<polyline points="' + pts.join(' ') + '" fill="none" stroke="var(--orange-ink)" '
+      + 'stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>'
+      + '</svg></div>';
+  }
+
   function renderAnalyticsPanel() {
     var el = document.getElementById('analytics-content');
     el.innerHTML = '<div class="overview-loading">Loading...</div>';
 
+    // GA lives behind its own function and may not be configured. Its failure
+    // must never take down the database charts, which are the reliable half.
+    var GA_API = ADMIN_API.replace(/\/admin$/, '') + '/ga-stats';
+
     Promise.all([
       apiFetch(ADMIN_API + '/bookings').then(function (r) { return r.json(); }),
-      apiFetch(ADMIN_API + '/tour-requests').then(function (r) { return r.json(); }).catch(function () { return []; })
+      apiFetch(ADMIN_API + '/tour-requests').then(function (r) { return r.json(); }).catch(function () { return []; }),
+      apiFetch(GA_API + '?days=28').then(function (r) { return r.json(); })
+        .catch(function () { return { configured: false, reason: 'Analytics is unavailable right now.' }; })
     ]).then(function (res) {
       var bookings = Array.isArray(res[0]) ? res[0] : [];
       var tours    = Array.isArray(res[1]) ? res[1] : [];
+      var ga       = res[2] || { configured: false };
 
       var confirmed = bookings.filter(function (b) { return (b.status || 'confirmed') === 'confirmed'; });
 
@@ -1851,6 +1879,25 @@
       var paidTours = tours.filter(function (t) { return t.status === 'paid'; });
 
       var html = '';
+
+      // Conversion rate needs BOTH halves: bookings from us, visitors from GA.
+      var gaOn = ga && ga.configured;
+      var recentBookings = confirmed.filter(function (b) {
+        return b.created_at && (Date.now() - new Date(b.created_at).getTime()) < 28 * 86400000;
+      }).length;
+      var convRate = (gaOn && ga.users > 0)
+        ? ((recentBookings / ga.users) * 100).toFixed(1) + '%' : null;
+
+      if (gaOn) {
+        html += '<div class="ov-cards">'
+          + ovCard('Visitors', Number(ga.users).toLocaleString(), 'Last 28 days', 'blue')
+          + ovCard('Sessions', Number(ga.sessions).toLocaleString(), 'Last 28 days', 'purple')
+          + ovCard('Page Views', Number(ga.pageviews).toLocaleString(), 'Last 28 days', 'blue')
+          + ovCard('Conversion Rate', convRate || 'n/a',
+                   recentBookings + ' of ' + Number(ga.users).toLocaleString() + ' booked', 'green')
+          + '</div>';
+      }
+
       html += '<div class="ov-cards">'
         + ovCard('Total Revenue', anMoney(totalRev), confirmed.length + ' bookings', 'green')
         + ovCard('Average Booking', anMoney(avg), 'Per rental', 'blue')
@@ -1859,6 +1906,21 @@
         + '</div>';
 
       html += '<div class="an-grid">';
+
+      if (gaOn) {
+        html += '<div class="an-card an-wide"><h3>Visitors per day</h3>'
+          + '<p class="an-sub">Last 28 days, from Google Analytics.</p>'
+          + anSparkline(ga.daily || []) + '</div>';
+        html += '<div class="an-card"><h3>Traffic sources</h3>'
+          + '<p class="an-sub">How people reached the site.</p>'
+          + anBars((ga.channels || []).map(function (c) { return { label: c.label, value: c.value }; }))
+          + '</div>';
+        html += '<div class="an-card"><h3>Most viewed pages</h3>'
+          + '<p class="an-sub">Where attention goes.</p>'
+          + anBars((ga.pages || []).map(function (p) { return { label: p.label, value: p.value }; }))
+          + '</div>';
+      }
+
       html += '<div class="an-card an-wide"><h3>Revenue by month</h3>'
         + '<p class="an-sub">Last 12 months. Hover a bar for the booking count.</p>'
         + anRevenueChart(months) + '</div>';
@@ -1881,9 +1943,13 @@
       html += '</div>';
       html += '</div>';
 
-      html += '<p class="an-note">These numbers come from your own booking records. '
-        + 'Visitor counts and traffic sources live in Google Analytics, which cannot be read '
-        + 'directly by this page.</p>';
+      html += '<p class="an-note">'
+        + (gaOn
+            ? 'Revenue comes from your booking records. Visitor numbers come from Google Analytics '
+              + 'and can lag by a few hours.'
+            : 'Revenue comes from your booking records. Visitor numbers are not connected yet'
+              + (ga && ga.reason ? ': ' + esc(ga.reason) : '.'))
+        + '</p>';
 
       el.innerHTML = html;
     }).catch(function () {
