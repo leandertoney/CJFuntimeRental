@@ -395,10 +395,17 @@ body.logged-in #admin-shell { display: flex; }
 /* ── PANELS ─────────────────────────────────────────────────── */
 .admin-panel { display: none; max-width: 900px; }
 .admin-panel.active { display: block; }
-/* Dashboards fill the viewport. The 900px cap suits forms and prose, where
-   long lines hurt readability, but on a data panel it wastes half a desktop
-   screen and forces scrolling for content that should fit at a glance. */
-#panel-overview, #panel-analytics { max-width: none; }
+/* The 900px cap is right for forms and prose, where long line lengths hurt
+   readability. It is wrong for dashboards and data tables, where it wastes half
+   a desktop screen and squeezes columns that then truncate or scroll
+   sideways. Tour Requests is the worst case at 10 columns.
+   Freed: the two dashboards plus every panel whose main content is a table. */
+#panel-overview,
+#panel-analytics,
+#panel-bookings,
+#panel-leads,
+#panel-tours,
+#panel-discounts { max-width: none; }
 
 .panel-intro {
   margin-bottom: 32px;
