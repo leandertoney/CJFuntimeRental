@@ -195,9 +195,9 @@ function promoEmailHTML(code: string, percentOff: number, expiresLabel: string) 
         <a href="${promoLink(PROMO_VEHICLE_LINKS[0].path, code)}"><img src="https://cjfuntimerentals.com/cj_funtime_logo.png" alt="CJ's Fun Time Rental" width="140" style="display:block;height:auto;margin:0 auto;"></a>
       </td></tr>
       <tr><td style="padding:32px 0 0;">
-        <h1 style="font-family:Impact,Arial,sans-serif;font-size:32px;letter-spacing:2px;margin:0 0 18px;">${percentOff}% OFF YOUR RIDE</h1>
+        <h1 style="font-family:Impact,Arial,sans-serif;font-size:32px;letter-spacing:2px;margin:0 0 18px;">LABOR DAY SPECIAL</h1>
         <p style="font-size:15px;color:rgba(255,255,255,0.72);margin:0 0 18px;line-height:1.7;">
-          You asked us about renting a Slingshot a while back and never took one out. The discount code we sent you at the time had a problem on our end and would not go through at checkout. That is fixed, and here is a better one.
+          Summer is winding down and the roads around Lancaster are about as good as they get right now. We are running ${percentOff}% off through the end of October. These things are a blast.
         </p>
         <div style="background:#1a1a1a;border:1px solid rgba(255,107,0,0.3);border-radius:10px;padding:24px;text-align:center;margin:0 0 20px;">
           <div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#FF6B00;margin-bottom:8px;">Your Code</div>
@@ -317,7 +317,7 @@ async function executeToolCall(name: string, input: Record<string, unknown>) {
       await resend.emails.send({
         from: "CJ's Fun Time Rental <bookings@cjfuntimerentals.com>",
         to: input.email as string,
-        subject: `${pct}% off your Slingshot rental`,
+        subject: `Labor Day special: ${pct}% off a Slingshot`,
         html: promoEmailHTML(code, pct, expiresLabel),
         ...promoReplyTo(PROMO_REPLY_TO)
       });
@@ -358,7 +358,7 @@ async function executeToolCall(name: string, input: Record<string, unknown>) {
           await resend.emails.send({
             from: "CJ's Fun Time Rental <bookings@cjfuntimerentals.com>",
             to: email,
-            subject: `${pct}% off your Slingshot rental`,
+            subject: `Labor Day special: ${pct}% off a Slingshot`,
             html: promoEmailHTML(code, pct, expiresLabel),
             ...promoReplyTo(PROMO_REPLY_TO)
           });
