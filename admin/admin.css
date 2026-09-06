@@ -1327,6 +1327,26 @@ body.logged-in #admin-shell { display: flex; }
 .ov-card-purple { border-color: var(--purple-line); }
 .ov-card-red    { border-color: var(--danger-line); }
 
+/* Clickable cards. Buttons for keyboard and screen-reader support, so they
+   need the browser's button styling stripped back to the card look. */
+.ov-card-link {
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+.ov-card-link:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+.ov-card-link:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 2px;
+}
+.ov-card-hero.ov-card-link:hover { border-color: var(--orange); }
+
 /* Hero: the one number worth reading first. */
 .ov-card-hero {
   background: var(--orange-soft);
@@ -1433,6 +1453,30 @@ body.logged-in #admin-shell { display: flex; }
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 .ov-empty-cta:hover { background: var(--surface-3); border-color: var(--text-4); }
+
+/* ── Pager ──────────────────────────────────────────────────── */
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 18px 0 4px;
+}
+.pager-btn {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.pager-btn:hover:not(:disabled) { background: var(--surface-3); border-color: var(--text-4); }
+.pager-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.pager-status { font-size: 13px; color: var(--text-3); }
 
 /* ── Needs your attention ───────────────────────────────────── */
 .attn-list { display: flex; flex-direction: column; gap: 8px; }

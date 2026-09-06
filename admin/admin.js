@@ -482,7 +482,7 @@
   // Empty-state buttons reuse the nav path so there is one way to switch panels.
   function bindEmptyStateCtas() {
     document.addEventListener('click', function (e) {
-      var btn = e.target.closest && e.target.closest('.ov-empty-cta');
+      var btn = e.target.closest && e.target.closest('.ov-empty-cta, .ov-card-link');
       if (!btn) return;
       e.preventDefault();
 
@@ -754,18 +754,21 @@
     // This month leads, because that is the number Chris actually checks.
     // All time sits underneath it rather than competing as a second hero.
     html += '<div class="ov-cards">';
-    html += '<div class="ov-card ov-card-hero">'
+    html += '<button type="button" class="ov-card ov-card-hero ov-card-link" data-goto="analytics">'
          +    '<div class="ov-card-label">' + now.toLocaleString('default', { month: 'long' }) + ' Revenue</div>'
          +    '<div class="ov-card-value">$' + thisMonthRev.toLocaleString() + '</div>'
          +    '<div class="ov-card-sub">$' + prevMonthRev.toLocaleString() + ' in ' + prevMonthName
          +      ' &middot; $' + totalRevenue.toLocaleString() + ' all time</div>'
-         +  '</div>';
-    html += ovCard('Total Bookings', bookings.length,                    'All time');
-    html += ovCard('Upcoming',       upcoming.length,                    'Future bookings');
-    html += ovCard('Leads',          leads.length,                       leadsThisMonth + ' this month');
+         +  '</button>';
+    html += ovCard('Total Bookings', bookings.length,                    'All time',
+                   null, 'bookings');
+    html += ovCard('Upcoming',       upcoming.length,                    'Future bookings',
+                   null, 'bookings');
+    html += ovCard('Leads',          leads.length,                       leadsThisMonth + ' this month',
+                   null, 'leads');
     // Vehicles keeps semantic colour: none available is a real problem.
     html += ovCard('Vehicles',       availCount + ' / ' + vKeys.length, 'Available now',
-                   availCount > 0 ? 'green' : 'red');
+                   availCount > 0 ? 'green' : 'red', 'pricing');
     html += '</div>';
 
     // Row 1: Active Rentals (full width, prominent)
@@ -939,12 +942,15 @@
       + '</div>';
   }
 
-  function ovCard(label, value, sub, color) {
-    return '<div class="ov-card' + (color ? ' ov-card-' + color : '') + '">'
+  function ovCard(label, value, sub, color, goto) {
+    var tag  = goto ? 'button' : 'div';
+    var attr = goto ? ' type="button" data-goto="' + goto + '"' : '';
+    return '<' + tag + ' class="ov-card' + (color ? ' ov-card-' + color : '')
+      + (goto ? ' ov-card-link' : '') + '"' + attr + '>'
       + '<div class="ov-card-value">' + value + '</div>'
       + '<div class="ov-card-label">' + label + '</div>'
       + '<div class="ov-card-sub">' + sub + '</div>'
-      + '</div>';
+      + '</' + tag + '>';
   }
 
   function ovBookingRow(b, type) {
@@ -1796,6 +1802,11 @@
   }
 
   // ── Leads panel ─────────────────────────────────────────────
+  // 25 rows a page, never infinite scroll: the list is scanned and acted on,
+  // and a lead deleted from page 3 must not silently move everything up.
+  var LEADS_PER_PAGE = 25;
+  var leadsPage = 1;
+
   function renderLeadsPanel() {
     var tbody   = document.getElementById('leads-tbody');
     var empty   = document.getElementById('leads-empty');
@@ -1808,7 +1819,11 @@
     apiFetch(ADMIN_API + '/leads')
       .then(function (r) { return r.json(); })
       .then(function (leads) {
-        count.textContent = leads.length + ' lead' + (leads.length !== 1 ? 's' : '');
+        var shownFrom = (leadsPage - 1) * LEADS_PER_PAGE + 1;
+        var shownTo   = Math.min(leadsPage * LEADS_PER_PAGE, leads.length);
+        count.textContent = leads.length > LEADS_PER_PAGE
+          ? 'Showing ' + shownFrom + '-' + shownTo + ' of ' + leads.length + ' leads'
+          : leads.length + ' lead' + (leads.length !== 1 ? 's' : '');
 
         if (!leads.length) {
           tbody.innerHTML = '';
@@ -1818,8 +1833,16 @@
         }
 
         expBtn.disabled = false;
+
+        var totalPages = Math.max(1, Math.ceil(leads.length / LEADS_PER_PAGE));
+        // A deletion can empty the last page; step back rather than show nothing.
+        if (leadsPage > totalPages) leadsPage = totalPages;
+        var startIdx = (leadsPage - 1) * LEADS_PER_PAGE;
+        var pageRows = leads.slice(startIdx, startIdx + LEADS_PER_PAGE);
+
         var html = '';
-        leads.forEach(function (lead, idx) {
+        pageRows.forEach(function (lead, i) {
+          var idx = startIdx + i;
           var d = new Date(lead.created_at || lead.date);
           var dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
           var timeStr = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
@@ -1832,6 +1855,7 @@
             + '</tr>';
         });
         tbody.innerHTML = html;
+        renderLeadsPager(leads.length, totalPages);
 
         // Delete buttons
         tbody.querySelectorAll('.lead-delete-btn').forEach(function (btn) {
@@ -1848,7 +1872,8 @@
         expBtn.onclick = function () {
           var rows = [['#', 'Email', 'Source', 'Date']];
           leads.forEach(function (l, i) {
-            rows.push([i + 1, l.email, l.source || 'Website', new Date(l.date).toLocaleString()]);
+            rows.push([i + 1, l.email, l.source || 'Website',
+                       new Date(l.created_at || l.date).toLocaleString()]);
           });
           var csv = rows.map(function (r) {
             return r.map(function (v) { return '"' + String(v).replace(/"/g, '""') + '"'; }).join(',');
@@ -1865,6 +1890,30 @@
       .catch(function () {
         tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--danger)">Failed to load leads.</td></tr>';
       });
+  }
+
+  function renderLeadsPager(total, totalPages) {
+    var host = document.getElementById('leads-pager');
+    if (!host) return;
+    if (totalPages <= 1) { host.innerHTML = ''; host.hidden = true; return; }
+    host.hidden = false;
+
+    var html = '<button type="button" class="pager-btn" data-page="' + (leadsPage - 1) + '"'
+             + (leadsPage === 1 ? ' disabled' : '') + '>Previous</button>';
+    html += '<span class="pager-status">Page ' + leadsPage + ' of ' + totalPages + '</span>';
+    html += '<button type="button" class="pager-btn" data-page="' + (leadsPage + 1) + '"'
+         +  (leadsPage === totalPages ? ' disabled' : '') + '>Next</button>';
+    host.innerHTML = html;
+
+    host.querySelectorAll('.pager-btn[data-page]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        if (this.disabled) return;
+        leadsPage = parseInt(this.getAttribute('data-page'), 10);
+        renderLeadsPanel();
+        var panel = document.getElementById('panel-leads');
+        if (panel) panel.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      });
+    });
   }
 
   // ── Tour requests panel ──────────────────────────────────────
