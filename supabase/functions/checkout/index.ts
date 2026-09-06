@@ -35,6 +35,36 @@ function attrField(v: unknown): string {
   return String(v).slice(0, 120);
 }
 
+
+// Local-date day-of-week for a 'YYYY-MM-DD' string. new Date('2026-09-12')
+// parses as UTC midnight and getDay() then answers in the runtime's zone, which
+// silently shifts the day. Same class of bug as the dashboard's UTC rollover.
+// Parse the parts explicitly so a rental date means the calendar date.
+function dowLocal(dateStr: string): number {
+  const [y, m, d] = String(dateStr).split('-').map(Number);
+  return new Date(y, (m || 1) - 1, d || 1).getDay();
+}
+
+// Every calendar day the vehicle is out must be allowed, not just the pickup.
+// A Thursday 4-day rental comes back Sunday, and a weekday-only code must not
+// quietly discount a weekend. For a 24hr booking endDate === startDate, so this
+// checks the pickup day alone.
+function promoDaysAllowed(startDate: string, endDate: string, weekdays: number[]): boolean {
+  const [sy, sm, sd] = String(startDate).split('-').map(Number);
+  const [ey, em, ed] = String(endDate || startDate).split('-').map(Number);
+  const cur = new Date(sy, (sm || 1) - 1, sd || 1);
+  const end = new Date(ey, (em || 1) - 1, ed || 1);
+  if (isNaN(cur.getTime()) || isNaN(end.getTime())) return true; // don't block on unparseable input
+  let guard = 0;
+  while (cur <= end && guard++ < 400) {
+    if (!weekdays.includes(cur.getDay())) return false;
+    cur.setDate(cur.getDate() + 1);
+  }
+  return true;
+}
+
+const PROMO_WEEKDAY_MSG = 'This code is good for Monday to Friday rentals. Pick weekday dates to use it.';
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 });
@@ -82,9 +112,17 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({ ok: false, error: 'That code is not valid or has expired.' }),
           { status: 200, headers: { ...CORS, 'Content-Type': 'application/json' } });
       }
+      // A weekday-only code rejected with a generic message reads as broken, so
+      // say what the rule is. MUST stay identical to the checkout block below.
+      const vWeekdays = Array.isArray(vPromo.weekdays) ? vPromo.weekdays as number[] : null;
+      if (vWeekdays && !promoDaysAllowed(String(startDate), String(endDate || startDate), vWeekdays)) {
+        return new Response(JSON.stringify({ ok: false, error: PROMO_WEEKDAY_MSG }),
+          { status: 200, headers: { ...CORS, 'Content-Type': 'application/json' } });
+      }
       return new Response(JSON.stringify({
         ok: true, code: vKey, percentOff: vPct,
-        label: String(vPromo.label || (vPct + '% off your rental'))
+        label: String(vPromo.label || (vPct + '% off your rental')),
+        restriction: vWeekdays ? 'Monday to Friday rentals only' : ''
       }), { status: 200, headers: { ...CORS, 'Content-Type': 'application/json' } });
     }
 
@@ -242,6 +280,13 @@ Deno.serve(async (req) => {
           JSON.stringify({ error: 'That promo code is not valid. Remove it to continue, or check the code and try again.' }),
           { status: 400, headers: { ...CORS, 'Content-Type': 'application/json' } }
         );
+      }
+      // Identical rule to the validate block above. The client cannot be
+      // trusted to have run it, so it is re-checked on the charging path.
+      const cWeekdays = Array.isArray(promo.weekdays) ? promo.weekdays as number[] : null;
+      if (cWeekdays && !promoDaysAllowed(String(startDate), String(endDate || startDate), cWeekdays)) {
+        return new Response(JSON.stringify({ error: PROMO_WEEKDAY_MSG }),
+          { status: 400, headers: { ...CORS, 'Content-Type': 'application/json' } });
       }
       promoPercentOff = pct;
       promoApplied = key;

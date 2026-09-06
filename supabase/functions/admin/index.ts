@@ -185,7 +185,7 @@ async function promoRecipients() {
 function promoEmailHTML(code: string, percentOff: number, expiresLabel: string) {
   const rows = PROMO_VEHICLE_LINKS.map((v) =>
     `<tr><td style="padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.07);">
-       <a href="${promoLink(v.path, code)}" style="color:#FF6B00;text-decoration:none;font-size:15px;">${v.name} &rarr;</a>
+       <a href="${promoLink(v.path, code)}" style="color:#FF6B00;text-decoration:none;font-size:15px;">${v.name} &nbsp;&middot;&nbsp; See pricing &rarr;</a>
      </td></tr>`).join('');
 
   return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#0f0f0f;font-family:'Helvetica Neue',Arial,sans-serif;color:#fff;">
@@ -197,18 +197,18 @@ function promoEmailHTML(code: string, percentOff: number, expiresLabel: string) 
       <tr><td style="padding:32px 0 0;">
         <h1 style="font-family:Impact,Arial,sans-serif;font-size:32px;letter-spacing:2px;margin:0 0 18px;">LABOR DAY SPECIAL</h1>
         <p style="font-size:15px;color:rgba(255,255,255,0.72);margin:0 0 18px;line-height:1.7;">
-          Summer is winding down and the roads around Lancaster are about as good as they get right now. We are running ${percentOff}% off through the end of October. These things are a blast.
+          Summer is winding down and the roads around Lancaster are about as good as they get right now. We are running ${percentOff}% off Monday through Friday rentals through the end of October. These things are a blast.
         </p>
         <div style="background:#1a1a1a;border:1px solid rgba(255,107,0,0.3);border-radius:10px;padding:24px;text-align:center;margin:0 0 20px;">
           <div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#FF6B00;margin-bottom:8px;">Your Code</div>
           <div style="font-family:Impact,Arial,sans-serif;font-size:38px;letter-spacing:5px;color:#FF6B00;">${code}</div>
-          <div style="font-size:13px;color:#aaa;margin-top:10px;">${percentOff}% off the rental &nbsp;·&nbsp; ${expiresLabel}</div>
+          <div style="font-size:13px;color:#aaa;margin-top:10px;">${percentOff}% off the rental &nbsp;·&nbsp; Mon to Fri &nbsp;·&nbsp; ${expiresLabel}</div>
         </div>
         <p style="font-size:15px;color:rgba(255,255,255,0.72);margin:0 0 8px;line-height:1.7;">
-          A $250 overnight rental comes to $${(250 - Math.round(250 * percentOff) / 100).toFixed(2)}. The refundable deposit and any delivery fee are not discounted.
+          The refundable deposit and any delivery fee are not discounted.
         </p>
         <p style="font-size:14px;color:rgba(255,255,255,0.55);margin:0 0 10px;line-height:1.7;">
-          Pick your ride and the code is applied for you:
+          Pick your ride to see pricing. The code is applied for you:
         </p>
         <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 26px;">${rows}</table>
         <p style="font-size:14px;color:rgba(255,255,255,0.55);margin:0;line-height:1.7;">
@@ -306,14 +306,14 @@ async function executeToolCall(name: string, input: Record<string, unknown>) {
     }
     case 'send_promo_to_lead': {
       const resend = new Resend(Deno.env.get('RESEND_API_KEY')!);
-      const code = ((input.code as string) || 'COMEBACK15').toUpperCase();
+      const code = ((input.code as string) || 'LABORDAY15').toUpperCase();
       const cfg = await readConfig();
       const promo = cfg?.pricing?.promoCodes?.[code];
       if (!promo || promo.enabled === false) {
         return { error: `Code ${code} is not in site_config.pricing.promoCodes, so it would be rejected at checkout. Add it before sending.` };
       }
       const pct = Number(promo.percentOff) || 0;
-      const expiresLabel = promo.expires ? `Expires ${promo.expires}` : 'No expiry';
+      const expiresLabel = promo.expires ? `Through ${promo.expires}` : 'No expiry';
       await resend.emails.send({
         from: "CJ's Fun Time Rental <bookings@cjfuntimerentals.com>",
         to: input.email as string,
@@ -329,14 +329,14 @@ async function executeToolCall(name: string, input: Record<string, unknown>) {
       // booked, with a one-line stub body. A bulk send is not something to
       // trigger by accident from a chat instruction, so the caller has to ask
       // for it explicitly with confirmSend: true.
-      const code = ((input.code as string) || 'COMEBACK15').toUpperCase();
+      const code = ((input.code as string) || 'LABORDAY15').toUpperCase();
       const cfg = await readConfig();
       const promo = cfg?.pricing?.promoCodes?.[code];
       if (!promo || promo.enabled === false) {
         return { error: `Code ${code} is not in site_config.pricing.promoCodes, so every recipient would get a code the checkout rejects. Add it first.` };
       }
       const pct = Number(promo.percentOff) || 0;
-      const expiresLabel = promo.expires ? `Expires ${promo.expires}` : 'No expiry';
+      const expiresLabel = promo.expires ? `Through ${promo.expires}` : 'No expiry';
       const recipients = await promoRecipients();
 
       if (input.confirmSend !== true) {
