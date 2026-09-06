@@ -6,7 +6,7 @@ Codes work now, via config, NOT via Stripe coupons. They live in
 `site_config.pricing.promoCodes`:
 
 ```json
-{ "LABORDAY15": { "percentOff": 15, "expires": "2026-10-31", "weekdays": [1,2,3,4,5], "enabled": true, "label": "15% off weekday rentals" } }
+{ "LABORDAY15": { "percentOff": 15, "expires": "2026-10-31", "weekdays": [0,1,2,3,4], "enabled": true, "label": "15% off Sunday to Thursday rentals" } }
 ```
 
 The input is on **`checkout.html`**, not `booking-widget.js`. The widget only
@@ -23,6 +23,9 @@ deliberately NOT called `days`: `days` is already the rental LENGTH in the
 checkout payload. EVERY calendar day from startDate through endDate must be
 allowed, not just the pickup, so a Thu multi-day ending Sunday is rejected.
 An absent key means no restriction, which is why FIRST10 works any day.
+Fri+Sat are excluded on purpose: they are 60% of net revenue from 5 of 11
+bookings, so they sell without help. Day names in messages and in the campaign
+email are DERIVED from this array, never hardcoded.
 Day-of-week is parsed from the date parts, never `new Date(str).getDay()`,
 which resolves as UTC midnight and shifts the day. The rule is enforced on
 BOTH the validate path and the charging path.
