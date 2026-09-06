@@ -137,6 +137,14 @@ jobs:
 
       # Idempotent (IF NOT EXISTS) - safe to run on every deploy. Must run
       # BEFORE the admin function deploys, since /dismiss-attention writes these.
+      - name: Apply campaigns migration
+        run: |
+          SQL=$(jq -Rs . < supabase/migrations/20260906000002_campaigns.sql)
+          curl -sf -X POST "https://api.supabase.com/v1/projects/yzdtevrwystezhbmgcwn/database/query" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"query\": $SQL}"
+
       - name: Apply attention dismissal migration
         run: |
           SQL=$(jq -Rs . < supabase/migrations/20260906000001_attention_dismissal.sql)

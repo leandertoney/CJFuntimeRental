@@ -1517,7 +1517,58 @@
   }
 
   // ── Email Templates panel ─────────────────────────────────────
+  // ── Campaigns ────────────────────────────────────────────────
+  // Shows the owners what marketing actually went out. Every number comes from
+  // the server: bookings and Stripe sessions, not a stored count that could
+  // drift away from reality.
+  function renderCampaigns() {
+    var box = document.getElementById('campaigns-container');
+    if (!box) return;
+    apiFetch(ADMIN_API + '/campaigns')
+      .then(function (r) { return r.json(); })
+      .then(function (rows) {
+        if (!Array.isArray(rows) || rows.length === 0) {
+          box.innerHTML = '<div class="campaigns-empty">No campaigns sent yet.</div>';
+          return;
+        }
+        box.innerHTML = rows.map(function (c) {
+          var when = new Date(c.sent_at);
+          var stat = function (n, label) {
+            return '<div class="campaign-stat' + (n ? '' : ' is-zero') + '">' +
+              '<div class="campaign-stat-num">' + n + '</div>' +
+              '<div class="campaign-stat-lbl">' + label + '</div></div>';
+          };
+          var money = '$' + (Number(c.revenue) || 0).toFixed(2);
+          return '<div class="campaign-card">' +
+            '<div class="campaign-top">' +
+              '<span class="campaign-name">' + esc(c.name) + '</span>' +
+              '<span class="campaign-when">' + when.toLocaleDateString('en-US',
+                { month: 'short', day: 'numeric', year: 'numeric' }) + ' at ' +
+                when.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) + '</span>' +
+            '</div>' +
+            '<div class="campaign-sub">' +
+              (c.promo_code ? '<span class="campaign-code">' + esc(c.promo_code) + '</span> &nbsp;' : '') +
+              esc(c.subject || '') +
+            '</div>' +
+            '<div class="campaign-stats">' +
+              stat(c.recipients, 'Sent to') +
+              stat(c.checkoutsStarted, 'Started checkout') +
+              stat(c.bookingsPaid, 'Booked') +
+              '<div class="campaign-stat' + ((Number(c.revenue) || 0) ? '' : ' is-zero') + '">' +
+                '<div class="campaign-stat-num">' + money + '</div>' +
+                '<div class="campaign-stat-lbl">Revenue</div></div>' +
+            '</div>' +
+            (c.notes ? '<div class="campaign-note">' + esc(c.notes) + '</div>' : '') +
+          '</div>';
+        }).join('');
+      })
+      .catch(function () {
+        box.innerHTML = '<div class="campaigns-empty">Could not load campaigns.</div>';
+      });
+  }
+
   function renderEmailsPanel() {
+    renderCampaigns();
     var container = document.getElementById('email-templates-container');
     var templates = cfg.email_templates || {};
 
