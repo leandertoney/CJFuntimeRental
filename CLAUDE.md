@@ -1,27 +1,39 @@
 # CJ Funtime Rentals - Project State (Updated 2026-09-06)
 
-## PROMO CODES DO NOT WORK (verified 2026-09-06)
+## PROMO CODES (rebuilt 2026-09-06)
 
-**Do not send a discount campaign to the leads.** The discount form mints a
-unique one-time Stripe promotion code per lead (`FIRST10-XXXXXXXX`, coupon
-`6pEsbmdK` = 10% off once, lead email in `metadata.email`). **54 codes exist and
-zero have ever been redeemed**, because **there is nowhere to enter one.**
+Codes work now, via config, NOT via Stripe coupons. They live in
+`site_config.pricing.promoCodes`:
 
-`booking-widget.js` (the live flow, loaded on vehicle pages) renders four inputs:
-pickup date, dropoff date, and the two delivery checkboxes. The string "promo"
-does not appear in that file. `supabase/functions/checkout/index.ts` DOES accept
-and resolve `promoCode` (~line 293), so the server half works and nothing sends
-it.
+```json
+{ "COMEBACK15": { "percentOff": 15, "expires": "2026-10-31", "enabled": true, "label": "15% off your rental" } }
+```
 
-The promo UI (`bm-promo-code`, `bm-promo-toggle`, `bm-promo-field`) exists only
-in `stripe-checkout.js`, the deprecated modal flow removed at index.html:2704.
-Its CSS is still in index.html, so grepping the HTML for "promo" makes it look
-like a working feature. It is orphaned styling.
+The input is on **`checkout.html`**, not `booking-widget.js`. The widget only
+stashes `bookingData` in sessionStorage and redirects, so checkout.html is where
+the price is actually assembled. The client posts only the code string;
+`checkout/index.ts` re-resolves it from config and folds the discount into
+`expectedBaseCents`, so the existing price-match guard is what enforces it. A
+client claiming a discounted price, with or without a real code, gets a 409.
 
-Order of work if picked up: add a promo input to `booking-widget.js`, test one
-real code end to end through Stripe, rewrite the promo email (currently the body
-is literally `<p>Your code: <strong>CODE</strong></p>` with no vehicle, price,
-link or expiry), and only then send.
+**The discount applies to the rental line only, never the deposit or delivery.**
+
+**Never hand a Stripe coupon to this checkout without checking `applies_to`
+first.** Coupon `6pEsbmdK` (used by the 54 legacy `FIRST10-*` codes) is
+unrestricted, so Stripe would apply it to the $100 refundable deposit and both
+$50 delivery legs as well. Those 54 codes were never redeemed once and are now
+actively rejected; issue config codes instead. For the same reason
+`allow_promotion_codes` is deliberately NOT set: it used to be, which put
+Stripe's own promo box on the payment page.
+
+If a discount ever needs different rounding, the client
+(`checkout.html` `discountedBase()`) and server must stay byte-identical:
+`base - Math.round(base * pct) / 100`. A one-cent drift 409s every discounted
+checkout.
+
+Still open: the promo email body is literally
+`<p>Your code: <strong>CODE</strong></p>` with no vehicle, price, link or
+expiry. Rewrite it before sending any campaign.
 
 **"47 leads never booked" is NOT evidence that discounts fail here.** That
 experiment has never actually run.
