@@ -163,6 +163,23 @@
 
   // ── Pricing Calculation ──────────────────────────────────────────────────
 
+  // Overlay stored values on defaults, ignoring the zeros/blanks that a
+  // partially-saved config produces. Booleans pass through as-is so the
+  // owner can still deliberately switch something off.
+  function mergeRates(defaults, stored) {
+    var out = {}, k;
+    for (k in defaults) if (Object.prototype.hasOwnProperty.call(defaults, k)) out[k] = defaults[k];
+    for (k in stored) {
+      if (!Object.prototype.hasOwnProperty.call(stored, k)) continue;
+      var v = stored[k];
+      if (typeof v === 'boolean') { out[k] = v; continue; }
+      if (typeof v === 'number' && v > 0) { out[k] = v; continue; }
+      if (typeof v === 'string' && v !== '') { out[k] = v; continue; }
+      if (v && typeof v === 'object') { out[k] = mergeRates(defaults[k] || {}, v); }
+    }
+    return out;
+  }
+
   function calcPrice() {
     var type = state.vehicleType || 'slingshot';
     var basePrice = 0;
@@ -237,11 +254,15 @@
       if (cp.hourlyMin)   PRICING.hourlyMin   = cp.hourlyMin;
       if (cp.hourlyMax)   PRICING.hourlyMax   = cp.hourlyMax;
       if (cp.hourlyCap)   PRICING.hourlyCap   = cp.hourlyCap;
-      if (cp.tenhrRate)   PRICING.tenhrRate   = cp.tenhrRate;
-      else if (cp.ninehrRate) PRICING.tenhrRate = cp.ninehrRate; // Legacy
-      if (cp.dailyRate)   PRICING.dailyRate    = cp.dailyRate;
+      if (cp.tenhrRate)   PRICING.tenhrRate   = mergeRates(PRICING.tenhrRate, cp.tenhrRate);
+      else if (cp.ninehrRate) PRICING.tenhrRate = mergeRates(PRICING.tenhrRate, cp.ninehrRate); // Legacy
+      if (cp.dailyRate)   PRICING.dailyRate    = mergeRates(PRICING.dailyRate, cp.dailyRate);
       if (cp.multiDay)    PRICING.multiDay     = cp.multiDay;
-      if (cp.delivery)    PRICING.delivery     = cp.delivery;
+      // Merge per key, never wholesale. These are objects, so `if (cp.x)` is
+      // always true and a config carrying zeros used to REPLACE the defaults
+      // outright. That is how a zeroed delivery block silenced the $50 fee and
+      // hid the delivery section entirely, with no `|| 50` guard to catch it.
+      if (cp.delivery)    PRICING.delivery     = mergeRates(PRICING.delivery, cp.delivery);
     }
 
     // Fetch bookings
