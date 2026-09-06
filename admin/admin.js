@@ -571,7 +571,7 @@
     faq:       'FAQ',
     emails:    'Email Templates',
     discounts: 'Discounts',
-    calendar:  'Blocked Dates',
+    calendar:  'Calendar',
     bookings:  'Bookings',
     leads:     'Leads',
     tours:     'Tour Requests',
@@ -1430,20 +1430,37 @@
   function renderCalendarPanel() {
     // Initialize per-vehicle blocks section
     renderVehicleBlocksPanel();
+    bindCalDisclosures();
 
-    // Initialize fleet-wide calendar
+    // Bookings drive the money/availability figures in each cell. Render at
+    // once so the grid appears immediately, then again when they land.
     renderCalendar();
     renderBlockedList();
-    document.getElementById('cal-prev').onclick = function () {
-      calMonth--;
-      if (calMonth < 0) { calMonth = 11; calYear--; }
+    apiFetch(ADMIN_API + '/bookings')
+      .then(function (r) { return r.json(); })
+      .then(function (rows) { calBookings = Array.isArray(rows) ? rows : []; renderCalendar(); })
+      .catch(function () { calBookings = []; });
+
+    var todayBtn = document.getElementById('cal-today');
+    if (todayBtn) todayBtn.onclick = function () {
+      var n = new Date();
+      calYear = n.getFullYear(); calMonth = n.getMonth();
+      calWeekStart = startOfWeek(n);
       renderCalendar();
     };
-    document.getElementById('cal-next').onclick = function () {
-      calMonth++;
-      if (calMonth > 11) { calMonth = 0; calYear++; }
-      renderCalendar();
-    };
+    document.getElementById('cal-prev').onclick = function () { stepCalendar(-1); };
+    document.getElementById('cal-next').onclick = function () { stepCalendar(1); };
+
+    document.querySelectorAll('.cal-view-btn').forEach(function (btn) {
+      btn.onclick = function () {
+        calView = this.getAttribute('data-view');
+        document.querySelectorAll('.cal-view-btn').forEach(function (b) {
+          b.classList.toggle('active', b.getAttribute('data-view') === calView);
+        });
+        if (calView === 'week' && !calWeekStart) calWeekStart = startOfWeek(new Date());
+        renderCalendar();
+      };
+    });
   }
 
   // ── Per-Vehicle Blocking ─────────────────────────────────────────────────
@@ -1630,14 +1647,210 @@
     });
   }
 
+  function bindCalDisclosures() {
+    document.querySelectorAll('.cal-disclosure').forEach(function (btn) {
+      if (btn.dataset.bound) return;
+      btn.dataset.bound = '1';
+      btn.addEventListener('click', function () {
+        var body = document.getElementById(this.getAttribute('data-target'));
+        if (!body) return;
+        var open = body.hidden;
+        body.hidden = !open;
+        this.setAttribute('aria-expanded', open ? 'true' : 'false');
+        this.classList.toggle('open', open);
+      });
+    });
+  }
+
+  // Legend plus the one number worth acting on: idle vehicle-days ahead.
+  // Nothing here is predicted. Ten bookings cannot support a forecast, so
+  // this counts what is genuinely on the books and what is genuinely empty.
+  function renderCalLegend() {
+    var host = document.getElementById('calendar-legend');
+    if (!host) return;
+
+    var todayStr    = localDateStr(new Date());
+    var daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+    var fleetSize   = Object.keys((cfg && cfg.vehicles) || {}).length || 4;
+    var idleDays = 0, bookedDays = 0, monthRev = 0, idleWeekend = 0;
+
+    for (var d = 1; d <= daysInMonth; d++) {
+      var ds = calYear + '-' + String(calMonth + 1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+      if (ds < todayStr) continue;
+      if (cfg && cfg.blockedDates && cfg.blockedDates.indexOf(ds) !== -1) continue;
+      var onDay = (calBookings || []).filter(function (b) {
+        var st = b.startDate || b.start_date, en = b.endDate || b.end_date;
+        return st && en && st <= ds && en >= ds;
+      });
+      monthRev += onDay.reduce(function (t, b) { return t + (b.total || 0); }, 0);
+      if (onDay.length) bookedDays++;
+      else {
+        idleDays++;
+        var dow = new Date(calYear, calMonth, d).getDay();
+        if (dow === 0 || dow === 5 || dow === 6) idleWeekend++;
+      }
+    }
+
+    var html = '<div class="cal-key">'
+      + '<span class="cal-key-item"><i class="k-booked"></i>Booked</span>'
+      + '<span class="cal-key-item"><i class="k-idle"></i>Open</span>'
+      + '<span class="cal-key-item"><i class="k-blocked"></i>Blocked</span>'
+      + '<span class="cal-key-item"><i class="k-holiday"></i>Holiday</span>'
+      + '</div>';
+
+    if (idleDays > 0) {
+      html += '<div class="cal-summary">'
+        + '<strong>' + idleDays + '</strong> open day' + (idleDays === 1 ? '' : 's')
+        + ' left this month'
+        + (idleWeekend ? ', <strong>' + idleWeekend + '</strong> of them Fri to Sun' : '')
+        + ' &middot; ' + bookedDays + ' booked &middot; $' + monthRev.toLocaleString() + ' still to come'
+        + '</div>';
+    }
+    host.innerHTML = html;
+  }
+
+  // US holidays that plausibly drive rentals. Fixed-date ones plus the
+  // floating Monday/Thursday holidays, computed per year rather than listed,
+  // so this does not quietly expire.
+  function holidaysFor(year) {
+    function nthDow(month, dow, n) {           // n-th <dow> of month
+      var d = new Date(year, month, 1);
+      var count = 0;
+      while (d.getMonth() === month) {
+        if (d.getDay() === dow && ++count === n) return fmtLocal(d);
+        d.setDate(d.getDate() + 1);
+      }
+      return null;
+    }
+    function lastDow(month, dow) {
+      var d = new Date(year, month + 1, 0);
+      while (d.getDay() !== dow) d.setDate(d.getDate() - 1);
+      return fmtLocal(d);
+    }
+    var h = {};
+    h[year + '-01-01'] = "New Year's Day";
+    h[lastDow(4, 1)]   = 'Memorial Day';
+    h[year + '-06-19'] = 'Juneteenth';
+    h[year + '-07-04'] = 'Independence Day';
+    h[nthDow(8, 1, 1)] = 'Labor Day';
+    h[nthDow(9, 1, 2)] = 'Columbus Day';
+    h[year + '-11-11'] = 'Veterans Day';
+    h[nthDow(10, 4, 4)] = 'Thanksgiving';
+    h[year + '-12-25'] = 'Christmas';
+    h[year + '-12-31'] = "New Year's Eve";
+    return h;
+  }
+
+  function fmtLocal(d) {
+    return d.getFullYear() + '-'
+      + String(d.getMonth() + 1).padStart(2, '0') + '-'
+      + String(d.getDate()).padStart(2, '0');
+  }
+
+  // Bookings for the calendar. Cached per panel visit so paging months does
+  // not refetch, and a failure degrades to a plain block calendar rather than
+  // breaking availability management.
+  var calBookings = null;
+  var calView     = 'month';   // 'month' | 'week'
+  var calWeekStart = null;     // Sunday of the visible week, in week view
+
+  function bookingsOn(dateStr) {
+    return (calBookings || []).filter(function (b) {
+      var st = b.startDate || b.start_date, en = b.endDate || b.end_date;
+      return st && en && st <= dateStr && en >= dateStr;
+    });
+  }
+
   function renderCalendar() {
+    if (calView === 'week') return renderCalendarWeek();
+    return renderCalendarMonth();
+  }
+
+  // Seven days across, tall enough to name who has which vehicle. This is the
+  // day-to-day operations view: month answers "how full am I", week answers
+  // "what is happening and who do I hand keys to".
+  function renderCalendarWeek() {
+    var DAY_LABELS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    var start = calWeekStart ? new Date(calWeekStart) : startOfWeek(new Date(calYear, calMonth, 1));
+    calWeekStart = new Date(start);
+
+    var end = new Date(start); end.setDate(end.getDate() + 6);
+    var fmt = function (d) { return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); };
+    document.getElementById('cal-month-label').textContent = fmt(start) + ' \u2013 ' + fmt(end) + ', ' + end.getFullYear();
+
+    var grid = document.getElementById('calendar-grid');
+    grid.className = 'calendar-grid calendar-grid-big calendar-grid-week';
+
+    var todayStr = localDateStr(new Date());
+    var holidays = holidaysFor(start.getFullYear());
+    var fleetSize = Object.keys((cfg && cfg.vehicles) || {}).length || 4;
+    var html = '';
+    DAY_LABELS.forEach(function (d) { html += '<div class="cal-day-label">' + d + '</div>'; });
+
+    for (var i = 0; i < 7; i++) {
+      var cur = new Date(start); cur.setDate(cur.getDate() + i);
+      var ds  = localDateStr(cur);
+      var cls = 'cal-day';
+      if (ds < todayStr) cls += ' past';
+      if (ds === todayStr) cls += ' today';
+      var blocked = cfg && cfg.blockedDates && cfg.blockedDates.indexOf(ds) !== -1;
+      if (blocked) cls += ' blocked';
+      var onDay = bookingsOn(ds);
+      if (onDay.length) cls += ' has-bookings';
+      else if (ds >= todayStr && !blocked) cls += ' idle';
+      if (holidays[ds]) cls += ' holiday';
+
+      var body = '<span class="cal-num">' + cur.getDate() + '</span>';
+      if (holidays[ds]) body += '<span class="cal-holiday">' + esc(holidays[ds]) + '</span>';
+      if (blocked) body += '<span class="cal-out">blocked</span>';
+      onDay.forEach(function (b) {
+        body += '<button type="button" class="cal-booking" data-booking-goto="' + esc(b.id) + '">'
+             +    '<b>' + esc(b.name || b.email || 'Booking') + '</b>'
+             +    '<span>' + esc(bookingVehicleName(b)) + '</span>'
+             +    '<span>$' + (b.total || 0).toLocaleString()
+             +      (b.pickup_time ? ' &middot; ' + esc(b.pickup_time) : '') + '</span>'
+             +  '</button>';
+      });
+      if (!onDay.length && !blocked && ds >= todayStr) {
+        body += '<span class="cal-free">' + fleetSize + ' free</span>';
+      }
+      html += '<div class="' + cls + '" data-date="' + ds + '">' + body + '</div>';
+    }
+
+    grid.innerHTML = html;
+    renderCalLegend();
+    bindCalDayClicks(grid);
+  }
+
+  function stepCalendar(dir) {
+    if (calView === 'week') {
+      var w = calWeekStart ? new Date(calWeekStart) : startOfWeek(new Date());
+      w.setDate(w.getDate() + dir * 7);
+      calWeekStart = w;
+      calYear = w.getFullYear(); calMonth = w.getMonth();
+    } else {
+      calMonth += dir;
+      if (calMonth < 0)  { calMonth = 11; calYear--; }
+      if (calMonth > 11) { calMonth = 0;  calYear++; }
+    }
+    renderCalendar();
+  }
+
+  function startOfWeek(d) {
+    var x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    x.setDate(x.getDate() - x.getDay());
+    return x;
+  }
+
+  function renderCalendarMonth() {
     var MONTH_NAMES = ['January','February','March','April','May','June',
                        'July','August','September','October','November','December'];
-    var DAY_LABELS  = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+    var DAY_LABELS  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
     document.getElementById('cal-month-label').textContent = MONTH_NAMES[calMonth] + ' ' + calYear;
 
     var grid = document.getElementById('calendar-grid');
+    grid.className = 'calendar-grid calendar-grid-big';
     var html = '';
 
     // Day-of-week headers
@@ -1655,23 +1868,64 @@
       html += '<div class="cal-day empty"></div>';
     }
 
+    var holidays   = holidaysFor(calYear);
+    var fleetSize  = Object.keys((cfg && cfg.vehicles) || {}).length || 4;
+
     for (var d = 1; d <= daysInMonth; d++) {
       var dateStr = calYear + '-'
         + String(calMonth + 1).padStart(2,'0') + '-'
         + String(d).padStart(2,'0');
       var cellDate = new Date(calYear, calMonth, d);
       var classes  = 'cal-day';
+      var isPast   = cellDate < today;
 
-      if (cellDate < today)   classes += ' past';
+      if (isPast) classes += ' past';
       if (cellDate.getTime() === today.getTime()) classes += ' today';
-      if (cfg && cfg.blockedDates && cfg.blockedDates.indexOf(dateStr) !== -1) classes += ' blocked';
+      var isBlocked = cfg && cfg.blockedDates && cfg.blockedDates.indexOf(dateStr) !== -1;
+      if (isBlocked) classes += ' blocked';
 
-      html += '<div class="' + classes + '" data-date="' + dateStr + '">' + d + '</div>';
+      // What is actually happening that day.
+      var onDay = (calBookings || []).filter(function (b) {
+        var st = b.startDate || b.start_date, en = b.endDate || b.end_date;
+        return st && en && st <= dateStr && en >= dateStr;
+      });
+      var revenue = onDay.reduce(function (sum, b) { return sum + (b.total || 0); }, 0);
+      var free    = Math.max(0, fleetSize - onDay.length);
+      var holiday = holidays[dateStr];
+
+      if (onDay.length) classes += ' has-bookings';
+      else if (!isPast && !isBlocked) classes += ' idle';
+      if (holiday) classes += ' holiday';
+
+      var body = '<span class="cal-num">' + d + '</span>';
+      if (holiday) body += '<span class="cal-holiday" title="' + esc(holiday) + '">' + esc(holiday) + '</span>';
+      if (onDay.length) {
+        body += '<span class="cal-rev">$' + revenue.toLocaleString() + '</span>';
+        body += '<span class="cal-out">' + onDay.length + ' out &middot; ' + free + ' free</span>';
+      } else if (!isPast && !isBlocked) {
+        body += '<span class="cal-free">' + free + ' free</span>';
+      } else if (isBlocked) {
+        body += '<span class="cal-out">blocked</span>';
+      }
+
+      html += '<div class="' + classes + '" data-date="' + dateStr + '">' + body + '</div>';
     }
 
     grid.innerHTML = html;
+    renderCalLegend();
+    bindCalDayClicks(grid);
+  }
 
-    // Bind click handlers (skip past days)
+  // Clicking a day blocks or unblocks the fleet; clicking a booking inside a
+  // day opens that booking instead, so the two do not fight each other.
+  function bindCalDayClicks(grid) {
+    grid.querySelectorAll('.cal-booking[data-booking-goto]').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        gotoBooking(this.getAttribute('data-booking-goto'));
+      });
+    });
+
     grid.querySelectorAll('.cal-day:not(.empty):not(.past)').forEach(function (cell) {
       cell.addEventListener('click', function () {
         if (!cfg || !cfg.blockedDates) return;
