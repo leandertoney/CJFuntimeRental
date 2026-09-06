@@ -182,7 +182,25 @@ async function promoRecipients() {
   return out;
 }
 
-function promoEmailHTML(code: string, percentOff: number, expiresLabel: string) {
+
+// Mirrors promoDaysLabel() in checkout/index.ts. The email must never advertise
+// days the server would reject, so the wording comes from the same config array
+// rather than a sentence typed into the template.
+const PROMO_DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const PROMO_DAY_ABBR = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+function promoDaysLabel(weekdays: number[] | null, abbr = false): string {
+  if (!weekdays || weekdays.length === 0) return '';
+  const names = abbr ? PROMO_DAY_ABBR : PROMO_DAY_NAMES;
+  const ds = [...new Set(weekdays)].filter((d) => d >= 0 && d <= 6).sort((a, b) => a - b);
+  if (ds.length === 0) return '';
+  if (ds.length === 1) return names[ds[0]];
+  const contiguous = ds.every((d, i) => i === 0 || d === ds[i - 1] + 1);
+  if (contiguous) return `${names[ds[0]]} to ${names[ds[ds.length - 1]]}`;
+  return ds.map((d) => names[d]).join(', ');
+}
+
+function promoEmailHTML(code: string, percentOff: number, expiresLabel: string, weekdays: number[] | null = null) {
   const rows = PROMO_VEHICLE_LINKS.map((v) =>
     `<tr><td style="padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.07);">
        <a href="${promoLink(v.path, code)}" style="color:#FF6B00;text-decoration:none;font-size:15px;">${v.name} &nbsp;&middot;&nbsp; See pricing &rarr;</a>
@@ -197,12 +215,12 @@ function promoEmailHTML(code: string, percentOff: number, expiresLabel: string) 
       <tr><td style="padding:32px 0 0;">
         <h1 style="font-family:Impact,Arial,sans-serif;font-size:32px;letter-spacing:2px;margin:0 0 18px;">LABOR DAY SPECIAL</h1>
         <p style="font-size:15px;color:rgba(255,255,255,0.72);margin:0 0 18px;line-height:1.7;">
-          Summer is winding down and the roads around Lancaster are about as good as they get right now. We are running ${percentOff}% off Monday through Friday rentals through the end of October. These things are a blast.
+          Summer is winding down and the roads around Lancaster are about as good as they get right now. We are running ${percentOff}% off${weekdays ? ' ' + promoDaysLabel(weekdays) + ' rentals' : ''} through the end of October. These things are a blast.
         </p>
         <div style="background:#1a1a1a;border:1px solid rgba(255,107,0,0.3);border-radius:10px;padding:24px;text-align:center;margin:0 0 20px;">
           <div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#FF6B00;margin-bottom:8px;">Your Code</div>
           <div style="font-family:Impact,Arial,sans-serif;font-size:38px;letter-spacing:5px;color:#FF6B00;">${code}</div>
-          <div style="font-size:13px;color:#aaa;margin-top:10px;">${percentOff}% off the rental &nbsp;·&nbsp; Mon to Fri &nbsp;·&nbsp; ${expiresLabel}</div>
+          <div style="font-size:13px;color:#aaa;margin-top:10px;">${percentOff}% off the rental${weekdays ? ' &nbsp;·&nbsp; ' + promoDaysLabel(weekdays, true) : ''} &nbsp;·&nbsp; ${expiresLabel}</div>
         </div>
         <p style="font-size:15px;color:rgba(255,255,255,0.72);margin:0 0 8px;line-height:1.7;">
           The refundable deposit and any delivery fee are not discounted.
@@ -318,7 +336,7 @@ async function executeToolCall(name: string, input: Record<string, unknown>) {
         from: "CJ's Fun Time Rental <bookings@cjfuntimerentals.com>",
         to: input.email as string,
         subject: `Labor Day special: ${pct}% off a Slingshot`,
-        html: promoEmailHTML(code, pct, expiresLabel),
+        html: promoEmailHTML(code, pct, expiresLabel, Array.isArray(promo.weekdays) ? promo.weekdays : null),
         ...promoReplyTo(PROMO_REPLY_TO)
       });
       return { ok: true, sentTo: input.email, code };
@@ -347,7 +365,7 @@ async function executeToolCall(name: string, input: Record<string, unknown>) {
           recipientCount: recipients.length,
           recipients,
           note: 'Nothing was sent. Call again with confirmSend: true to send for real.',
-          samplePreviewHtml: promoEmailHTML(code, pct, expiresLabel)
+          samplePreviewHtml: promoEmailHTML(code, pct, expiresLabel, Array.isArray(promo.weekdays) ? promo.weekdays : null)
         };
       }
 
@@ -359,7 +377,7 @@ async function executeToolCall(name: string, input: Record<string, unknown>) {
             from: "CJ's Fun Time Rental <bookings@cjfuntimerentals.com>",
             to: email,
             subject: `Labor Day special: ${pct}% off a Slingshot`,
-            html: promoEmailHTML(code, pct, expiresLabel),
+            html: promoEmailHTML(code, pct, expiresLabel, Array.isArray(promo.weekdays) ? promo.weekdays : null),
             ...promoReplyTo(PROMO_REPLY_TO)
           });
           results.push({ email, sent: true });

@@ -63,7 +63,28 @@ function promoDaysAllowed(startDate: string, endDate: string, weekdays: number[]
   return true;
 }
 
-const PROMO_WEEKDAY_MSG = 'This code is good for Monday to Friday rentals. Pick weekday dates to use it.';
+// Describe the allowed days FROM the config array rather than hardcoding a
+// sentence. A hardcoded "Monday to Friday" silently becomes a lie the moment
+// the array changes, which is the same drift that put wrong prices in this
+// codebase: a value edited in one place and a label left behind in another.
+const PROMO_DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+function promoDaysLabel(weekdays: number[]): string {
+  const ds = [...new Set(weekdays)].filter((d) => d >= 0 && d <= 6).sort((a, b) => a - b);
+  if (ds.length === 0) return '';
+  // Contiguous in week order, or contiguous when wrapped through Sunday
+  // (e.g. [0,1,2,3,4] reads better as "Sunday to Thursday").
+  const contiguous = ds.every((d, i) => i === 0 || d === ds[i - 1] + 1);
+  if (contiguous && ds.length > 1) {
+    return `${PROMO_DAY_NAMES[ds[0]]} to ${PROMO_DAY_NAMES[ds[ds.length - 1]]}`;
+  }
+  if (ds.length === 1) return PROMO_DAY_NAMES[ds[0]];
+  return ds.map((d) => PROMO_DAY_NAMES[d]).join(', ');
+}
+
+function promoWeekdayMsg(weekdays: number[]): string {
+  return `This code is good for ${promoDaysLabel(weekdays)} rentals. Pick those days to use it.`;
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
@@ -116,13 +137,13 @@ Deno.serve(async (req) => {
       // say what the rule is. MUST stay identical to the checkout block below.
       const vWeekdays = Array.isArray(vPromo.weekdays) ? vPromo.weekdays as number[] : null;
       if (vWeekdays && !promoDaysAllowed(String(startDate), String(endDate || startDate), vWeekdays)) {
-        return new Response(JSON.stringify({ ok: false, error: PROMO_WEEKDAY_MSG }),
+        return new Response(JSON.stringify({ ok: false, error: promoWeekdayMsg(vWeekdays) }),
           { status: 200, headers: { ...CORS, 'Content-Type': 'application/json' } });
       }
       return new Response(JSON.stringify({
         ok: true, code: vKey, percentOff: vPct,
         label: String(vPromo.label || (vPct + '% off your rental')),
-        restriction: vWeekdays ? 'Monday to Friday rentals only' : ''
+        restriction: vWeekdays ? promoDaysLabel(vWeekdays) + ' rentals only' : ''
       }), { status: 200, headers: { ...CORS, 'Content-Type': 'application/json' } });
     }
 
@@ -147,29 +168,9 @@ Deno.serve(async (req) => {
 
     const stripeKey = Deno.env.get('STRIPE_SECRET_KEY')!;
 
-    // Check for double-booking
-    const { data: existing } = await supabase
-      .from('bookings')
-      .select('id, start_date, end_date')
-      .eq('status', 'confirmed')
-      .eq('vehicle', vehicleKey);
-
-    if (existing && existing.length > 0) {
-      const reqStart = new Date(startDate);
-      const reqEnd   = new Date(endDate || startDate);
-      for (const b of existing) {
-        const bStart = new Date(b.start_date);
-        const bEnd   = new Date(b.end_date || b.start_date);
-        if (reqStart < bEnd && reqEnd > bStart) {
-          return new Response(JSON.stringify({ error: 'Those dates are already booked. Please choose different dates.' }), {
-            status: 409, headers: { ...CORS, 'Content-Type': 'application/json' }
-          });
-        }
-      }
-    }
-
-    // Get vehicle info from Supabase config
     let vehicleName = vehicleKey;
+    let vehicleAltName = '';
+    let vehicleAltName2 = '';
     let vehicleType = vehicleKey.includes('canam') ? 'canam' : 'slingshot';
     let stripeProductId: string | null = null;
 
@@ -177,11 +178,83 @@ Deno.serve(async (req) => {
       const { data } = await supabase.from('site_config').select('config').eq('id', 1).single();
       const vehicle = data?.config?.vehicles?.[vehicleKey];
       if (vehicle?.label || vehicle?.name) vehicleName = vehicle.label || vehicle.name;
+      // Legacy bookings stored `name`, but vehicleName prefers `label`, so keep
+      // both spellings for the availability match below.
+      if (vehicle?.name) vehicleAltName = vehicle.name;
+      if (vehicle?.label) vehicleAltName2 = vehicle.label;
       if (vehicle?.type) vehicleType = vehicle.type;
       if (vehicle?.stripeProductId) stripeProductId = vehicle.stripeProductId;
     } catch { /* fall through */ }
 
     if (!stripeProductId) stripeProductId = STRIPE_PRODUCTS[vehicleKey] || null;
+
+    // ── Availability ────────────────────────────────────────────────────────
+    // Dates here are INCLUSIVE on both ends: a 24hr booking sends
+    // endDate === startDate, and every booking taken so far has been a single
+    // day. The previous test was `reqStart < bEnd && reqEnd > bStart`, which is
+    // the half-open comparison. On a same-day booking it compares a date to
+    // itself and returns false, so two customers could book the same vehicle on
+    // the same day. Inclusive overlap is `reqStart <= bEnd && reqEnd >= bStart`.
+    //
+    // Compared as plain 'YYYY-MM-DD' strings, which sort correctly and avoid the
+    // UTC-vs-local shift that new Date('2026-09-12') introduces.
+    const reqStartStr = String(startDate);
+    const reqEndStr   = String(endDate || startDate);
+
+    // Match on vehicle_key OR the display name. `bookings.vehicle` holds a NAME
+    // ("2016 Polaris Slingshot") while this function receives a KEY
+    // ("slingshot_2020"), so the old .eq('vehicle', vehicleKey) matched nothing
+    // and the double-booking guard never actually fired on a real booking.
+    // vehicle_key is populated only on newer rows (6 of 11 are NULL), so both
+    // are needed. Two vehicles share the name "2016 Polaris Slingshot", which
+    // makes the name comparison over-broad rather than under-broad: it can
+    // refuse a free vehicle, never sell one twice. That is the safe direction,
+    // and vehicle_key wins whenever it is present.
+    const { data: existing } = await supabase
+      .from('bookings')
+      .select('id, start_date, end_date, vehicle, vehicle_key')
+      .eq('status', 'confirmed');
+
+    if (existing && existing.length > 0) {
+      for (const b of existing) {
+        const sameVehicle = b.vehicle_key
+          ? b.vehicle_key === vehicleKey
+          : [vehicleName, vehicleAltName, vehicleAltName2]
+              .filter(Boolean)
+              .includes(String(b.vehicle || ''));
+        if (!sameVehicle) continue;
+        const bStart = String(b.start_date);
+        const bEnd   = String(b.end_date || b.start_date);
+        if (reqStartStr <= bEnd && reqEndStr >= bStart) {
+          return new Response(JSON.stringify({ error: 'Those dates are already booked. Please choose different dates.' }), {
+            status: 409, headers: { ...CORS, 'Content-Type': 'application/json' }
+          });
+        }
+      }
+    }
+
+    // Owner-set blocks (maintenance, personal use, a day held back). The widget
+    // already greys these out, but that is browser-side only: without this the
+    // sole thing standing between a promo link and a booking on a blocked day
+    // is client code. Fail closed the same way double-booking does.
+    const { data: blocks } = await supabase
+      .from('vehicle_blocks')
+      .select('start_date, end_date, reason')
+      .eq('vehicle_key', vehicleKey);
+
+    if (blocks && blocks.length > 0) {
+      for (const bl of blocks) {
+        const blStart = String(bl.start_date);
+        const blEnd   = String(bl.end_date || bl.start_date);
+        if (reqStartStr <= blEnd && reqEndStr >= blStart) {
+          return new Response(JSON.stringify({ error: 'That vehicle is unavailable on those dates. Please choose different dates.' }), {
+            status: 409, headers: { ...CORS, 'Content-Type': 'application/json' }
+          });
+        }
+      }
+    }
+
+    // Get vehicle info from Supabase config
 
     // ── Server-side price verification ──────────────────────────────────────
     // The client computes baseCents/totalCents itself (booking-widget.js's
@@ -285,7 +358,7 @@ Deno.serve(async (req) => {
       // trusted to have run it, so it is re-checked on the charging path.
       const cWeekdays = Array.isArray(promo.weekdays) ? promo.weekdays as number[] : null;
       if (cWeekdays && !promoDaysAllowed(String(startDate), String(endDate || startDate), cWeekdays)) {
-        return new Response(JSON.stringify({ error: PROMO_WEEKDAY_MSG }),
+        return new Response(JSON.stringify({ error: promoWeekdayMsg(cWeekdays) }),
           { status: 400, headers: { ...CORS, 'Content-Type': 'application/json' } });
       }
       promoPercentOff = pct;
