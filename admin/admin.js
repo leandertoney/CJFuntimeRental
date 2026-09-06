@@ -1079,7 +1079,7 @@
     var el;
 
     el = document.getElementById('admin-hourly-rate');
-    if (el) el.value = p.hourlyRate || 35;
+    if (el) el.value = p.hourlyRate || 30;
     el = document.getElementById('admin-hourly-min');
     if (el) el.value = p.hourlyMin || 3;
 
@@ -2369,7 +2369,18 @@
       obj[path[path.length - 1]] = value;
     });
 
-    // Collect data-pricing fields into cfg.pricing
+    // Collect data-pricing fields into cfg.pricing.
+    //
+    // ONLY when the Pricing panel is the one being left. These inputs live in
+    // static markup, so they exist and are EMPTY from the moment the page
+    // loads; renderPricingPanel() is what fills them. Collecting
+    // unconditionally meant any nav click, from any panel, read "" and wrote
+    // Number("") === 0 over every stored price, and an unrendered checkbox
+    // read false. A later Save & Publish then persisted those zeros. That is
+    // how hourlyRate, hourlyMin, tenhrRate, dailyRate and the delivery
+    // settings were all zeroed in the live config while hourlyCap, hourlyMax
+    // and multiDayRate, which have no inputs, survived untouched.
+    if (activeSection === 'pricing') {
     if (!cfg.pricing) cfg.pricing = {};
     document.querySelectorAll('[data-pricing]').forEach(function (el) {
       var path = el.getAttribute('data-pricing').split('.');
@@ -2389,9 +2400,10 @@
       }
       obj[path[path.length - 1]] = value;
     });
+    }
 
     // Also sync ratePerDay on vehicles to the 24hr rate for backward compat
-    if (cfg.pricing.dailyRate && cfg.vehicles) {
+    if (cfg.pricing && cfg.pricing.dailyRate && cfg.vehicles) {
       Object.keys(cfg.vehicles).forEach(function (key) {
         var v = cfg.vehicles[key];
         var type = v.type || (key.indexOf('canam') !== -1 ? 'canam' : 'slingshot');
