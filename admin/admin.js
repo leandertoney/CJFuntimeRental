@@ -505,14 +505,26 @@
     collectFormData();
     activeSection = 'bookings';
     updateNavActive('bookings');
-    renderPanel('bookings');
 
-    var tries = 0;
-    (function open() {
-      var row = document.querySelector('[data-booking-id="' + bookingId + '"]');
-      if (row) return row.click();
-      if (++tries < 40) setTimeout(open, 100);
-    })();
+    // Bookings is paginated, so the target row may not be on the page the
+    // panel would open by default. Find which page holds it first, otherwise
+    // the wait below would spin against a row that is never drawn.
+    apiFetch(ADMIN_API + '/bookings')
+      .then(function (r) { return r.json(); })
+      .then(function (all) {
+        var idx = (all || []).findIndex(function (b) { return b.id === bookingId; });
+        if (idx >= 0) listPage.bookings = Math.floor(idx / ROWS_PER_PAGE) + 1;
+      })
+      .catch(function () { /* fall back to whatever page is current */ })
+      .then(function () {
+        renderPanel('bookings');
+        var tries = 0;
+        (function open() {
+          var row = document.querySelector('[data-booking-id="' + bookingId + '"]');
+          if (row) return row.click();
+          if (++tries < 40) setTimeout(open, 100);
+        })();
+      });
   }
 
   function updateNavActive(name) {
@@ -1716,7 +1728,8 @@
     apiFetch(ADMIN_API + '/bookings')
       .then(function (r) { return r.json(); })
       .then(function (bookings) {
-        count.textContent = bookings.length + ' booking' + (bookings.length !== 1 ? 's' : '');
+        var pg = paginate('bookings', bookings, renderBookingsPanel);
+        count.textContent = pg.countLabel('booking');
 
         if (!bookings.length) {
           tbody.innerHTML = '';
@@ -1727,7 +1740,8 @@
 
         expBtn.disabled = false;
         var html = '';
-        bookings.forEach(function (b, idx) {
+        pg.rows.forEach(function (b, i) {
+          var idx = pg.offset + i;
           var d = new Date(b.created_at);
           var statusClass = b.status === 'confirmed' ? 'status-confirmed' : 'status-pending';
 
@@ -1823,10 +1837,60 @@
   }
 
   // ── Leads panel ─────────────────────────────────────────────
-  // 25 rows a page, never infinite scroll: the list is scanned and acted on,
-  // and a lead deleted from page 3 must not silently move everything up.
-  var LEADS_PER_PAGE = 25;
-  var leadsPage = 1;
+  // 25 rows a page, never infinite scroll: these lists are scanned and acted
+  // on, and a row deleted from page 3 must not silently move everything up.
+  var ROWS_PER_PAGE = 25;
+  var listPage = { leads: 1, bookings: 1, tours: 1 };
+
+  // Slice one page out of a list and render its pager. Returns the rows to
+  // draw plus the offset, so row numbering stays continuous across pages.
+  // Every list panel re-fetches on page change, so `rerender` is the panel's
+  // own render function.
+  function paginate(key, rows, rerender) {
+    var totalPages = Math.max(1, Math.ceil(rows.length / ROWS_PER_PAGE));
+    // A deletion can empty the last page; step back rather than show nothing.
+    if (listPage[key] > totalPages) listPage[key] = totalPages;
+    var page   = listPage[key];
+    var offset = (page - 1) * ROWS_PER_PAGE;
+
+    renderPager(key, page, totalPages, rerender);
+
+    return {
+      rows: rows.slice(offset, offset + ROWS_PER_PAGE),
+      offset: offset,
+      // "Showing 1-25 of 52 leads" once there is more than one page.
+      countLabel: function (noun) {
+        var plural = noun + (rows.length !== 1 ? 's' : '');
+        if (rows.length <= ROWS_PER_PAGE) return rows.length + ' ' + plural;
+        return 'Showing ' + (offset + 1) + '-' + Math.min(offset + ROWS_PER_PAGE, rows.length)
+             + ' of ' + rows.length + ' ' + plural;
+      }
+    };
+  }
+
+  function renderPager(key, page, totalPages, rerender) {
+    var host = document.getElementById(key + '-pager');
+    if (!host) return;
+    if (totalPages <= 1) { host.innerHTML = ''; host.hidden = true; return; }
+    host.hidden = false;
+
+    host.innerHTML =
+        '<button type="button" class="pager-btn" data-page="' + (page - 1) + '"'
+      + (page === 1 ? ' disabled' : '') + '>Previous</button>'
+      + '<span class="pager-status">Page ' + page + ' of ' + totalPages + '</span>'
+      + '<button type="button" class="pager-btn" data-page="' + (page + 1) + '"'
+      + (page === totalPages ? ' disabled' : '') + '>Next</button>';
+
+    host.querySelectorAll('.pager-btn[data-page]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        if (this.disabled) return;
+        listPage[key] = parseInt(this.getAttribute('data-page'), 10);
+        rerender();
+        var panel = document.getElementById('panel-' + (key === 'tours' ? 'tours' : key));
+        if (panel) panel.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      });
+    });
+  }
 
   function renderLeadsPanel() {
     var tbody   = document.getElementById('leads-tbody');
@@ -1840,11 +1904,8 @@
     apiFetch(ADMIN_API + '/leads')
       .then(function (r) { return r.json(); })
       .then(function (leads) {
-        var shownFrom = (leadsPage - 1) * LEADS_PER_PAGE + 1;
-        var shownTo   = Math.min(leadsPage * LEADS_PER_PAGE, leads.length);
-        count.textContent = leads.length > LEADS_PER_PAGE
-          ? 'Showing ' + shownFrom + '-' + shownTo + ' of ' + leads.length + ' leads'
-          : leads.length + ' lead' + (leads.length !== 1 ? 's' : '');
+        var pg = paginate('leads', leads, renderLeadsPanel);
+        count.textContent = pg.countLabel('lead');
 
         if (!leads.length) {
           tbody.innerHTML = '';
@@ -1855,15 +1916,9 @@
 
         expBtn.disabled = false;
 
-        var totalPages = Math.max(1, Math.ceil(leads.length / LEADS_PER_PAGE));
-        // A deletion can empty the last page; step back rather than show nothing.
-        if (leadsPage > totalPages) leadsPage = totalPages;
-        var startIdx = (leadsPage - 1) * LEADS_PER_PAGE;
-        var pageRows = leads.slice(startIdx, startIdx + LEADS_PER_PAGE);
-
         var html = '';
-        pageRows.forEach(function (lead, i) {
-          var idx = startIdx + i;
+        pg.rows.forEach(function (lead, i) {
+          var idx = pg.offset + i;
           var d = new Date(lead.created_at || lead.date);
           var dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
           var timeStr = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
@@ -1876,7 +1931,6 @@
             + '</tr>';
         });
         tbody.innerHTML = html;
-        renderLeadsPager(leads.length, totalPages);
 
         // Delete buttons
         tbody.querySelectorAll('.lead-delete-btn').forEach(function (btn) {
@@ -1911,30 +1965,6 @@
       .catch(function () {
         tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--danger)">Failed to load leads.</td></tr>';
       });
-  }
-
-  function renderLeadsPager(total, totalPages) {
-    var host = document.getElementById('leads-pager');
-    if (!host) return;
-    if (totalPages <= 1) { host.innerHTML = ''; host.hidden = true; return; }
-    host.hidden = false;
-
-    var html = '<button type="button" class="pager-btn" data-page="' + (leadsPage - 1) + '"'
-             + (leadsPage === 1 ? ' disabled' : '') + '>Previous</button>';
-    html += '<span class="pager-status">Page ' + leadsPage + ' of ' + totalPages + '</span>';
-    html += '<button type="button" class="pager-btn" data-page="' + (leadsPage + 1) + '"'
-         +  (leadsPage === totalPages ? ' disabled' : '') + '>Next</button>';
-    host.innerHTML = html;
-
-    host.querySelectorAll('.pager-btn[data-page]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        if (this.disabled) return;
-        leadsPage = parseInt(this.getAttribute('data-page'), 10);
-        renderLeadsPanel();
-        var panel = document.getElementById('panel-leads');
-        if (panel) panel.scrollIntoView({ block: 'start', behavior: 'smooth' });
-      });
-    });
   }
 
   // ── Tour requests panel ──────────────────────────────────────
@@ -1977,7 +2007,8 @@
       .then(function (r) { return r.json(); })
       .then(function (rows) {
         if (!Array.isArray(rows)) throw new Error('bad payload');
-        count.textContent = rows.length + ' request' + (rows.length !== 1 ? 's' : '');
+        var pg = paginate('tours', rows, renderTourRequestsPanel);
+        count.textContent = pg.countLabel('request');
 
         if (!rows.length) {
           tbody.innerHTML = '';
@@ -1988,7 +2019,8 @@
         expBtn.disabled = false;
 
         var html = '';
-        rows.forEach(function (t, idx) {
+        pg.rows.forEach(function (t, i) {
+          var idx = pg.offset + i;
           var d = new Date(t.created_at);
           var dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
           var timeStr = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
