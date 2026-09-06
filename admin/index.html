@@ -394,6 +394,7 @@
         <!-- PANEL: Blocked Dates -->
         <section id="panel-calendar" class="admin-panel">
 
+          <div class="cal-layout">
           <!-- Calendar leads and stays as large as possible. The day detail
                opens as a popover OVER it rather than stealing width. -->
           <div id="calendar-wrap" class="calendar-wrap-big">
@@ -415,20 +416,19 @@
             <div id="cal-day-panel" class="cday-panel" hidden role="dialog" aria-modal="true"></div>
           </div>
 
-          <div class="cal-secondary-wrap">
-
+          <aside class="cal-rail">
           <div class="cal-secondary">
-            <button class="cal-disclosure" type="button" data-target="cal-blocked-panel"
-                    aria-expanded="false">Blocked dates list</button>
-            <div id="cal-blocked-panel" class="cal-disclosure-body" hidden>
+            <button class="cal-disclosure open" type="button" data-target="cal-blocked-panel"
+                    aria-expanded="true">Blocked dates</button>
+            <div id="cal-blocked-panel" class="cal-disclosure-body">
               <div id="blocked-list-wrap" class="blocked-list-wrap">
                 <div id="blocked-list" class="blocked-list"></div>
               </div>
             </div>
 
-            <button class="cal-disclosure" type="button" data-target="cal-vblocks-panel"
-                    aria-expanded="false">Per-vehicle blocks</button>
-            <div id="cal-vblocks-panel" class="cal-disclosure-body" hidden>
+            <button class="cal-disclosure open" type="button" data-target="cal-vblocks-panel"
+                    aria-expanded="true">Block a vehicle</button>
+            <div id="cal-vblocks-panel" class="cal-disclosure-body">
               <div class="panel-intro">
                 <p>Block specific vehicles for specific dates (e.g. when rented on Turo, maintenance). Other vehicles remain available.</p>
               </div>
@@ -457,9 +457,10 @@
                   </div>
                 </div>
               </div>
-              <div id="vehicle-blocks-list" style="margin-top:24px"></div>
+              <div id="vehicle-blocks-list" style="margin-top:16px"></div>
             </div>
           </div>
+          </aside>
           </div>
 
         </section>
@@ -529,7 +530,7 @@
     <div class="modal-box whatsnew-box" role="dialog" aria-modal="true" aria-labelledby="wn-title">
       <div class="wn-progress"><span id="wn-progress-fill"></span></div>
       <div class="wn-body">
-        <span class="wn-step" id="wn-step"></span>
+        <span class="wn-eyebrow" id="wn-eyebrow">What's new</span>
         <h3 class="modal-title" id="wn-title"></h3>
         <p class="wn-text" id="wn-text"></p>
       </div>

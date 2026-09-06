@@ -958,8 +958,35 @@ body.logged-in #admin-shell { display: flex; }
    enough to carry money and availability instead of just a number. */
 /* The calendar keeps the full width. Day detail opens as a popover centred
    over it, dismissible, so nothing permanently steals space from the grid. */
-.calendar-wrap-big { margin-bottom: 0; position: relative; }
-.cal-secondary-wrap { margin-top: 28px; }
+/* Calendar takes the room; the block tools ride a narrow rail beside it so
+   they are always visible without competing for width. */
+.cal-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 244px;
+  gap: 20px;
+  align-items: start;
+}
+.calendar-wrap-big { margin-bottom: 0; position: relative; min-width: 0; }
+
+.cal-rail { min-width: 0; font-size: 13px; }
+.cal-rail .cal-secondary { border-top: none; padding-top: 0; }
+.cal-rail .cal-disclosure { font-size: 12px; padding: 10px 0; }
+.cal-rail .cal-disclosure-body { padding: 2px 0 14px; }
+.cal-rail .panel-intro p { font-size: 11.5px; line-height: 1.5; color: var(--text-4); margin-bottom: 10px; }
+.cal-rail .vblock-form-grid { grid-template-columns: 1fr; gap: 8px; }
+.cal-rail .vblock-field label { font-size: 11px; }
+.cal-rail .vblock-field input,
+.cal-rail .vblock-field select { font-size: 12px; padding: 7px 9px; }
+.cal-rail .vblock-add-btn { width: 100%; font-size: 12px; padding: 8px; }
+.cal-rail .blocked-list { max-height: 220px; overflow-y: auto; }
+.cal-rail .blocked-list-wrap h4 { font-size: 12px; }
+
+/* Below this the rail would squeeze the grid, so it drops underneath. */
+@media (max-width: 1200px) {
+  .cal-layout { grid-template-columns: 1fr; }
+  .cal-rail { border-top: 1px solid var(--border); padding-top: 8px; }
+  .cal-rail .vblock-form-grid { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+}
 .calendar-wrap-big .calendar-nav {
   justify-content: center;
   gap: 12px;
@@ -970,13 +997,14 @@ body.logged-in #admin-shell { display: flex; }
 
 .calendar-grid-big {
   max-width: none;
+  width: 100%;
   gap: 8px;
   margin-bottom: 16px;
 }
 
 .calendar-grid-big .cal-day {
   aspect-ratio: auto;
-  min-height: 92px;
+  min-height: 104px;
   flex-direction: column;
   align-items: flex-start;
   justify-content: flex-start;
@@ -1039,14 +1067,16 @@ body.logged-in #admin-shell { display: flex; }
 /* ── What's new wizard ──────────────────────────────────────── */
 #whatsnew-modal { background: rgba(16,24,40,0.42); align-items: center; }
 .whatsnew-box {
-  max-width: 420px; width: calc(100% - 32px); padding: 0; overflow: hidden;
+  max-width: 380px; width: calc(100% - 32px); padding: 0; overflow: hidden;
   transition: transform 0.25s ease;
 }
 /* Keep the dialog clear of whatever it is pointing at. */
-#whatsnew-modal { align-items: center; }
-#whatsnew-modal.wn-low { align-items: flex-end; padding-bottom: 24px; }
-/* Never let the ringed element sit under the dialog. */
-#whatsnew-modal.wn-low .whatsnew-box { margin-top: 24px; }
+/* The card must always be fully on screen. Anchoring to flex-end with a
+   viewport-relative pad was clipping the title off the bottom. */
+#whatsnew-modal { align-items: center; padding: 24px; }
+#whatsnew-modal.wn-low  { align-items: flex-end; }
+#whatsnew-modal.wn-high { align-items: flex-start; }
+#whatsnew-modal.wn-low .whatsnew-box { margin-bottom: 8px; }
 .whatsnew-box.wn-shifted { transform: none; }
 
 /* The real element, ringed on the real screen. */
@@ -1060,16 +1090,16 @@ body.logged-in #admin-shell { display: flex; }
 }
 .wn-progress { height: 3px; background: var(--surface-3); }
 .wn-progress span { display: block; height: 100%; width: 20%; background: var(--orange); transition: width 0.25s ease; }
-.wn-body { padding: 24px 26px 16px; }
-.wn-step {
+.wn-body { padding: 20px 24px 12px; }
+.wn-eyebrow {
   display: block; font-size: 11px; font-weight: 700; letter-spacing: 1px;
-  text-transform: uppercase; color: var(--text-4); margin-bottom: 8px;
+  text-transform: uppercase; color: var(--orange-ink); margin-bottom: 8px;
 }
-.whatsnew-box .modal-title { font-size: 19px; line-height: 1.3; margin-bottom: 8px; }
+.whatsnew-box .modal-title { font-size: 17px; line-height: 1.3; margin-bottom: 6px; }
 .wn-text { font-size: 14px; line-height: 1.55; color: var(--text-2); }
 
 
-.wn-actions { display: flex; align-items: center; gap: 12px; padding: 16px 28px 22px; }
+.wn-actions { display: flex; align-items: center; gap: 12px; padding: 10px 24px 18px; }
 .wn-skip {
   font: inherit; font-size: 13px; color: var(--text-3);
   background: none; border: none; cursor: pointer; padding: 8px 4px;

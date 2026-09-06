@@ -245,30 +245,35 @@
     {
       section: 'overview',
       target: '.attn-list',
-      title: 'Your dashboard opens with what needs doing',
+      eyebrow: 'Your dashboard',
+      title: 'It opens with what needs doing',
       text: 'Held deposits, missing IDs, unanswered tour requests. Each row takes you to the booking.'
     },
     {
       section: 'overview',
       target: '.attn-dismiss',
+      eyebrow: 'Your dashboard',
       title: 'Already handled it? Clear it',
       text: 'Hit the \u00d7. It asks why, keeps your reason on the booking, and never shows that item again.'
     },
     {
       section: 'calendar',
       target: '#calendar-grid',
-      title: 'The calendar shows the whole month',
+      eyebrow: 'The calendar',
+      title: 'It shows the whole month',
       text: 'Each day shows what it earned and how many vehicles are free. Switch to Week to see pickups.'
     },
     {
       section: 'calendar',
       target: '#calendar-grid',
+      eyebrow: 'The calendar',
       title: 'One click never changes anything',
       text: 'Clicking a day opens it. Blocking asks you to confirm, and still needs Save & Publish.'
     },
     {
       section: 'calendar',
       target: null,
+      eyebrow: 'On your website',
       title: 'Delivery is back on',
       text: 'It had stopped showing at checkout and was charging $0. Live again at $50 each way, 30 miles.'
     }
@@ -312,7 +317,8 @@
     }
 
     var set = function (id, val) { var el = document.getElementById(id); if (el) el.innerHTML = val; };
-    set('wn-step',  'Step ' + (wnIndex + 1) + ' of ' + WHATS_NEW_STEPS.length);
+    // Named, not numbered: "Step 3 of 5" makes a two-minute tour feel like a form.
+    set('wn-eyebrow', wnIndex === 0 ? "What's new" : esc(step.eyebrow || "What's new"));
     set('wn-title', esc(step.title));
     set('wn-text',  esc(step.text));
 
@@ -347,15 +353,26 @@
     document.querySelectorAll('.wn-spot').forEach(function (el) { el.classList.remove('wn-spot'); });
     var box = document.querySelector('.whatsnew-box');
     var modalEl = document.getElementById('whatsnew-modal');
-    if (!selector) { if (modalEl) modalEl.classList.remove('wn-low'); return; }
+    var clear = function () {
+      if (modalEl) modalEl.classList.remove('wn-low', 'wn-high');
+    };
+    if (!selector) { clear(); return; }
     var el = document.querySelector(selector);
-    if (!el) { if (modalEl) modalEl.classList.remove('wn-low'); return; }
+    if (!el) { clear(); return; }
     el.classList.add('wn-spot');
     el.scrollIntoView({ block: 'center', behavior: 'smooth' });
     // If the target sits in the upper half, drop the dialog to the bottom.
-    var r = el.getBoundingClientRect();
+    // Move the dialog out of the way only when there is real room for it.
+    // Dropping it to the bottom regardless just put the highlight on top of it.
+    var r   = el.getBoundingClientRect();
+    var box = document.querySelector('.whatsnew-box');
     var modal = document.getElementById('whatsnew-modal');
-    if (modal) modal.classList.toggle('wn-low', r.top < window.innerHeight / 2);
+    if (!modal) return;
+    var boxH  = box ? box.getBoundingClientRect().height : 320;
+    var below = window.innerHeight - r.bottom;
+    var above = r.top;
+    modal.classList.toggle('wn-low',  below >= boxH + 32);
+    modal.classList.toggle('wn-high', below <  boxH + 32 && above >= boxH + 32);
   }
 
   function closeWhatsNew() {
