@@ -232,6 +232,40 @@
     try { localStorage.setItem('cjfr_admin_sidebar_collapsed', collapsed ? '1' : '0'); } catch (e) {}
   }
 
+  // ── In-app confirm ───────────────────────────────────────────
+  //
+  // Replaces window.confirm(). The native dialog is titled with the origin
+  // ("localhost:4310 says", "cjfuntimerentals.com says"), which on a real
+  // action like blocking the fleet reads as a browser error rather than the
+  // app asking a question. Also lets a destructive action look destructive.
+  function askConfirm(opts, onYes) {
+    var modal  = document.getElementById('confirm-modal');
+    if (!modal) { if (window.confirm(opts.title)) onYes(); return; }
+    var okBtn  = document.getElementById('confirm-ok');
+    var cancel = document.getElementById('confirm-cancel');
+
+    document.getElementById('confirm-title').textContent = opts.title || 'Are you sure?';
+    document.getElementById('confirm-text').textContent  = opts.text  || '';
+    okBtn.textContent = opts.confirmLabel || 'Confirm';
+    okBtn.classList.toggle('is-danger', !!opts.danger);
+    modal.classList.remove('hidden');
+    okBtn.focus();
+
+    function cleanup() {
+      modal.classList.add('hidden');
+      okBtn.onclick = null; cancel.onclick = null;
+      document.removeEventListener('keydown', onKey);
+    }
+    function onKey(e) {
+      if (e.key === 'Escape') cleanup();
+      if (e.key === 'Enter')  { cleanup(); onYes(); }
+    }
+    okBtn.onclick  = function () { cleanup(); onYes(); };
+    cancel.onclick = cleanup;
+    modal.onclick  = function (e) { if (e.target === modal) cleanup(); };
+    document.addEventListener('keydown', onKey);
+  }
+
   // ── What's new ───────────────────────────────────────────────
   //
   // Shown once per admin per release. Bump WHATS_NEW_VERSION when the steps
@@ -2181,18 +2215,29 @@
     // Fleet-wide changes are confirmed: this closes or reopens the whole day.
     var blockBtn = host.querySelector('[data-block-day]');
     if (blockBtn) blockBtn.onclick = function () {
-      if (!confirm('Block ALL vehicles on ' + dateStr + '?\n\nNobody will be able to book this day until you unblock it.')) return;
-      if (!cfg.blockedDates) cfg.blockedDates = [];
-      if (cfg.blockedDates.indexOf(dateStr) === -1) { cfg.blockedDates.push(dateStr); cfg.blockedDates.sort(); }
-      afterCalChange(dateStr);
+      askConfirm({
+        title: 'Block the whole fleet?',
+        text: 'Nobody will be able to book ' + dateStr + ' until you unblock it.',
+        confirmLabel: 'Block the day',
+        danger: true
+      }, function () {
+        if (!cfg.blockedDates) cfg.blockedDates = [];
+        if (cfg.blockedDates.indexOf(dateStr) === -1) { cfg.blockedDates.push(dateStr); cfg.blockedDates.sort(); }
+        afterCalChange(dateStr);
+      });
     };
 
     var unblockBtn = host.querySelector('[data-unblock-day]');
     if (unblockBtn) unblockBtn.onclick = function () {
-      if (!confirm('Unblock ' + dateStr + ' and make the fleet bookable again?')) return;
-      var idx = (cfg.blockedDates || []).indexOf(dateStr);
-      if (idx !== -1) cfg.blockedDates.splice(idx, 1);
-      afterCalChange(dateStr);
+      askConfirm({
+        title: 'Reopen this day?',
+        text: dateStr + ' becomes bookable again for the whole fleet.',
+        confirmLabel: 'Unblock the day'
+      }, function () {
+        var idx = (cfg.blockedDates || []).indexOf(dateStr);
+        if (idx !== -1) cfg.blockedDates.splice(idx, 1);
+        afterCalChange(dateStr);
+      });
     };
 
     var vehBtn = host.querySelector('[data-block-vehicle]');
@@ -2219,9 +2264,15 @@
     host.querySelectorAll('[data-remove-vblock]').forEach(function (btn) {
       btn.onclick = function () {
         var id = this.getAttribute('data-remove-vblock');
-        if (!confirm('Remove this vehicle block? That vehicle becomes bookable again.')) return;
-        deleteVehicleBlock(id);
-        host.hidden = true;
+        askConfirm({
+          title: 'Remove this block?',
+          text: 'That vehicle becomes bookable again for those dates.',
+          confirmLabel: 'Remove block',
+          danger: true
+        }, function () {
+          deleteVehicleBlock(id);
+          closeCalDay();
+        });
       };
     });
   }
@@ -2466,10 +2517,16 @@
         tbody.querySelectorAll('.lead-delete-btn').forEach(function (btn) {
           btn.addEventListener('click', function () {
             var id = this.getAttribute('data-id');
-            if (!confirm('Remove this lead?')) return;
-            apiFetch(ADMIN_API + '/leads/' + id, { method: 'DELETE' })
-              .then(function (r) { return r.json(); })
-              .then(function (data) { if (data.ok) renderLeadsPanel(); });
+            askConfirm({
+              title: 'Remove this lead?',
+              text: 'They come off the list permanently.',
+              confirmLabel: 'Remove lead',
+              danger: true
+            }, function () {
+              apiFetch(ADMIN_API + '/leads/' + id, { method: 'DELETE' })
+                .then(function (r) { return r.json(); })
+                .then(function (data) { if (data.ok) renderLeadsPanel(); });
+            });
           });
         });
 
@@ -2602,10 +2659,16 @@
         tbody.querySelectorAll('.tour-delete-btn').forEach(function (btn) {
           btn.addEventListener('click', function () {
             var id = this.getAttribute('data-id');
-            if (!confirm('Delete this tour request? This cannot be undone.')) return;
-            apiFetch(ADMIN_API + '/tour-requests/' + id, { method: 'DELETE' })
-              .then(function (r) { return r.json(); })
-              .then(function (data) { if (data.ok) renderTourRequestsPanel(); });
+            askConfirm({
+              title: 'Delete this tour request?',
+              text: 'This cannot be undone.',
+              confirmLabel: 'Delete request',
+              danger: true
+            }, function () {
+              apiFetch(ADMIN_API + '/tour-requests/' + id, { method: 'DELETE' })
+                .then(function (r) { return r.json(); })
+                .then(function (data) { if (data.ok) renderTourRequestsPanel(); });
+            });
           });
         });
 
@@ -3417,8 +3480,17 @@
   function refundDeposit() {
     if (!currentBooking) return;
     var dollars = '$' + ((currentBooking.deposit_cents || 0) / 100).toLocaleString();
-    if (!confirm('Refund the ' + dollars + ' deposit to ' + (currentBooking.name || currentBooking.email) + '? This sends the money back to their card and cannot be undone.')) return;
+    askConfirm({
+      title: 'Refund the ' + dollars + ' deposit?',
+      text: 'This sends the money back to ' + (currentBooking.name || currentBooking.email)
+          + ' on their original card. It cannot be undone.',
+      confirmLabel: 'Refund ' + dollars,
+      danger: true
+    }, doRefundDeposit);
+  }
 
+  function doRefundDeposit() {
+    var dollars = '$' + ((currentBooking.deposit_cents || 0) / 100).toLocaleString();
     var btn = document.getElementById('bd-refund-deposit');
     btn.disabled = true;
     btn.textContent = 'Refunding…';
@@ -3571,13 +3643,14 @@
 
         if (!res.ok) {
           if (res.body && res.body.warning === 'price_mismatch') {
-            var proceed = confirm(res.body.error + '\n\nProceed anyway without changing the amount charged?');
-            if (proceed) {
-              rescheduleBooking(true);
-              return;
-            }
+            askConfirm({
+              title: 'The price does not match',
+              text: res.body.error + ' Proceed anyway without changing the amount charged?',
+              confirmLabel: 'Reschedule anyway',
+              danger: true
+            }, function () { rescheduleBooking(true); });
             msgEl.style.color = 'var(--warn)';
-            msgEl.textContent = 'Reschedule cancelled — price mismatch not confirmed.';
+            msgEl.textContent = 'Waiting on the price mismatch above.';
             return;
           }
           throw new Error((res.body && res.body.error) || 'Failed to reschedule');
