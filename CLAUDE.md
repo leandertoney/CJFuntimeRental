@@ -1,4 +1,32 @@
-# CJ Funtime Rentals - Project State (Updated 2026-08-29)
+# CJ Funtime Rentals - Project State (Updated 2026-09-06)
+
+## PROMO CODES DO NOT WORK (verified 2026-09-06)
+
+**Do not send a discount campaign to the leads.** The discount form mints a
+unique one-time Stripe promotion code per lead (`FIRST10-XXXXXXXX`, coupon
+`6pEsbmdK` = 10% off once, lead email in `metadata.email`). **54 codes exist and
+zero have ever been redeemed**, because **there is nowhere to enter one.**
+
+`booking-widget.js` (the live flow, loaded on vehicle pages) renders four inputs:
+pickup date, dropoff date, and the two delivery checkboxes. The string "promo"
+does not appear in that file. `supabase/functions/checkout/index.ts` DOES accept
+and resolve `promoCode` (~line 293), so the server half works and nothing sends
+it.
+
+The promo UI (`bm-promo-code`, `bm-promo-toggle`, `bm-promo-field`) exists only
+in `stripe-checkout.js`, the deprecated modal flow removed at index.html:2704.
+Its CSS is still in index.html, so grepping the HTML for "promo" makes it look
+like a working feature. It is orphaned styling.
+
+Order of work if picked up: add a promo input to `booking-widget.js`, test one
+real code end to end through Stripe, rewrite the promo email (currently the body
+is literally `<p>Your code: <strong>CODE</strong></p>` with no vehicle, price,
+link or expiry), and only then send.
+
+**"47 leads never booked" is NOT evidence that discounts fail here.** That
+experiment has never actually run.
+
+---
 
 ## Session 2026-08-29: GUIDED TOURS product (LIVE - deployed)
 
