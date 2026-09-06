@@ -736,6 +736,14 @@
       deliveryFee: pricing.deliveryFee,
       total: pricing.total,
       days: pricing.days,
+      // Carried from a ?promo= link so a code emailed to a lead survives the
+      // hop to checkout.html, which is where it is actually applied. This is
+      // display/plumbing only: the code is validated and the discount computed
+      // server-side, so nothing here affects price math.
+      promoCode: (function () {
+        try { return new URLSearchParams(window.location.search).get('promo') || null; }
+        catch (e) { return null; }
+      })(),
       createdAt: Date.now()  // Add timestamp for staleness detection
     };
 
