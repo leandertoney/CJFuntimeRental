@@ -347,6 +347,10 @@
 
     // Restore previous booking state if exists
     restoreBookingState();
+
+    // If the visitor arrived from a promo link, ask the server whether the code
+    // is good and show the discounted price alongside the original.
+    loadPromoFromUrl();
   }
 
   function restoreBookingState() {
@@ -694,16 +698,91 @@
       }
       // Refundable deposit note (config: SITE_CONFIG.pricing.deposit)
       var depCfg = (window.SITE_CONFIG && window.SITE_CONFIG.pricing && window.SITE_CONFIG.pricing.deposit) || {};
+      var depNote = '';
       if (depCfg.enabled !== false) {
-        priceText += ' + $' + (Number(depCfg.amount) || 100) + ' refundable deposit';
+        depNote = ' + $' + (Number(depCfg.amount) || 100) + ' refundable deposit';
       }
-      priceDisplay.textContent = priceText;
+
+      // Someone arriving from a discount email needs to SEE the discount. Until
+      // now the widget showed the full price with no sign the code had done
+      // anything, so the only way to find out was to reach checkout. Show the
+      // old price struck through next to the new one.
+      //
+      // Display only. The real discount is computed and enforced server-side in
+      // supabase/functions/checkout/index.ts; nothing here changes what is
+      // charged, and the promo is re-validated there.
+      var promo = pendingPromo();
+      if (promo && promo.percentOff > 0 && promoAppliesToDates(promo)) {
+        var full = pricing.total;
+        var off  = full - (full - Math.round(full * promo.percentOff) / 100);
+        priceDisplay.innerHTML =
+          '<span class="bw-price-was">' + formatCurrency(full * 100) + '</span> ' +
+          '<span class="bw-price-now">' + formatCurrency((full - off) * 100) + '</span>' +
+          '<span class="bw-price-note">' + promo.percentOff + '% off with ' + promo.code + depNote + '</span>';
+      } else {
+        priceDisplay.textContent = priceText + depNote;
+      }
     }
 
     if (ctaBtn) {
       ctaBtn.disabled = false;
       ctaBtn.textContent = 'Continue to Checkout';
     }
+  }
+
+
+  // ── Promo preview ─────────────────────────────────────────────────────────
+  // The widget does not decide whether a code is valid; it asks the checkout
+  // function, which is the same code path that enforces the discount at
+  // payment. This is purely so the price the customer sees matches the price
+  // they will be charged.
+  var promoState = null;
+
+  function pendingPromo() { return promoState; }
+
+  // Mirrors the weekday rule the server enforces, so we never show a discounted
+  // price for dates the server would refuse.
+  function promoAppliesToDates(promo) {
+    if (!promo.weekdays || !promo.weekdays.length) return true;
+    if (!state.startDate) return false;
+    var parts = String(state.startDate).split('-').map(Number);
+    var endParts = String(state.endDate || state.startDate).split('-').map(Number);
+    var cur = new Date(parts[0], parts[1] - 1, parts[2]);
+    var end = new Date(endParts[0], endParts[1] - 1, endParts[2]);
+    var guard = 0;
+    while (cur <= end && guard++ < 400) {
+      if (promo.weekdays.indexOf(cur.getDay()) === -1) return false;
+      cur.setDate(cur.getDate() + 1);
+    }
+    return true;
+  }
+
+  function loadPromoFromUrl() {
+    var code;
+    try { code = new URLSearchParams(window.location.search).get('promo'); }
+    catch (e) { return; }
+    if (!code) return;
+    var api = (window.CJFR_FUNCTIONS_URL || 'https://yzdtevrwystezhbmgcwn.supabase.co/functions/v1') + '/checkout';
+    fetch(api, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        validatePromoOnly: true, promoCode: code,
+        vehicleKey: state.vehicleKey,
+        // Deliberately no dates: this asks "is the code real and what are its
+        // rules", before the visitor has picked a day. Sending today's date
+        // would make a valid code look invalid whenever today is excluded.
+        durationType: state.durationType || '24hr'
+      })
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d && d.ok) {
+          promoState = { code: d.code, percentOff: d.percentOff, weekdays: d.weekdays || null };
+          updatePricing();
+        }
+      })
+      .catch(function () { /* preview only: never block booking */ });
   }
 
   function proceedToCheckout() {

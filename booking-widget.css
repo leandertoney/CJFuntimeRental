@@ -43,6 +43,26 @@
   letter-spacing: 0.3px;
 }
 
+/* Promo price. A visitor arriving from a discount email needs to see the
+   discount, not just a number they cannot check. Old price struck through,
+   new price emphasised, and the code named so it is obvious WHY it changed. */
+.bw-price-was {
+  text-decoration: line-through;
+  opacity: 0.55;
+  font-weight: 500;
+  margin-right: 8px;
+}
+.bw-price-now { color: #FF6B00; }
+.bw-price-note {
+  display: block;
+  margin-top: 4px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  color: #1a7f4b;
+}
+
 /* Section spacing */
 .bw-section {
   margin-bottom: 20px;
