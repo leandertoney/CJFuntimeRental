@@ -482,15 +482,37 @@
   // Empty-state buttons reuse the nav path so there is one way to switch panels.
   function bindEmptyStateCtas() {
     document.addEventListener('click', function (e) {
-      var btn = e.target.closest && e.target.closest('.ov-empty-cta[data-goto]');
+      var btn = e.target.closest && e.target.closest('.ov-empty-cta');
       if (!btn) return;
       e.preventDefault();
+
+      // Attention rows jump straight to the booking they are about.
+      var bookingId = btn.getAttribute('data-booking-goto');
+      if (bookingId) return gotoBooking(bookingId);
+
       var target = btn.getAttribute('data-goto');
+      if (!target) return;
       collectFormData();
       activeSection = target;
       updateNavActive(target);
       renderPanel(target);
     });
+  }
+
+  // Open the Bookings panel and the detail modal for one booking. The panel
+  // fetches its own data, so wait for the row to exist rather than guessing.
+  function gotoBooking(bookingId) {
+    collectFormData();
+    activeSection = 'bookings';
+    updateNavActive('bookings');
+    renderPanel('bookings');
+
+    var tries = 0;
+    (function open() {
+      var row = document.querySelector('[data-booking-id="' + bookingId + '"]');
+      if (row) return row.click();
+      if (++tries < 40) setTimeout(open, 100);
+    })();
   }
 
   function updateNavActive(name) {
@@ -601,7 +623,7 @@
   // ── Notification badges ──────────────────────────────────────
   function updateNotificationBadges(bookings, leads) {
     var now = new Date();
-    var todayStr = now.toISOString().split('T')[0];
+    var todayStr = localDateStr(now);
     var sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
     // Count active rentals (happening today)
@@ -677,7 +699,7 @@
 
   function buildOverviewHTML(bookings, leads) {
     var now       = new Date();
-    var todayStr  = now.toISOString().split('T')[0];
+    var todayStr  = localDateStr(now);
 
     // ── Booking stats ────────────────────────────────────────────
     var totalRevenue    = 0;
@@ -687,9 +709,17 @@
 
     var thisMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
 
+    // Same month last year is meaningless with one season of data, so the
+    // comparison is the month just gone. A plain fact, not a trend claim.
+    var prev      = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    var prevMonth = prev.getFullYear() + '-' + String(prev.getMonth() + 1).padStart(2, '0');
+    var prevMonthRev = 0;
+    var prevMonthName = prev.toLocaleString('default', { month: 'long' });
+
     bookings.forEach(function (b) {
       totalRevenue += b.total || 0;
       if ((b.createdAt || '').startsWith(thisMonth)) thisMonthRev += b.total || 0;
+      if ((b.createdAt || '').startsWith(prevMonth)) prevMonthRev += b.total || 0;
 
       // Active rentals: happening today (start <= today AND end >= today)
       if (b.startDate <= todayStr && b.endDate >= todayStr) {
@@ -727,7 +757,8 @@
     html += '<div class="ov-card ov-card-hero">'
          +    '<div class="ov-card-label">' + now.toLocaleString('default', { month: 'long' }) + ' Revenue</div>'
          +    '<div class="ov-card-value">$' + thisMonthRev.toLocaleString() + '</div>'
-         +    '<div class="ov-card-sub">$' + totalRevenue.toLocaleString() + ' all time</div>'
+         +    '<div class="ov-card-sub">$' + prevMonthRev.toLocaleString() + ' in ' + prevMonthName
+         +      ' &middot; $' + totalRevenue.toLocaleString() + ' all time</div>'
          +  '</div>';
     html += ovCard('Total Bookings', bookings.length,                    'All time');
     html += ovCard('Upcoming',       upcoming.length,                    'Future bookings');
@@ -738,6 +769,8 @@
     html += '</div>';
 
     // Row 1: Active Rentals (full width, prominent)
+    html += buildAttentionHTML(bookings, leads, todayStr);
+
     // Tint only when a rental is genuinely out. An orange alarm panel over
     // "nothing happening" trained the eye to ignore the colour.
     html += '<div class="ov-section' + (activeNow.length ? ' ov-section-prominent' : '') + '">';
@@ -766,6 +799,136 @@
     html += '</div>';
 
     return html;
+  }
+
+  // ── Needs your attention ─────────────────────────────────────
+  // Deterministic checks over booking workflow state, not predictions: ten
+  // bookings is far too little to forecast anything, but these fields are a
+  // state machine and money genuinely gets stranded in it.
+  //
+  // Deliberately NOT flagged:
+  //   - post-rental review emails, which a cron sends ~24h after return
+  //     (migration 20260408000002_followup_cron), so a "missing" one here
+  //     would fire during the window the automation still owns;
+  //   - anything older than STALE_DAYS, so early owner test bookings age out.
+  var ATTN_STALE_DAYS = 45;
+  var OWNER_EMAILS = ['leandertoney@gmail.com', 'chrisjohnson839@gmail.com'];
+
+  function buildAttentionHTML(bookings, leads, todayStr) {
+    var items = [];
+    var cutoff = shiftDate(todayStr, -ATTN_STALE_DAYS);
+
+    bookings.forEach(function (b) {
+      if (OWNER_EMAILS.indexOf((b.email || '').toLowerCase()) !== -1) return;
+
+      var start = b.startDate || b.start_date;
+      var end   = b.endDate   || b.end_date;
+
+      // 1. Money sitting in Stripe after the vehicle is back.
+      if (b.deposit_cents && !b.deposit_refunded_at && end && end < todayStr && end >= cutoff) {
+        items.push({
+          urgency: 'high',
+          text: '$' + (b.deposit_cents / 100).toFixed(0) + ' deposit still held for '
+              + esc(b.name || b.email || 'a customer'),
+          meta: 'Returned ' + relativeDays(end, todayStr),
+          bookingId: b.id,
+          cta: 'Refund deposit'
+        });
+      }
+
+      // 2. Pre-pickup blockers: no ID on file, or an unverified Can-Am licence.
+      if (start && start >= todayStr) {
+        if ((b.id_upload_status || 'pending') !== 'received') {
+          items.push({
+            urgency: 'high',
+            text: 'No ID uploaded yet for ' + esc(b.name || b.email || 'a customer'),
+            meta: 'Picks up ' + relativeDays(start, todayStr),
+            bookingId: b.id,
+            cta: 'Open booking'
+          });
+        }
+        if (b.requires_canam_license_check && !b.canam_license_verified) {
+          items.push({
+            urgency: 'high',
+            text: "Can-Am licence not verified for " + esc(b.name || b.email || 'a customer'),
+            meta: 'Motorcycle endorsement required. Picks up ' + relativeDays(start, todayStr),
+            bookingId: b.id,
+            cta: 'Open booking'
+          });
+        }
+      }
+    });
+
+    // 3. Leads who never converted. One row, not one per lead.
+    var bookedEmails = {};
+    bookings.forEach(function (b) { bookedEmails[(b.email || '').toLowerCase()] = 1; });
+    var unconverted = (leads || []).filter(function (l) {
+      return !bookedEmails[(l.email || '').toLowerCase()];
+    }).length;
+    if (unconverted > 0) {
+      items.push({
+        urgency: 'low',
+        text: unconverted + ' lead' + (unconverted === 1 ? '' : 's') + ' never booked',
+        meta: 'Signed up for the discount and did not come back',
+        section: 'leads',
+        cta: 'View leads'
+      });
+    }
+
+    var order = { high: 0, low: 1 };
+    items.sort(function (a, b) { return order[a.urgency] - order[b.urgency]; });
+
+    var html = '<div class="ov-section">';
+    html += '<h3 class="ov-section-title">Needs Your Attention</h3>';
+    if (!items.length) {
+      html += '<div class="ov-empty"><span class="ov-empty-msg">'
+           +  'Nothing needs you right now.</span></div>';
+    } else {
+      html += '<div class="attn-list">';
+      items.forEach(function (it) {
+        var target = it.bookingId
+          ? ' data-booking-goto="' + esc(it.bookingId) + '"'
+          : ' data-goto="' + it.section + '"';
+        html += '<div class="attn-row attn-' + it.urgency + '">'
+             +    '<span class="attn-dot" aria-hidden="true"></span>'
+             +    '<div class="attn-body">'
+             +      '<div class="attn-text">' + it.text + '</div>'
+             +      '<div class="attn-meta">' + esc(it.meta) + '</div>'
+             +    '</div>'
+             +    '<button type="button" class="ov-empty-cta"' + target + '>'
+             +      esc(it.cta) + '</button>'
+             +  '</div>';
+      });
+      html += '</div>';
+    }
+    html += '</div>';
+    return html;
+  }
+
+  function shiftDate(dateStr, deltaDays) {
+    var d = new Date(dateStr + 'T12:00:00');
+    d.setDate(d.getDate() + deltaDays);
+    return localDateStr(d);
+  }
+
+  function relativeDays(dateStr, todayStr) {
+    var a = new Date(dateStr  + 'T12:00:00');
+    var b = new Date(todayStr + 'T12:00:00');
+    var n = Math.round((a - b) / 86400000);
+    if (n === 0)  return 'today';
+    if (n === 1)  return 'tomorrow';
+    if (n === -1) return 'yesterday';
+    return n > 0 ? 'in ' + n + ' days' : n * -1 + ' days ago';
+  }
+
+  // Local calendar date. toISOString() is UTC, which after ~8pm Eastern
+  // rolls the dashboard to tomorrow and makes a rental that ends today
+  // look already returned.
+  function localDateStr(d) {
+    d = d || new Date();
+    return d.getFullYear() + '-'
+         + String(d.getMonth() + 1).padStart(2, '0') + '-'
+         + String(d.getDate()).padStart(2, '0');
   }
 
   function ovEmpty(message, _unused, section, cta) {

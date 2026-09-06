@@ -1434,6 +1434,38 @@ body.logged-in #admin-shell { display: flex; }
 }
 .ov-empty-cta:hover { background: var(--surface-3); border-color: var(--text-4); }
 
+/* ── Needs your attention ───────────────────────────────────── */
+.attn-list { display: flex; flex-direction: column; gap: 8px; }
+
+.attn-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.attn-row.attn-high { border-color: var(--warn-line); background: var(--warn-soft); }
+
+.attn-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border-strong);
+}
+.attn-high .attn-dot { background: var(--warn-solid); }
+
+.attn-body { flex: 1; min-width: 0; }
+.attn-text { font-size: 14px; font-weight: 600; color: var(--text); }
+.attn-meta { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+
+@media (max-width: 640px) {
+  .attn-row { flex-wrap: wrap; }
+  .attn-row .ov-empty-cta { width: 100%; }
+}
+
 .ov-list {
   display: flex;
   flex-direction: column;
