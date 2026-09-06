@@ -304,3 +304,31 @@
     font-size: 15px;
   }
 }
+
+/* ── Date picker (flatpickr) ────────────────────────────────────────────────
+   Unavailable days are greyed out IN the calendar, so a customer never picks a
+   date and then finds out at the bottom of the form that the vehicle is taken.
+
+   flatpickr's default disabled colour is 10% opacity, which reads as "blank"
+   rather than "unavailable". These days need to look deliberately closed. */
+.flatpickr-day.flatpickr-disabled,
+.flatpickr-day.flatpickr-disabled:hover {
+  color: #b6b6b6;
+  background: repeating-linear-gradient(
+    -45deg, rgba(0,0,0,0.045) 0 4px, transparent 4px 8px);
+  text-decoration: line-through;
+  cursor: not-allowed;
+}
+.flatpickr-day.selected,
+.flatpickr-day.selected:hover {
+  background: #FF6B00;
+  border-color: #FF6B00;
+  color: #fff;
+}
+.flatpickr-day:hover:not(.flatpickr-disabled) { background: #ffe8d6; border-color: #ffe8d6; }
+.flatpickr-calendar { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+/* Wider tap targets on a phone. */
+@media (max-width: 768px) {
+  .flatpickr-calendar { width: auto; max-width: 100%; }
+  .flatpickr-day { height: 42px; line-height: 42px; }
+}
