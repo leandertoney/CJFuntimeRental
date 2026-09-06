@@ -467,12 +467,18 @@ body.logged-in #admin-shell { display: flex; }
 #admin-content {
   flex: 1;
   overflow-y: auto;
+  /* Reserve the scroll gutter so it does not eat into the right padding and
+     leave the content visibly off-centre. */
+  scrollbar-gutter: stable;
   padding: 28px 32px;
   background: var(--bg);
 }
 
 /* ── PANELS ─────────────────────────────────────────────────── */
 .admin-panel { display: none; max-width: 900px; }
+/* The calendar is a grid, not a column of text, so it uses the full width
+   the content area gives it, with the same padding on both sides. */
+#panel-calendar { max-width: none; }
 .admin-panel.active { display: block; }
 /* The 900px cap is right for forms and prose, where long line lengths hurt
    readability. It is wrong for dashboards and data tables, where it wastes half
@@ -963,9 +969,9 @@ body.logged-in #admin-shell { display: flex; }
 .calendar-wrap-big {
   position: relative;
   min-width: 0;
-  max-width: 1180px;
+  width: 100%;
   margin: 8px auto 0;
-  padding: 0 8px 8px;
+  padding: 0 0 8px;
 }
 .calendar-wrap-big .calendar-nav {
   justify-content: center;
