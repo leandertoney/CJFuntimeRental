@@ -468,6 +468,7 @@
   function bindNav() {
     bindSetupGroup();
     bindEmptyStateCtas();
+    bindAttentionDismiss();
     document.querySelectorAll('.nav-link[data-section]').forEach(function (link) {
       link.addEventListener('click', function (e) {
         e.preventDefault();
@@ -496,6 +497,43 @@
       activeSection = target;
       updateNavActive(target);
       renderPanel(target);
+    });
+  }
+
+  // Dismissing asks WHY, because the reason is the useful part later.
+  function bindAttentionDismiss() {
+    document.addEventListener('click', function (e) {
+      var btn = e.target.closest && e.target.closest('.attn-dismiss[data-dismiss]');
+      if (!btn) return;
+      e.preventDefault();
+      e.stopPropagation();
+
+      var id  = btn.getAttribute('data-dismiss');
+      var row = btn.closest('.attn-row');
+      var what = row ? (row.querySelector('.attn-text') || {}).textContent : 'this item';
+      var note = window.prompt(
+        'Clear this off the dashboard for good?\n\n' + (what || '').trim()
+        + '\n\nWhy? (kept on the booking, e.g. "deal worked out with renter")');
+      if (note === null) return;
+      note = note.trim();
+      if (!note) { showToast('error', 'Reason needed', 'Say why so the decision is not lost.'); return; }
+
+      btn.disabled = true;
+      apiFetch(ADMIN_API + '/bookings/' + id + '/dismiss-attention', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ note: note })
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (!data.ok) throw new Error(data.error || 'Failed');
+          showToast('success', 'Dismissed', 'It will not come back.');
+          renderOverviewPanel();
+        })
+        .catch(function (err) {
+          btn.disabled = false;
+          showToast('error', 'Could not dismiss', err.message);
+        });
     });
   }
 
@@ -835,6 +873,8 @@
 
     bookings.forEach(function (b) {
       if (OWNER_EMAILS.indexOf((b.email || '').toLowerCase()) !== -1) return;
+      // Dismissed means the owner has already dealt with it off-system.
+      if (b.attention_dismissed_at) return;
 
       var start = b.startDate || b.start_date;
       var end   = b.endDate   || b.end_date;
@@ -933,6 +973,10 @@
              +    '</div>'
              +    '<button type="button" class="ov-empty-cta"' + target + '>'
              +      esc(it.cta) + '</button>'
+             +    (it.bookingId
+                  ? '<button type="button" class="attn-dismiss" title="Dismiss this"'
+                    + ' aria-label="Dismiss this" data-dismiss="' + esc(it.bookingId) + '">&times;</button>'
+                  : '')
              +  '</div>';
       });
       html += '</div>';
@@ -2015,6 +2059,16 @@
               deliveryBadges += '<span class="source-badge" style="background:var(--success-soft);color:var(--success);border-color:var(--success-line);margin-left:4px;font-size:10px;">💵 Deposit held</span>';
             }
           }
+          // Dismissed from the dashboard queue. Shown here so the booking list
+          // stays the full picture: hidden on the dashboard, never hidden here.
+          if (b.attention_dismissed_at) {
+            var dnote = b.attention_dismissed_note || 'no reason given';
+            deliveryBadges += '<span class="source-badge" title="' + esc(dnote)
+              + (b.attention_dismissed_by ? ' \u2014 ' + esc(b.attention_dismissed_by) : '')
+              + '" style="background:var(--surface-3);color:var(--text-2);border-color:var(--border-strong);margin-left:4px;font-size:10px;">'
+              + '\u2713 Cleared</span>';
+          }
+
           // Additional driver badge (free, no price impact)
           if (b.additional_driver_name) {
             if (b.driver2_id_upload_status === 'received') {

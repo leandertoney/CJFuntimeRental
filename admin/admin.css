@@ -1618,6 +1618,19 @@ body.logged-in #admin-shell { display: flex; }
 }
 .attn-high .attn-dot { background: var(--warn-solid); }
 
+.attn-dismiss {
+  flex-shrink: 0;
+  width: 30px; height: 30px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font: inherit; font-size: 20px; line-height: 1;
+  color: var(--text-4);
+  background: none; border: 1px solid transparent; border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.attn-dismiss:hover { background: var(--surface); color: var(--text); border-color: var(--border-strong); }
+.attn-dismiss:disabled { opacity: 0.4; cursor: default; }
+
 .attn-body { flex: 1; min-width: 0; }
 .attn-text { font-size: 14px; font-weight: 600; color: var(--text); }
 .attn-meta { font-size: 12px; color: var(--text-3); margin-top: 2px; }

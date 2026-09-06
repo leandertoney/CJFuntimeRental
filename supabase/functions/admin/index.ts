@@ -824,6 +824,52 @@ Deno.serve(async (req) => {
     });
   }
 
+  // ── POST /bookings/:id/dismiss-attention — clear it off the dashboard ──────
+  // The dashboard queue flags bookings that LOOK unresolved (deposit still
+  // held after return, ID missing before pickup). Some are settled
+  // deliberately off-system, so the owner needs a way to say "handled" and
+  // have it stay said. A queue that shows resolved items stops being read.
+  //
+  // The note is required: recording WHY keeps the decision on the booking, so
+  // a later reader can tell "worked out a deal" from "not a problem".
+  // Reversible by design - POST with undo:true clears the dismissal.
+  if (path.match(/^\/bookings\/[^/]+\/dismiss-attention$/) && req.method === 'POST') {
+    const bookingId = path.split('/')[2];
+    const body = await req.json().catch(() => ({}));
+
+    if (body && body.undo === true) {
+      const { error: undoErr } = await supabase.from('bookings')
+        .update({
+          attention_dismissed_at: null,
+          attention_dismissed_by: null,
+          attention_dismissed_note: null
+        })
+        .eq('id', bookingId);
+      if (undoErr) return json({ error: undoErr.message }, 500);
+      return json({ ok: true, dismissed: false });
+    }
+
+    const note = typeof body?.note === 'string' ? body.note.trim() : '';
+    if (!note) return json({ error: 'A reason is required to dismiss.' }, 400);
+    if (note.length > 300) return json({ error: 'Reason must be 300 characters or fewer.' }, 400);
+
+    const { data: existing, error: findErr } = await supabase
+      .from('bookings').select('id').eq('id', bookingId).maybeSingle();
+    if (findErr) return json({ error: findErr.message }, 500);
+    if (!existing) return json({ error: 'Booking not found' }, 404);
+
+    const { error: updErr } = await supabase.from('bookings')
+      .update({
+        attention_dismissed_at: new Date().toISOString(),
+        attention_dismissed_by: authedUser.email,
+        attention_dismissed_note: note
+      })
+      .eq('id', bookingId);
+    if (updErr) return json({ error: updErr.message }, 500);
+
+    return json({ ok: true, dismissed: true, by: authedUser.email, note });
+  }
+
   // ── POST /bookings/:id/refund-deposit — vehicle returned, refund the $100 ──
   // Refunds ONLY the deposit portion of the original payment via the Stripe
   // Refunds API (partial refund on the payment intent). Idempotent: a second
