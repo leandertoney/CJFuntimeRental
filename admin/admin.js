@@ -691,13 +691,13 @@
       var tours    = Array.isArray(results[2]) ? results[2] : [];
       updateNotificationBadges(bookings, leads);
       updateTourBadge(tours);
-      container.innerHTML = buildOverviewHTML(bookings, leads);
+      container.innerHTML = buildOverviewHTML(bookings, leads, tours);
     }).catch(function () {
       container.innerHTML = '<div class="overview-loading">Could not load data.</div>';
     });
   }
 
-  function buildOverviewHTML(bookings, leads) {
+  function buildOverviewHTML(bookings, leads, tours) {
     var now       = new Date();
     var todayStr  = localDateStr(now);
 
@@ -772,7 +772,7 @@
     html += '</div>';
 
     // Row 1: Active Rentals (full width, prominent)
-    html += buildAttentionHTML(bookings, leads, todayStr);
+    html += buildAttentionHTML(bookings, leads, tours, todayStr);
 
     // Tint only when a rental is genuinely out. An orange alarm panel over
     // "nothing happening" trained the eye to ignore the colour.
@@ -817,7 +817,7 @@
   var ATTN_STALE_DAYS = 45;
   var OWNER_EMAILS = ['leandertoney@gmail.com', 'chrisjohnson839@gmail.com'];
 
-  function buildAttentionHTML(bookings, leads, todayStr) {
+  function buildAttentionHTML(bookings, leads, tours, todayStr) {
     var items = [];
     var cutoff = shiftDate(todayStr, -ATTN_STALE_DAYS);
 
@@ -862,7 +862,28 @@
       }
     });
 
-    // 3. Leads who never converted. One row, not one per lead.
+    // 3. Tour requests nobody has actioned. Same definition of open as the
+    // sidebar badge: anything not yet paid or closed. V1 tour payment is a
+    // manual Stripe link, so these sit until a human sends one.
+    (tours || []).forEach(function (t) {
+      var status = t.status || 'new';
+      if (status === 'paid' || status === 'closed') return;
+      var when = (t.created_at || '').slice(0, 10);
+      var route = TOUR_ROUTES[t.route] || t.route || 'a tour';
+      var bits  = [route];
+      if (t.group_size) bits.push(t.group_size + ' guests');
+      if (t.preferred_date) bits.push(t.preferred_date);
+      items.push({
+        urgency: 'high',
+        text: 'Tour request from ' + esc(t.name || t.email || 'someone'),
+        meta: bits.join(' \u00b7 ')
+            + (when ? ' \u00b7 asked ' + relativeDays(when, todayStr) : ''),
+        section: 'tours',
+        cta: 'Open request'
+      });
+    });
+
+    // 4. Leads who never converted. One row, not one per lead.
     var bookedEmails = {};
     bookings.forEach(function (b) { bookedEmails[(b.email || '').toLowerCase()] = 1; });
     var unconverted = (leads || []).filter(function (l) {

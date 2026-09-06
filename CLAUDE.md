@@ -1,11 +1,14 @@
 # CJ Funtime Rentals - Project State (Updated 2026-08-29)
 
-## Session 2026-08-29: GUIDED TOURS product (built, NOT deployed - awaiting approval)
+## Session 2026-08-29: GUIDED TOURS product (LIVE - deployed)
 
 **New product line: owner-guided group Slingshot tours.** Distinct from the
 rental business: the customer still drives, but Chris plans and leads the whole
-day. Built in full and verified end to end; **nothing is pushed**, because in
-this repo push = deploy on both Netlify (static) and CI (functions).
+day. Built in full and verified end to end. **Shipped**: confirmed 2026-09-05
+that the working tree is clean with nothing unpushed, so all of this is live.
+Note for future sessions: in this repo push = deploy on both Netlify (static)
+and CI (`.github/workflows/deploy-supabase.yml`, which fires on push to main
+touching `supabase/functions/**`).
 
 **Pricing, owner-set. Do not derive, discount or recompute these:**
 
