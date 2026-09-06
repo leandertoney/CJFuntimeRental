@@ -424,6 +424,20 @@
       wnIndex++; renderWhatsNew();
     };
     if (skip) skip.onclick = closeWhatsNew;
+
+    // Clicking the dim closes it, so a step that fails to render is never a
+    // trap. The press must both start and end on the dim itself: a click
+    // that began on a button inside the card must not dismiss the tour.
+    var modal = document.getElementById('whatsnew-modal');
+    if (modal) {
+      var downOnDim = false;
+      modal.addEventListener('mousedown', function (e) { downOnDim = (e.target === modal); });
+      modal.addEventListener('click', function (e) {
+        if (downOnDim && e.target === modal) closeWhatsNew();
+        downOnDim = false;
+      });
+    }
+
     document.addEventListener('keydown', function (e) {
       var m = document.getElementById('whatsnew-modal');
       if (!m || m.classList.contains('hidden')) return;

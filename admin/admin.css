@@ -1078,12 +1078,18 @@ body.logged-in #admin-shell { display: flex; }
 /* The real element, ringed on the real screen. */
 .wn-spot {
   position: relative;
-  z-index: 10001;          /* above .modal-overlay (10000) so it reads clearly */
+  /* MUST stay below .modal-overlay (10000). At 10001 a tall target such as
+     the calendar grid covered the dialog completely, leaving no way out. The
+     ring reads fine through the dim, and the card always stays on top. */
+  z-index: 9998;
   background: var(--surface);
   border-radius: 12px;
   box-shadow: 0 0 0 3px var(--orange), 0 0 0 12px rgba(255,107,0,0.18);
   transition: box-shadow 0.2s ease;
 }
+/* The card sits above everything, always. */
+#whatsnew-modal { z-index: 10050; }
+.whatsnew-box { position: relative; z-index: 10051; }
 .wn-progress { height: 3px; background: var(--surface-3); }
 .wn-progress span { display: block; height: 100%; width: 20%; background: var(--orange); transition: width 0.25s ease; }
 .wn-body { padding: 20px 24px 12px; }
