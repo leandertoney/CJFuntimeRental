@@ -288,10 +288,15 @@ function promoEmailHTML(code: string, percentOff: number, expiresLabel: string, 
           <div style="font-size:12px;line-height:1.7;color:#6e6e6e;">Discount applies to the rental only. The deposit and delivery are not discounted.</div>
         </td></tr>
 
-        <tr><td style="padding:26px 6px 8px 6px;border-top:1px solid #e0e0e0;">
-          <div style="font-size:11px;line-height:1.7;color:#6e6e6e;">
-            CJ's Fun Time Rental &nbsp;·&nbsp; Lancaster, PA<br>
-            You are getting this because you asked us for a discount code. <a href="mailto:${PROMO_REPLY_TO}?subject=Unsubscribe" style="color:#5a5a5a;text-decoration:underline;">Unsubscribe</a>.
+        <tr><td style="padding:24px 6px 8px 6px;border-top:1px solid #e0e0e0;">
+          <div style="font-size:13px;line-height:1.7;color:#5a5a5a;">
+            CJ's Fun Time Rental &nbsp;·&nbsp; Lancaster, PA
+          </div>
+          <div style="font-size:13px;line-height:1.7;color:#5a5a5a;margin-top:10px;">
+            You are getting this because you asked us for a discount code.
+          </div>
+          <div style="font-size:13px;line-height:1.7;margin-top:10px;">
+            <a href="mailto:${PROMO_REPLY_TO}?subject=Unsubscribe" style="color:#1a56c4;text-decoration:underline;font-weight:600;">Unsubscribe</a>
           </div>
         </td></tr>
 
