@@ -20,7 +20,11 @@
     .header-inner { display:flex; align-items:center; justify-content:space-between; }
     .header-logo img { height:40px; width:auto; }
     .main { flex:1; padding:64px 0; }
-    .checkout-grid { display:grid; grid-template-columns:1.2fr 1fr; gap:48px; align-items:start; }
+    /* minmax(0,...) is load-bearing: a bare `1fr` is minmax(auto,1fr), whose
+       auto floor is the column's min-content width. A long value like
+       "2024 Polaris Slingshot (Orange)" then pushes the TRACK wider than the
+       grid itself, which is what was overflowing the page on a phone. */
+    .checkout-grid { display:grid; grid-template-columns:minmax(0,1.2fr) minmax(0,1fr); gap:48px; align-items:start; }
     .checkout-summary { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:32px; position:sticky; top:100px; }
     h1 { font-family:var(--heading); font-size:clamp(2rem,4vw,2.8rem); letter-spacing:3px; margin-bottom:24px; }
     h2 { font-family:var(--heading); font-size:1.6rem; letter-spacing:2px; margin-bottom:16px; }
@@ -46,7 +50,7 @@
     .detail-row { display:flex; justify-content:space-between; padding:10px 0; font-size:15px; }
     .detail-label { color:var(--muted); }
     .error-message { background:rgba(255,77,0,0.1); border:1px solid rgba(255,77,0,0.3); border-radius:8px; padding:16px; margin-bottom:24px; color:#ff6b4d; }
-    .loading { text-align:center; padding:48px; color:var(--muted); }
+    .loading { text-align:center; padding:48px 16px; color:var(--muted); }
     /* ID upload */
     .id-help { font-size:14px; color:var(--white); line-height:1.6; margin-bottom:12px; }
     .id-uploads { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:8px; }
@@ -74,7 +78,48 @@
     .modal-message { line-height:1.6; margin-bottom:24px; color:var(--white); }
     .modal-btn { background:var(--orange); color:#000; border:none; border-radius:8px; padding:14px 28px; font-weight:700; font-size:15px; cursor:pointer; transition:all 0.2s; width:100%; }
     .modal-btn:hover { filter:brightness(1.1); transform:translateY(-1px); }
-    @media(max-width:768px) { .checkout-grid{grid-template-columns:1fr;} .id-uploads{grid-template-columns:1fr;} }
+    /* Mobile. Most of this traffic arrives from a phone, and the layout was
+       overflowing the screen: a 390px viewport was rendering a 538px content
+       column, so values like "2024 Polaris Slingshot (Orange)" ran off the
+       right edge on the page where people hand over their card.
+
+       The root cause is flex rows with justify-content:space-between and no
+       min-width:0 on the children. A flex item defaults to min-width:auto and
+       so refuses to shrink below its content, pushing the row wider than its
+       parent instead of wrapping. */
+    @media(max-width:768px) {
+      .container { padding:0 18px; }
+      .main { padding:32px 0; }
+      .checkout-grid { grid-template-columns:minmax(0,1fr); gap:28px; }
+      .id-uploads { grid-template-columns:1fr; }
+
+      /* Label left, value right, but allowed to wrap onto two lines when the
+         value is long rather than overflowing. */
+      .detail-row, .summary-row {
+        gap:14px;
+        align-items:baseline;
+      }
+      .detail-row > *, .summary-row > * { min-width:0; }
+      .detail-label, .summary-label { flex:0 0 auto; }
+      .detail-row > :last-child, .summary-row > :last-child {
+        text-align:right;
+        overflow-wrap:anywhere;
+      }
+
+      .checkout-summary { padding:22px; position:static; }
+      h1 { letter-spacing:1.5px; margin-bottom:18px; }
+      h2 { font-size:1.3rem; letter-spacing:1px; }
+      .agreement-box { max-height:160px; }
+      /* 16px keeps iOS Safari from zooming the page when the field is focused. */
+      .promo-field input, .driver2-name-input { font-size:16px; }
+      .driver2-fields { margin-left:0; }
+      .btn { padding:15px 20px; }
+    }
+
+    /* Nothing on the page may push the document wider than the screen. */
+    @media(max-width:768px) {
+      html, body { max-width:100%; overflow-x:hidden; }
+    }
   </style>
   <script src="/attribution.js"></script>
   <script src="/ga4.js"></script>
@@ -479,7 +524,7 @@
       var depositEnabled = depositCfg.enabled !== false;
       var depositAmount = depositEnabled ? (Number(depositCfg.amount) || 100) : 0;
 
-      html += '<div class="summary-row"><span class="summary-label">Base Price</span><span class="summary-value" style="font-weight:600;color:var(--white);">' + formatCurrency(bookingData.basePrice * 100) + '</span></div>';
+      html += '<div class="summary-row"><span class="summary-label">Base Price</span><span class="summary-value" id="summary-base-value" style="font-weight:600;color:var(--white);">' + formatCurrency(bookingData.basePrice * 100) + '</span></div>';
       // Discount row. Hidden until a code is accepted by the server; the
       // amount shown is always recomputed from the server's percentage, never
       // from anything the customer typed.
@@ -549,6 +594,7 @@
       var promoLabel  = document.getElementById('summary-promo-label');
       var promoValue  = document.getElementById('summary-promo-value');
       var totalValue  = document.getElementById('summary-total-value');
+      var baseValue   = document.getElementById('summary-base-value');
 
       // Discount applies to the rental only. Delivery is a real cost and the
       // deposit comes back to the customer, so neither is discounted. Rounding
@@ -562,10 +608,18 @@
         var base = discountedBase();
         var off  = bookingData.basePrice - base;
         if (appliedPromo && off > 0) {
+          // Strike the original so the saving is visible at a glance rather
+          // than something the customer has to work out from two numbers.
+          if (baseValue) {
+            baseValue.innerHTML =
+              '<span style="text-decoration:line-through;opacity:.5;font-weight:500;margin-right:8px;">' +
+              formatCurrency(bookingData.basePrice * 100) + '</span>' + formatCurrency(base * 100);
+          }
           promoRow.style.display = '';
           promoLabel.textContent = appliedPromo.code + ' (' + appliedPromo.percentOff + '% off rental)';
           promoValue.textContent = '-' + formatCurrency(off * 100);
         } else {
+          if (baseValue) baseValue.textContent = formatCurrency(bookingData.basePrice * 100);
           promoRow.style.display = 'none';
         }
         var deliv = bookingData.deliveryFee || 0;

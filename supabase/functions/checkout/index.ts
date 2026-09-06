@@ -100,7 +100,8 @@ Deno.serve(async (req) => {
       promoCode, bookingRef, attribution, validatePromoOnly
     } = body;
 
-    if (!vehicleKey || !durationType || !startDate) {
+    // validatePromoOnly is a code lookup, not a booking: it needs no dates.
+    if (!body.validatePromoOnly && (!vehicleKey || !durationType || !startDate)) {
       return new Response(JSON.stringify({ error: 'Missing fields' }), { status: 400, headers: { ...CORS, 'Content-Type': 'application/json' } });
     }
 
@@ -136,14 +137,22 @@ Deno.serve(async (req) => {
       // A weekday-only code rejected with a generic message reads as broken, so
       // say what the rule is. MUST stay identical to the checkout block below.
       const vWeekdays = Array.isArray(vPromo.weekdays) ? vPromo.weekdays as number[] : null;
-      if (vWeekdays && !promoDaysAllowed(String(startDate), String(endDate || startDate), vWeekdays)) {
+      // No dates supplied means "is this code real, and what are its rules?",
+      // which is what the booking widget asks before the visitor has picked a
+      // day. Answer with the rule rather than rejecting against a date the
+      // caller never chose.
+      if (vWeekdays && startDate && !promoDaysAllowed(String(startDate), String(endDate || startDate), vWeekdays)) {
         return new Response(JSON.stringify({ ok: false, error: promoWeekdayMsg(vWeekdays) }),
           { status: 200, headers: { ...CORS, 'Content-Type': 'application/json' } });
       }
       return new Response(JSON.stringify({
         ok: true, code: vKey, percentOff: vPct,
         label: String(vPromo.label || (vPct + '% off your rental')),
-        restriction: vWeekdays ? promoDaysLabel(vWeekdays) + ' rentals only' : ''
+        restriction: vWeekdays ? promoDaysLabel(vWeekdays) + ' rentals only' : '',
+        // The widget previews the discounted price before dates are chosen, so
+        // it needs the rule to avoid advertising a discount on a day this
+        // function would reject. Display only; the server still decides.
+        weekdays: vWeekdays
       }), { status: 200, headers: { ...CORS, 'Content-Type': 'application/json' } });
     }
 
