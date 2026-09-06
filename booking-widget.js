@@ -133,10 +133,18 @@
       if (vehicleBlocks[i].vehicle_key !== vehicleKey) continue;
       out.push({ from: vehicleBlocks[i].start_date, to: vehicleBlocks[i].end_date || vehicleBlocks[i].start_date });
     }
-    if (window.CJFR_BLOCKED_DATES && window.CJFR_BLOCKED_DATES.length) {
-      for (i = 0; i < window.CJFR_BLOCKED_DATES.length; i++) {
-        out.push({ from: window.CJFR_BLOCKED_DATES[i], to: window.CJFR_BLOCKED_DATES[i] });
-      }
+    // Fleet-wide closures (config.blockedDates): days the whole business is
+    // shut, not tied to one vehicle.
+    //
+    // Read from SITE_CONFIG directly. This used to read window.CJFR_BLOCKED_DATES,
+    // which is set by frontend-config.js -- a file the vehicle pages have never
+    // loaded. It was therefore always undefined here and fleet closures were
+    // silently ignored on the only pages that can take a booking. The fallback
+    // is kept for the other pages that do load that script.
+    var fleet = (window.SITE_CONFIG && window.SITE_CONFIG.blockedDates)
+      || window.CJFR_BLOCKED_DATES || [];
+    for (i = 0; i < fleet.length; i++) {
+      out.push({ from: fleet[i], to: fleet[i] });
     }
     return out;
   }

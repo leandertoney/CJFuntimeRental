@@ -178,6 +178,7 @@ Deno.serve(async (req) => {
     const stripeKey = Deno.env.get('STRIPE_SECRET_KEY')!;
 
     let vehicleName = vehicleKey;
+    let cfgFleetBlocked: unknown = null;
     let vehicleAltName = '';
     let vehicleAltName2 = '';
     let vehicleType = vehicleKey.includes('canam') ? 'canam' : 'slingshot';
@@ -186,6 +187,7 @@ Deno.serve(async (req) => {
     try {
       const { data } = await supabase.from('site_config').select('config').eq('id', 1).single();
       const vehicle = data?.config?.vehicles?.[vehicleKey];
+      cfgFleetBlocked = data?.config?.blockedDates;
       if (vehicle?.label || vehicle?.name) vehicleName = vehicle.label || vehicle.name;
       // Legacy bookings stored `name`, but vehicleName prefers `label`, so keep
       // both spellings for the availability match below.
@@ -236,6 +238,23 @@ Deno.serve(async (req) => {
         const bEnd   = String(b.end_date || b.start_date);
         if (reqStartStr <= bEnd && reqEndStr >= bStart) {
           return new Response(JSON.stringify({ error: 'Those dates are already booked. Please choose different dates.' }), {
+            status: 409, headers: { ...CORS, 'Content-Type': 'application/json' }
+          });
+        }
+      }
+    }
+
+    // Fleet-wide closures: site_config.blockedDates, days the whole business is
+    // shut. These were enforced NOWHERE. The widget read them from a global set
+    // by frontend-config.js, which the vehicle pages do not load, and this
+    // function never looked at them at all, so a booking on a closed day went
+    // through to a real charge. Chris had 2026-09-14 through 09-18 closed.
+    const fleetBlocked: string[] = Array.isArray(cfgFleetBlocked) ? cfgFleetBlocked : [];
+    if (fleetBlocked.length > 0) {
+      for (const day of fleetBlocked) {
+        const d = String(day);
+        if (reqStartStr <= d && reqEndStr >= d) {
+          return new Response(JSON.stringify({ error: 'That vehicle is unavailable on those dates. Please choose different dates.' }), {
             status: 409, headers: { ...CORS, 'Content-Type': 'application/json' }
           });
         }
