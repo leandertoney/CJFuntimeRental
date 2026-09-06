@@ -70,7 +70,8 @@ Deno.serve(async (req) => {
       } catch { /* fall through: unknown code */ }
       const vCodes = (vCfg.promoCodes || {}) as Record<string, Record<string, unknown>>;
       const vKey = String(promoCode || '').trim().toUpperCase();
-      const vPromo = vCodes[vKey];
+      let vPromo = vCodes[vKey];
+      if (!vPromo && /^FIRST10-[A-Z0-9]{8}$/.test(vKey)) vPromo = vCodes.FIRST10;
       const vNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
       const vToday = vNow.getFullYear() + '-' +
         String(vNow.getMonth() + 1).padStart(2, '0') + '-' +
@@ -219,7 +220,15 @@ Deno.serve(async (req) => {
     let promoApplied = '';
     if (promoCode) {
       const key = String(promoCode).trim().toUpperCase();
-      const promo = promoCodes[key];
+      let promo = promoCodes[key];
+      // Legacy FIRST10-XXXXXXXX codes: the signup form has minted a unique
+      // Stripe promotion code per lead since April and the welcome email
+      // promises 10% off with "No expiry". Those Stripe codes are no longer
+      // consulted (their coupon is unrestricted, so Stripe would discount the
+      // refundable deposit and delivery too), but the promise still stands, so
+      // any well-formed FIRST10-* falls back to a single config entry and is
+      // honoured at 10% off the rental.
+      if (!promo && /^FIRST10-[A-Z0-9]{8}$/.test(key)) promo = promoCodes.FIRST10;
       // Local calendar date, not toISOString(): a UTC date string rolls over
       // in the evening Eastern and would expire a code a day early.
       const nowET = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));

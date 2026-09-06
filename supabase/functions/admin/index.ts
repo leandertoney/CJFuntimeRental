@@ -124,10 +124,105 @@ const ADMIN_TOOLS = [
   { type: 'function', function: { name: 'get_leads', description: 'Read all leads with email, source, date, promo code.', parameters: { type: 'object', properties: {}, required: [] } } },
   { type: 'function', function: { name: 'delete_lead', description: 'Delete a lead by email.', parameters: { type: 'object', properties: { email: { type: 'string' } }, required: ['email'] } } },
   { type: 'function', function: { name: 'send_promo_to_lead', description: 'Send a discount code email to a single lead.', parameters: { type: 'object', properties: { email: { type: 'string' }, code: { type: 'string' } }, required: ['email'] } } },
-  { type: 'function', function: { name: 'send_promo_to_all_leads', description: 'Send a discount code email to every lead.', parameters: { type: 'object', properties: { code: { type: 'string' } }, required: ['code'] } } },
+  { type: 'function', function: { name: 'send_promo_to_all_leads', description: 'Preview (dry run) a discount campaign to every lead who has not booked. Returns the recipient list without sending. Only sends for real when confirmSend is true, which requires the owner to explicitly ask.', parameters: { type: 'object', properties: { code: { type: 'string' }, confirmSend: { type: 'boolean', description: 'Must be true to actually send. Omit for a dry run.' } }, required: ['code'] } } },
   { type: 'function', function: { name: 'get_discounts', description: 'Read discount tiers — days, percentage, label, enabled.', parameters: { type: 'object', properties: {}, required: [] } } },
   { type: 'function', function: { name: 'get_blocked_dates', description: 'Read all blocked dates unavailable for booking.', parameters: { type: 'object', properties: {}, required: [] } } },
 ];
+
+
+// ── Promo campaign ──────────────────────────────────────────────────────────
+// Reply-To is mandatory on every send: cjfuntimerentals.com is send-only with
+// no mailboxes, so without it a customer's reply goes nowhere. resend@2
+// forwards keys verbatim and the API reads `reply_to`, so send both spellings.
+const PROMO_REPLY_TO = 'chrisjohnson839@gmail.com';
+const PROMO_OWNER_EMAILS = ['chrisjohnson839@gmail.com', 'leandertoney@gmail.com'];
+
+function promoReplyTo(addr: string) {
+  return { reply_to: addr, replyTo: addr } as Record<string, string>;
+}
+
+// Vehicle pages carry the booking widget. The homepage does NOT read ?promo=,
+// and the widget drops any query string when it redirects to checkout, so a
+// promo link must point at a vehicle page or the code silently does not apply.
+const PROMO_VEHICLE_LINKS = [
+  { name: '2024 Polaris Slingshot SL AutoDrive', path: '/2024-orange-slingshot-autodrive' },
+  { name: '2016 Polaris Slingshot S Manual (Gray)', path: '/2016-gray-slingshot-manual' },
+  { name: '2016 Polaris Slingshot S Manual (Red)', path: '/2016-red-slingshot-manual' },
+  { name: '2021 Can-Am Spyder F3 Limited', path: '/2021-canam-spyder-f3' }
+];
+
+function promoLink(path: string, code: string) {
+  return 'https://cjfuntimerentals.com' + path +
+    '?promo=' + encodeURIComponent(code) +
+    '&utm_source=email&utm_medium=promo&utm_campaign=' + encodeURIComponent(code.toLowerCase());
+}
+
+// Recipients: unique addresses, excluding the owners and anyone who already
+// has a confirmed booking. Emailing a "come back and book" discount to someone
+// who already booked reads as if nobody is paying attention.
+async function promoRecipients() {
+  const { data: leads } = await supabase.from('leads').select('email, created_at');
+  const { data: bookings } = await supabase.from('bookings').select('email, status');
+  const booked = new Set(
+    (bookings ?? [])
+      .filter((b: Record<string, unknown>) => b.status === 'confirmed')
+      .map((b: Record<string, unknown>) => String(b.email || '').toLowerCase().trim())
+  );
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const l of (leads ?? [])) {
+    const e = String((l as Record<string, unknown>).email || '').toLowerCase().trim();
+    if (!e || seen.has(e)) continue;
+    seen.add(e);
+    if (PROMO_OWNER_EMAILS.includes(e)) continue;
+    if (booked.has(e)) continue;
+    if (/test|example\.com|noreply|no-reply/i.test(e)) continue;
+    out.push(e);
+  }
+  return out;
+}
+
+function promoEmailHTML(code: string, percentOff: number, expiresLabel: string) {
+  const rows = PROMO_VEHICLE_LINKS.map((v) =>
+    `<tr><td style="padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.07);">
+       <a href="${promoLink(v.path, code)}" style="color:#FF6B00;text-decoration:none;font-size:15px;">${v.name} &rarr;</a>
+     </td></tr>`).join('');
+
+  return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#0f0f0f;font-family:'Helvetica Neue',Arial,sans-serif;color:#fff;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f0f0f;padding:40px 0;">
+    <tr><td align="center"><table width="580" cellpadding="0" cellspacing="0" style="max-width:580px;width:100%;">
+      <tr><td style="padding:0 0 28px 0;text-align:center;border-bottom:1px solid rgba(255,255,255,0.07);">
+        <a href="${promoLink(PROMO_VEHICLE_LINKS[0].path, code)}"><img src="https://cjfuntimerentals.com/cj_funtime_logo.png" alt="CJ's Fun Time Rental" width="140" style="display:block;height:auto;margin:0 auto;"></a>
+      </td></tr>
+      <tr><td style="padding:32px 0 0;">
+        <h1 style="font-family:Impact,Arial,sans-serif;font-size:32px;letter-spacing:2px;margin:0 0 18px;">${percentOff}% OFF YOUR RIDE</h1>
+        <p style="font-size:15px;color:rgba(255,255,255,0.72);margin:0 0 18px;line-height:1.7;">
+          You asked us about renting a Slingshot a while back and never took one out. The discount code we sent you at the time had a problem on our end and would not go through at checkout. That is fixed, and here is a better one.
+        </p>
+        <div style="background:#1a1a1a;border:1px solid rgba(255,107,0,0.3);border-radius:10px;padding:24px;text-align:center;margin:0 0 20px;">
+          <div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#FF6B00;margin-bottom:8px;">Your Code</div>
+          <div style="font-family:Impact,Arial,sans-serif;font-size:38px;letter-spacing:5px;color:#FF6B00;">${code}</div>
+          <div style="font-size:13px;color:#aaa;margin-top:10px;">${percentOff}% off the rental &nbsp;·&nbsp; ${expiresLabel}</div>
+        </div>
+        <p style="font-size:15px;color:rgba(255,255,255,0.72);margin:0 0 8px;line-height:1.7;">
+          A $250 overnight rental comes to $${(250 - Math.round(250 * percentOff) / 100).toFixed(2)}. The refundable deposit and any delivery fee are not discounted.
+        </p>
+        <p style="font-size:14px;color:rgba(255,255,255,0.55);margin:0 0 10px;line-height:1.7;">
+          Pick your ride and the code is applied for you:
+        </p>
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 26px;">${rows}</table>
+        <p style="font-size:14px;color:rgba(255,255,255,0.55);margin:0;line-height:1.7;">
+          Questions, or want to book a group ride? Just reply to this email.
+        </p>
+      </td></tr>
+      <tr><td style="padding:26px 0 0 0;border-top:1px solid rgba(255,255,255,0.07);text-align:center;">
+        <p style="font-size:11px;color:#555;margin:0 0 6px;">CJ's Fun Time Rental &nbsp;·&nbsp; Lancaster, PA &nbsp;·&nbsp; Polaris Slingshot &amp; Can-Am Spyder Rentals</p>
+        <p style="font-size:11px;color:#555;margin:0;">You are getting this because you requested a discount code on our site. Reply with "unsubscribe" and we will take you off the list.</p>
+      </td></tr>
+    </table></td></tr>
+  </table>
+</body></html>`;
+}
 
 async function readConfig() {
   const { data } = await supabase.from('site_config').select('config').eq('id', 1).single();
@@ -211,33 +306,68 @@ async function executeToolCall(name: string, input: Record<string, unknown>) {
     }
     case 'send_promo_to_lead': {
       const resend = new Resend(Deno.env.get('RESEND_API_KEY')!);
-      const code = (input.code as string) || 'FIRST10';
+      const code = ((input.code as string) || 'COMEBACK15').toUpperCase();
+      const cfg = await readConfig();
+      const promo = cfg?.pricing?.promoCodes?.[code];
+      if (!promo || promo.enabled === false) {
+        return { error: `Code ${code} is not in site_config.pricing.promoCodes, so it would be rejected at checkout. Add it before sending.` };
+      }
+      const pct = Number(promo.percentOff) || 0;
+      const expiresLabel = promo.expires ? `Expires ${promo.expires}` : 'No expiry';
       await resend.emails.send({
         from: "CJ's Fun Time Rental <bookings@cjfuntimerentals.com>",
         to: input.email as string,
-        subject: `Your ${code} discount code — CJ's Fun Time Rental`,
-        html: `<p>Your code: <strong>${code}</strong></p>`
+        subject: `${pct}% off your Slingshot rental`,
+        html: promoEmailHTML(code, pct, expiresLabel),
+        ...promoReplyTo(PROMO_REPLY_TO)
       });
       return { ok: true, sentTo: input.email, code };
     }
     case 'send_promo_to_all_leads': {
+      // Defaults to a DRY RUN. This used to email every row in `leads` the
+      // moment it was called, including the owners and people who had already
+      // booked, with a one-line stub body. A bulk send is not something to
+      // trigger by accident from a chat instruction, so the caller has to ask
+      // for it explicitly with confirmSend: true.
+      const code = ((input.code as string) || 'COMEBACK15').toUpperCase();
+      const cfg = await readConfig();
+      const promo = cfg?.pricing?.promoCodes?.[code];
+      if (!promo || promo.enabled === false) {
+        return { error: `Code ${code} is not in site_config.pricing.promoCodes, so every recipient would get a code the checkout rejects. Add it first.` };
+      }
+      const pct = Number(promo.percentOff) || 0;
+      const expiresLabel = promo.expires ? `Expires ${promo.expires}` : 'No expiry';
+      const recipients = await promoRecipients();
+
+      if (input.confirmSend !== true) {
+        return {
+          dryRun: true,
+          code,
+          percentOff: pct,
+          recipientCount: recipients.length,
+          recipients,
+          note: 'Nothing was sent. Call again with confirmSend: true to send for real.',
+          samplePreviewHtml: promoEmailHTML(code, pct, expiresLabel)
+        };
+      }
+
       const resend = new Resend(Deno.env.get('RESEND_API_KEY')!);
-      const { data: leads } = await supabase.from('leads').select('email');
       const results = [];
-      for (const lead of (leads ?? [])) {
+      for (const email of recipients) {
         try {
           await resend.emails.send({
             from: "CJ's Fun Time Rental <bookings@cjfuntimerentals.com>",
-            to: lead.email,
-            subject: `Your ${input.code} discount code — CJ's Fun Time Rental`,
-            html: `<p>Your code: <strong>${input.code}</strong></p>`
+            to: email,
+            subject: `${pct}% off your Slingshot rental`,
+            html: promoEmailHTML(code, pct, expiresLabel),
+            ...promoReplyTo(PROMO_REPLY_TO)
           });
-          results.push({ email: lead.email, sent: true });
+          results.push({ email, sent: true });
         } catch (e) {
-          results.push({ email: lead.email, sent: false, error: (e as Error).message });
+          results.push({ email, sent: false, error: (e as Error).message });
         }
       }
-      return { ok: true, results };
+      return { ok: true, code, sent: results.filter((r) => r.sent).length, results };
     }
     case 'get_discounts': {
       const cfg = await readConfig();
