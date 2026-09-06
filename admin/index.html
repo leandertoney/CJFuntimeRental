@@ -394,7 +394,8 @@
         <!-- PANEL: Blocked Dates -->
         <section id="panel-calendar" class="admin-panel">
 
-          <!-- Calendar leads: the whole point of this panel is seeing the month. -->
+          <!-- Calendar leads and stays as large as possible. The day detail
+               opens as a popover OVER it rather than stealing width. -->
           <div id="calendar-wrap" class="calendar-wrap-big">
             <div id="calendar-nav" class="calendar-nav">
               <button id="cal-prev" class="cal-nav-btn" aria-label="Previous month">&#8592;</button>
@@ -410,10 +411,12 @@
             <div id="calendar-grid" class="calendar-grid calendar-grid-big"></div>
             <div id="calendar-legend" class="cal-legend"></div>
             <p class="cal-hint">Click any day to see what is on it. Nothing changes until you choose an action.</p>
-            <div id="cal-day-panel" class="cday-panel" hidden></div>
+            <div id="cal-day-backdrop" class="cday-backdrop" hidden></div>
+            <div id="cal-day-panel" class="cday-panel" hidden role="dialog" aria-modal="true"></div>
           </div>
 
-          <!-- Everything below is secondary: available, not in the way. -->
+          <div class="cal-secondary-wrap">
+
           <div class="cal-secondary">
             <button class="cal-disclosure" type="button" data-target="cal-blocked-panel"
                     aria-expanded="false">Blocked dates list</button>
@@ -456,6 +459,7 @@
               </div>
               <div id="vehicle-blocks-list" style="margin-top:24px"></div>
             </div>
+          </div>
           </div>
 
         </section>
@@ -519,6 +523,24 @@
   <!-- ── END AI CHAT WIDGET ──────────────────────────────────── -->
 
   <!-- Change Password Modal -->
+  <!-- Shown once per admin per release, so nobody has to discover a changed
+       dashboard by trial and error. -->
+  <div id="whatsnew-modal" class="modal-overlay hidden">
+    <div class="modal-box whatsnew-box" role="dialog" aria-modal="true" aria-labelledby="wn-title">
+      <div class="wn-progress"><span id="wn-progress-fill"></span></div>
+      <div class="wn-body">
+        <span class="wn-step" id="wn-step"></span>
+        <h3 class="modal-title" id="wn-title"></h3>
+        <p class="wn-text" id="wn-text"></p>
+      </div>
+      <div class="modal-actions wn-actions">
+        <button type="button" class="wn-skip" id="wn-skip">Skip</button>
+        <span class="wn-dots" id="wn-dots"></span>
+        <button type="button" class="btn-primary-admin" id="wn-next">Next</button>
+      </div>
+    </div>
+  </div>
+
   <div id="change-pw-modal" class="modal-overlay hidden">
     <form class="modal-box" onsubmit="return false;">
       <h3 class="modal-title">Change Password</h3>

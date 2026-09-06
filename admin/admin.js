@@ -232,6 +232,156 @@
     try { localStorage.setItem('cjfr_admin_sidebar_collapsed', collapsed ? '1' : '0'); } catch (e) {}
   }
 
+  // ── What's new ───────────────────────────────────────────────
+  //
+  // Shown once per admin per release. Bump WHATS_NEW_VERSION when the steps
+  // change and everyone sees it again; leave it alone and nobody is nagged.
+  // Keyed per admin email so Chris and Leander each see it once.
+  //
+  // Keep this to things that CHANGE WHAT SOMEONE DOES. A changelog nobody
+  // acts on is a dialog people learn to dismiss.
+  var WHATS_NEW_VERSION = '2026-09-06';
+  var WHATS_NEW_STEPS = [
+    {
+      section: 'overview',
+      target: '.attn-list',
+      title: 'Your dashboard opens with what needs doing',
+      text: 'Held deposits, missing IDs, unanswered tour requests. Each row takes you to the booking.'
+    },
+    {
+      section: 'overview',
+      target: '.attn-dismiss',
+      title: 'Already handled it? Clear it',
+      text: 'Hit the \u00d7. It asks why, keeps your reason on the booking, and never shows that item again.'
+    },
+    {
+      section: 'calendar',
+      target: '#calendar-grid',
+      title: 'The calendar shows the whole month',
+      text: 'Each day shows what it earned and how many vehicles are free. Switch to Week to see pickups.'
+    },
+    {
+      section: 'calendar',
+      target: '#calendar-grid',
+      title: 'One click never changes anything',
+      text: 'Clicking a day opens it. Blocking asks you to confirm, and still needs Save & Publish.'
+    },
+    {
+      section: 'calendar',
+      target: null,
+      title: 'Delivery is back on',
+      text: 'It had stopped showing at checkout and was charging $0. Live again at $50 each way, 30 miles.'
+    }
+  ];
+
+  var wnIndex = 0;
+
+  function whatsNewKey() {
+    return 'cjfr_whatsnew_' + (adminName || 'admin').toLowerCase();
+  }
+
+  function maybeShowWhatsNew() {
+    var seen = null;
+    try { seen = localStorage.getItem(whatsNewKey()); } catch (e) { return; }
+    if (seen === WHATS_NEW_VERSION) return;
+
+    // The tour points at real elements, so wait for the dashboard to finish
+    // loading rather than spotlighting a "Loading..." placeholder.
+    var tries = 0;
+    (function waitForContent() {
+      if (document.querySelector('.attn-list, .ov-cards') || ++tries > 40) {
+        wnIndex = 0;
+        renderWhatsNew();
+        var m = document.getElementById('whatsnew-modal');
+        if (m) m.classList.remove('hidden');
+        return;
+      }
+      setTimeout(waitForContent, 150);
+    })();
+  }
+
+  function renderWhatsNew() {
+    var step = WHATS_NEW_STEPS[wnIndex];
+    if (!step) return closeWhatsNew();
+
+    // Show the real screen behind the dialog rather than describing it.
+    if (step.section && activeSection !== step.section) {
+      activeSection = step.section;
+      updateNavActive(step.section);
+      renderPanel(step.section);
+    }
+
+    var set = function (id, val) { var el = document.getElementById(id); if (el) el.innerHTML = val; };
+    set('wn-step',  'Step ' + (wnIndex + 1) + ' of ' + WHATS_NEW_STEPS.length);
+    set('wn-title', esc(step.title));
+    set('wn-text',  esc(step.text));
+
+    var dots = '';
+    for (var i = 0; i < WHATS_NEW_STEPS.length; i++) {
+      dots += '<i class="' + (i === wnIndex ? 'on' : '') + '"></i>';
+    }
+    set('wn-dots', dots);
+
+    var fill = document.getElementById('wn-progress-fill');
+    if (fill) fill.style.width = ((wnIndex + 1) / WHATS_NEW_STEPS.length * 100) + '%';
+
+    var next = document.getElementById('wn-next');
+    if (next) next.textContent = (wnIndex === WHATS_NEW_STEPS.length - 1) ? 'Got it' : 'Next';
+    var skip = document.getElementById('wn-skip');
+    if (skip) skip.hidden = (wnIndex === WHATS_NEW_STEPS.length - 1);
+
+    // Panels render asynchronously, so wait for the target to exist rather
+    // than guessing a delay: step 3 switches panels and the grid is not
+    // there yet on the first tick.
+    var tries = 0;
+    (function trySpot() {
+      if (!step.target || document.querySelector(step.target) || ++tries > 20) {
+        return spotlight(step.target);
+      }
+      setTimeout(trySpot, 100);
+    })();
+  }
+
+  // Ring the element being described and keep the dialog off it.
+  function spotlight(selector) {
+    document.querySelectorAll('.wn-spot').forEach(function (el) { el.classList.remove('wn-spot'); });
+    var box = document.querySelector('.whatsnew-box');
+    var modalEl = document.getElementById('whatsnew-modal');
+    if (!selector) { if (modalEl) modalEl.classList.remove('wn-low'); return; }
+    var el = document.querySelector(selector);
+    if (!el) { if (modalEl) modalEl.classList.remove('wn-low'); return; }
+    el.classList.add('wn-spot');
+    el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    // If the target sits in the upper half, drop the dialog to the bottom.
+    var r = el.getBoundingClientRect();
+    var modal = document.getElementById('whatsnew-modal');
+    if (modal) modal.classList.toggle('wn-low', r.top < window.innerHeight / 2);
+  }
+
+  function closeWhatsNew() {
+    document.querySelectorAll('.wn-spot').forEach(function (el) { el.classList.remove('wn-spot'); });
+    try { localStorage.setItem(whatsNewKey(), WHATS_NEW_VERSION); } catch (e) {}
+    var m = document.getElementById('whatsnew-modal');
+    if (m) m.classList.add('hidden');
+  }
+
+  function bindWhatsNew() {
+    var next = document.getElementById('wn-next');
+    var skip = document.getElementById('wn-skip');
+    if (next) next.onclick = function () {
+      if (wnIndex >= WHATS_NEW_STEPS.length - 1) return closeWhatsNew();
+      wnIndex++; renderWhatsNew();
+    };
+    if (skip) skip.onclick = closeWhatsNew;
+    document.addEventListener('keydown', function (e) {
+      var m = document.getElementById('whatsnew-modal');
+      if (!m || m.classList.contains('hidden')) return;
+      if (e.key === 'Escape') closeWhatsNew();
+      if (e.key === 'ArrowRight' && next) next.click();
+      if (e.key === 'ArrowLeft' && wnIndex > 0) { wnIndex--; renderWhatsNew(); }
+    });
+  }
+
   // ── Auth ─────────────────────────────────────────────────────
   function checkAuth() {
     if (!_token) return;
@@ -420,6 +570,7 @@
           // /me resolves after the first render, so re-title once it lands.
           adminName = String(data.name).trim().split(/\s+/)[0];
           if (activeSection === 'overview') setPanelTitle('overview');
+          maybeShowWhatsNew();
         }
       });
     loadConfig().then(function () {
@@ -469,6 +620,7 @@
     bindSetupGroup();
     bindEmptyStateCtas();
     bindAttentionDismiss();
+    bindWhatsNew();
     document.querySelectorAll('.nav-link[data-section]').forEach(function (link) {
       link.addEventListener('click', function (e) {
         e.preventDefault();
@@ -1475,6 +1627,7 @@
     // Initialize per-vehicle blocks section
     renderVehicleBlocksPanel();
     bindCalDisclosures();
+    bindCalDayDismiss();
 
     // Bookings drive the money/availability figures in each cell. Render at
     // once so the grid appears immediately, then again when they land.
@@ -1691,6 +1844,22 @@
     });
   }
 
+  function bindCalDayDismiss() {
+    var back = document.getElementById('cal-day-backdrop');
+    if (back && !back.dataset.bound) {
+      back.dataset.bound = '1';
+      back.addEventListener('click', closeCalDay);
+    }
+    if (!document.body.dataset.calEscBound) {
+      document.body.dataset.calEscBound = '1';
+      document.addEventListener('keydown', function (e) {
+        if (e.key !== 'Escape') return;
+        var host = document.getElementById('cal-day-panel');
+        if (host && !host.hidden) closeCalDay();
+      });
+    }
+  }
+
   function bindCalDisclosures() {
     document.querySelectorAll('.cal-disclosure').forEach(function (btn) {
       if (btn.dataset.bound) return;
@@ -1713,28 +1882,6 @@
     var host = document.getElementById('calendar-legend');
     if (!host) return;
 
-    var todayStr    = localDateStr(new Date());
-    var daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
-    var fleetSize   = Object.keys((cfg && cfg.vehicles) || {}).length || 4;
-    var idleDays = 0, bookedDays = 0, monthRev = 0, idleWeekend = 0;
-
-    for (var d = 1; d <= daysInMonth; d++) {
-      var ds = calYear + '-' + String(calMonth + 1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
-      if (ds < todayStr) continue;
-      if (cfg && cfg.blockedDates && cfg.blockedDates.indexOf(ds) !== -1) continue;
-      var onDay = (calBookings || []).filter(function (b) {
-        var st = b.startDate || b.start_date, en = b.endDate || b.end_date;
-        return st && en && st <= ds && en >= ds;
-      });
-      monthRev += onDay.reduce(function (t, b) { return t + (b.total || 0); }, 0);
-      if (onDay.length) bookedDays++;
-      else {
-        idleDays++;
-        var dow = new Date(calYear, calMonth, d).getDay();
-        if (dow === 0 || dow === 5 || dow === 6) idleWeekend++;
-      }
-    }
-
     var html = '<div class="cal-key">'
       + '<span class="cal-key-item"><i class="k-booked"></i>Booked</span>'
       + '<span class="cal-key-item"><i class="k-idle"></i>Open</span>'
@@ -1742,14 +1889,6 @@
       + '<span class="cal-key-item"><i class="k-holiday"></i>Holiday</span>'
       + '</div>';
 
-    if (idleDays > 0) {
-      html += '<div class="cal-summary">'
-        + '<strong>' + idleDays + '</strong> open day' + (idleDays === 1 ? '' : 's')
-        + ' left this month'
-        + (idleWeekend ? ', <strong>' + idleWeekend + '</strong> of them Fri to Sun' : '')
-        + ' &middot; ' + bookedDays + ' booked &middot; $' + monthRev.toLocaleString() + ' still to come'
-        + '</div>';
-    }
     host.innerHTML = html;
   }
 
@@ -1823,7 +1962,7 @@
     document.getElementById('cal-month-label').textContent = fmt(start) + ' \u2013 ' + fmt(end) + ', ' + end.getFullYear();
 
     var grid = document.getElementById('calendar-grid');
-    grid.className = 'calendar-grid calendar-grid-big calendar-grid-week';
+    setGridLayout(grid, true);
 
     var todayStr = localDateStr(new Date());
     var holidays = holidaysFor(start.getFullYear());
@@ -1880,6 +2019,13 @@
     renderCalendar();
   }
 
+  // Toggle only the layout classes. A wholesale className assignment would
+  // also drop classes owned elsewhere, such as the what's-new highlight.
+  function setGridLayout(grid, isWeek) {
+    grid.classList.add('calendar-grid', 'calendar-grid-big');
+    grid.classList.toggle('calendar-grid-week', !!isWeek);
+  }
+
   function startOfWeek(d) {
     var x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
     x.setDate(x.getDate() - x.getDay());
@@ -1894,7 +2040,7 @@
     document.getElementById('cal-month-label').textContent = MONTH_NAMES[calMonth] + ' ' + calYear;
 
     var grid = document.getElementById('calendar-grid');
-    grid.className = 'calendar-grid calendar-grid-big';
+    setGridLayout(grid, false);
     var html = '';
 
     // Day-of-week headers
@@ -2069,17 +2215,27 @@
 
     host.innerHTML = html;
     host.hidden = false;
+    var backdrop = document.getElementById('cal-day-backdrop');
+    if (backdrop) backdrop.hidden = false;
     bindCalDayPanel(host, dateStr);
-    host.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    var firstBtn = host.querySelector('.cday-close');
+    if (firstBtn) firstBtn.focus();
     if (focusBookingId) {
       var b = host.querySelector('[data-open-booking="' + focusBookingId + '"]');
       if (b) b.focus();
     }
   }
 
+  function closeCalDay() {
+    var host = document.getElementById('cal-day-panel');
+    var back = document.getElementById('cal-day-backdrop');
+    if (host) host.hidden = true;
+    if (back) back.hidden = true;
+  }
+
   function bindCalDayPanel(host, dateStr) {
     var closeBtn = host.querySelector('.cday-close');
-    if (closeBtn) closeBtn.onclick = function () { host.hidden = true; };
+    if (closeBtn) closeBtn.onclick = closeCalDay;
 
     host.querySelectorAll('[data-open-booking]').forEach(function (btn) {
       btn.onclick = function () { gotoBooking(this.getAttribute('data-open-booking')); };
@@ -2117,7 +2273,7 @@
   function afterCalChange(dateStr) {
     renderCalendar();
     renderBlockedList();
-    openCalDay(dateStr);
+    openCalDay(dateStr);   // reopens with the backdrop still up
     showToast('info', 'Not saved yet', 'Hit Save & Publish to put this live.');
   }
 
