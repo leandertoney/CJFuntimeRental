@@ -219,14 +219,14 @@ function promoEmailHTML(code: string, percentOff: number, expiresLabel: string, 
   // a button on a phone.
   const cards = PROMO_VEHICLE_LINKS.map((v) => `
     <tr><td style="padding:0 0 14px 0;">
-      <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#1a1a1a;border:1px solid rgba(255,255,255,0.08);border-radius:12px;">
+      <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#ffffff;border:1px solid #e0e0e0;border-radius:12px;">
         <tr><td style="padding:0;">
           <a href="${promoLink(v.path, code)}" style="text-decoration:none;display:block;">
-            <img src="https://cjfuntimerentals.com${v.img}" alt="${v.name}" width="516" height="200" style="display:block;width:100%;max-width:516px;height:200px;object-fit:cover;object-position:center;border-radius:12px 12px 0 0;border:0;background:#0f0f0f;">
+            <img src="https://cjfuntimerentals.com${v.img}" alt="${v.name}" width="516" height="200" style="display:block;width:100%;max-width:516px;height:200px;object-fit:cover;object-position:center;border-radius:12px 12px 0 0;border:0;background:#eeeeee;">
           </a>
         </td></tr>
         <tr><td style="padding:16px 20px 18px 20px;">
-          <div style="font-size:16px;font-weight:700;color:#ffffff;line-height:1.35;margin:0 0 12px;">${v.name}</div>
+          <div style="font-size:16px;font-weight:700;color:#1a1a1a;line-height:1.35;margin:0 0 12px;">${v.name}</div>
           <a href="${promoLink(v.path, code)}" style="display:inline-block;background:#FF6B00;color:#000000;font-weight:700;font-size:14px;letter-spacing:0.4px;padding:12px 22px;border-radius:6px;text-decoration:none;">See pricing</a>
         </td></tr>
       </table>
@@ -240,51 +240,58 @@ function promoEmailHTML(code: string, percentOff: number, expiresLabel: string, 
 <!-- This email is dark by design. Declaring the scheme stops Gmail and Apple
      Mail from running their own dark-mode inversion over it, which is what
      turns a designed dark email into muddy grey. -->
-<meta name="color-scheme" content="dark">
-<meta name="supported-color-schemes" content="dark">
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
+<style>
+  :root { color-scheme: light; supported-color-schemes: light; }
+</style>
 </head>
-<body style="margin:0;padding:0;background:#0f0f0f;">
+<body class="body" style="margin:0;padding:0;background:#f4f4f4;">
   <!-- The outer cell carries the side padding. Without it the table collapses
        to the screen width on a phone and every line runs edge to edge. -->
-  <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#0f0f0f;">
-    <tr><td align="center" style="padding:32px 20px;">
+  <table width="100%" cellpadding="0" cellspacing="0" role="presentation" class="dark-bg" style="background:#f4f4f4;">
+    <tr><td align="center" style="padding:32px 20px 48px 20px;">
       <table width="516" cellpadding="0" cellspacing="0" role="presentation" style="max-width:516px;width:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
 
         <tr><td align="center" style="padding:0 0 26px 0;">
-          <img src="https://cjfuntimerentals.com/cj_funtime_logo.png" alt="CJ's Fun Time Rental" width="120" style="display:block;height:auto;border:0;">
+          <table cellpadding="0" cellspacing="0" role="presentation"><tr>
+            <td align="center" style="background:#111111;border-radius:14px;padding:16px 26px;">
+              <img src="https://cjfuntimerentals.com/cj_funtime_logo.png" alt="CJ's Fun Time Rental" width="110" style="display:block;height:auto;border:0;">
+            </td>
+          </tr></table>
         </td></tr>
 
-        <tr><td style="background:#1a1a1a;border:1px solid rgba(255,107,0,0.35);border-radius:12px;padding:26px 22px;">
+        <tr><td style="background:#ffffff;border:1px solid #ffd0a8;border-radius:12px;padding:26px 22px;">
           <div style="font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#FF6B00;font-weight:700;margin:0 0 10px;">Labor Day Special</div>
-          <div style="font-size:26px;line-height:1.25;font-weight:700;color:#ffffff;margin:0 0 14px;">${percentOff}% off${dayRule ? ' ' + dayRule : ''} rides</div>
-          <div style="font-size:15px;line-height:1.6;color:rgba(255,255,255,0.68);margin:0 0 22px;">Summer is winding down and the roads around Lancaster are about as good as they get right now.</div>
-          <div style="background:#0f0f0f;border:1px dashed rgba(255,107,0,0.5);border-radius:8px;padding:16px;text-align:center;">
-            <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.45);margin:0 0 6px;">Your code</div>
+          <div style="font-size:26px;line-height:1.25;font-weight:700;color:#1a1a1a;margin:0 0 14px;">${percentOff}% off${dayRule ? ' ' + dayRule : ''} rides</div>
+          <div style="font-size:15px;line-height:1.6;color:#5a5a5a;margin:0 0 22px;">Summer is winding down and the roads around Lancaster are about as good as they get right now.</div>
+          <div style="background:#fff6ee;border:1px dashed #ffb478;border-radius:8px;padding:16px;text-align:center;">
+            <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#6e6e6e;margin:0 0 6px;">Your code</div>
             <div style="font-size:26px;letter-spacing:3px;font-weight:700;color:#FF6B00;">${code}</div>
           </div>
-          <div style="font-size:13px;line-height:1.6;color:rgba(255,255,255,0.45);text-align:center;margin:12px 0 0;">${expiresLabel}</div>
+          <div style="font-size:13px;line-height:1.6;color:#6e6e6e;text-align:center;margin:12px 0 0;">${expiresLabel}</div>
         </td></tr>
 
-        <tr><td style="padding:26px 4px 14px 4px;font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.4);font-weight:700;">Pick your ride</td></tr>
+        <tr><td style="padding:26px 4px 14px 4px;font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:#6e6e6e;font-weight:700;">Pick your ride</td></tr>
 
         ${cards}
 
         <tr><td style="padding:8px 4px 0 4px;">
-          <div style="font-size:13px;line-height:1.9;color:rgba(255,255,255,0.55);">
+          <div style="font-size:13px;line-height:1.9;color:#5a5a5a;">
             No motorcycle license required<br>
             300 miles per trip &nbsp;·&nbsp; Full tank at pickup<br>
             Insurance included &nbsp;·&nbsp; Pickup in Lancaster
           </div>
         </td></tr>
 
-        <tr><td style="padding:22px 4px 0 4px;">
-          <div style="font-size:12px;line-height:1.6;color:rgba(255,255,255,0.3);">Discount applies to the rental only. The refundable deposit and any delivery fee are not discounted.</div>
+        <tr><td style="padding:20px 6px 0 6px;">
+          <div style="font-size:12px;line-height:1.7;color:#6e6e6e;">Discount applies to the rental only. The deposit and delivery are not discounted.</div>
         </td></tr>
 
-        <tr><td style="padding:26px 4px 0 4px;border-top:1px solid rgba(255,255,255,0.08);">
-          <div style="font-size:11px;line-height:1.7;color:rgba(255,255,255,0.3);">
+        <tr><td style="padding:26px 6px 8px 6px;border-top:1px solid #e0e0e0;">
+          <div style="font-size:11px;line-height:1.7;color:#6e6e6e;">
             CJ's Fun Time Rental &nbsp;·&nbsp; Lancaster, PA<br>
-            You are getting this because you asked us for a discount code. <a href="mailto:${PROMO_REPLY_TO}?subject=Unsubscribe" style="color:rgba(255,255,255,0.5);text-decoration:underline;">Unsubscribe</a>.
+            You are getting this because you asked us for a discount code. <a href="mailto:${PROMO_REPLY_TO}?subject=Unsubscribe" style="color:#5a5a5a;text-decoration:underline;">Unsubscribe</a>.
           </div>
         </td></tr>
 
