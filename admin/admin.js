@@ -232,6 +232,207 @@
     try { localStorage.setItem('cjfr_admin_sidebar_collapsed', collapsed ? '1' : '0'); } catch (e) {}
   }
 
+  // ── In-app confirm ───────────────────────────────────────────
+  //
+  // Replaces window.confirm(). The native dialog is titled with the origin
+  // ("localhost:4310 says", "cjfuntimerentals.com says"), which on a real
+  // action like blocking the fleet reads as a browser error rather than the
+  // app asking a question. Also lets a destructive action look destructive.
+  function askConfirm(opts, onYes) {
+    var modal  = document.getElementById('confirm-modal');
+    if (!modal) { if (window.confirm(opts.title)) onYes(); return; }
+    var okBtn  = document.getElementById('confirm-ok');
+    var cancel = document.getElementById('confirm-cancel');
+
+    document.getElementById('confirm-title').textContent = opts.title || 'Are you sure?';
+    document.getElementById('confirm-text').textContent  = opts.text  || '';
+    okBtn.textContent = opts.confirmLabel || 'Confirm';
+    okBtn.classList.toggle('is-danger', !!opts.danger);
+    modal.classList.remove('hidden');
+    okBtn.focus();
+
+    function cleanup() {
+      modal.classList.add('hidden');
+      okBtn.onclick = null; cancel.onclick = null;
+      document.removeEventListener('keydown', onKey);
+    }
+    function onKey(e) {
+      if (e.key === 'Escape') cleanup();
+      if (e.key === 'Enter')  { cleanup(); onYes(); }
+    }
+    okBtn.onclick  = function () { cleanup(); onYes(); };
+    cancel.onclick = cleanup;
+    modal.onclick  = function (e) { if (e.target === modal) cleanup(); };
+    document.addEventListener('keydown', onKey);
+  }
+
+  // ── What's new ───────────────────────────────────────────────
+  //
+  // Shown once per admin per release. Bump WHATS_NEW_VERSION when the steps
+  // change and everyone sees it again; leave it alone and nobody is nagged.
+  // Keyed per admin email so Chris and Leander each see it once.
+  //
+  // Keep this to things that CHANGE WHAT SOMEONE DOES. A changelog nobody
+  // acts on is a dialog people learn to dismiss.
+  var WHATS_NEW_VERSION = '2026-09-06';
+  var WHATS_NEW_STEPS = [
+    {
+      section: 'overview',
+      target: '.attn-list',
+      eyebrow: 'Your dashboard',
+      title: 'It opens with what needs doing',
+      text: 'Held deposits, missing IDs, unanswered tour requests. Each row takes you to the booking.'
+    },
+    {
+      section: 'overview',
+      target: '.attn-dismiss',
+      eyebrow: 'Your dashboard',
+      title: 'Already handled it? Clear it',
+      text: 'Hit the \u00d7. It asks why, keeps your reason on the booking, and never shows that item again.'
+    },
+    {
+      section: 'calendar',
+      target: '#calendar-grid',
+      eyebrow: 'The calendar',
+      title: 'It shows the whole month',
+      text: 'Each day shows what it earned and how many vehicles are free. Switch to Week to see pickups.'
+    },
+    {
+      section: 'calendar',
+      target: '#calendar-grid',
+      eyebrow: 'The calendar',
+      title: 'One click never changes anything',
+      text: 'Clicking a day opens it. Blocking asks you to confirm, and still needs Save & Publish.'
+    },
+    {
+      section: 'calendar',
+      target: null,
+      eyebrow: 'On your website',
+      title: 'Delivery is back on',
+      text: 'It had stopped showing at checkout and was charging $0. Live again at $50 each way, 30 miles.'
+    }
+  ];
+
+  var wnIndex = 0;
+
+  function whatsNewKey() {
+    return 'cjfr_whatsnew_' + (adminName || 'admin').toLowerCase();
+  }
+
+  function maybeShowWhatsNew() {
+    var seen = null;
+    try { seen = localStorage.getItem(whatsNewKey()); } catch (e) { return; }
+    if (seen === WHATS_NEW_VERSION) return;
+
+    // The tour points at real elements, so wait for the dashboard to finish
+    // loading rather than spotlighting a "Loading..." placeholder.
+    var tries = 0;
+    (function waitForContent() {
+      if (document.querySelector('.attn-list, .ov-cards') || ++tries > 40) {
+        wnIndex = 0;
+        renderWhatsNew();
+        var m = document.getElementById('whatsnew-modal');
+        if (m) m.classList.remove('hidden');
+        return;
+      }
+      setTimeout(waitForContent, 150);
+    })();
+  }
+
+  function renderWhatsNew() {
+    var step = WHATS_NEW_STEPS[wnIndex];
+    if (!step) return closeWhatsNew();
+
+    // Show the real screen behind the dialog rather than describing it.
+    if (step.section && activeSection !== step.section) {
+      activeSection = step.section;
+      updateNavActive(step.section);
+      renderPanel(step.section);
+    }
+
+    var set = function (id, val) { var el = document.getElementById(id); if (el) el.innerHTML = val; };
+    // Named, not numbered: "Step 3 of 5" makes a two-minute tour feel like a form.
+    set('wn-eyebrow', wnIndex === 0 ? "What's new" : esc(step.eyebrow || "What's new"));
+    set('wn-title', esc(step.title));
+    set('wn-text',  esc(step.text));
+
+    var dots = '';
+    for (var i = 0; i < WHATS_NEW_STEPS.length; i++) {
+      dots += '<i class="' + (i === wnIndex ? 'on' : '') + '"></i>';
+    }
+    set('wn-dots', dots);
+
+    var fill = document.getElementById('wn-progress-fill');
+    if (fill) fill.style.width = ((wnIndex + 1) / WHATS_NEW_STEPS.length * 100) + '%';
+
+    var next = document.getElementById('wn-next');
+    if (next) next.textContent = (wnIndex === WHATS_NEW_STEPS.length - 1) ? 'Got it' : 'Next';
+    var skip = document.getElementById('wn-skip');
+    if (skip) skip.hidden = (wnIndex === WHATS_NEW_STEPS.length - 1);
+
+    // Panels render asynchronously, so wait for the target to exist rather
+    // than guessing a delay: step 3 switches panels and the grid is not
+    // there yet on the first tick.
+    var tries = 0;
+    (function trySpot() {
+      if (!step.target || document.querySelector(step.target) || ++tries > 20) {
+        return spotlight(step.target);
+      }
+      setTimeout(trySpot, 100);
+    })();
+  }
+
+  // Ring the element being described and keep the dialog off it.
+  function spotlight(selector) {
+    document.querySelectorAll('.wn-spot').forEach(function (el) { el.classList.remove('wn-spot'); });
+    var box = document.querySelector('.whatsnew-box');
+    var modalEl = document.getElementById('whatsnew-modal');
+    var clear = function () {
+      if (modalEl) modalEl.classList.remove('wn-low', 'wn-high');
+    };
+    if (!selector) { clear(); return; }
+    var el = document.querySelector(selector);
+    if (!el) { clear(); return; }
+    el.classList.add('wn-spot');
+    el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    // If the target sits in the upper half, drop the dialog to the bottom.
+    // Move the dialog out of the way only when there is real room for it.
+    // Dropping it to the bottom regardless just put the highlight on top of it.
+    var r   = el.getBoundingClientRect();
+    var box = document.querySelector('.whatsnew-box');
+    var modal = document.getElementById('whatsnew-modal');
+    if (!modal) return;
+    var boxH  = box ? box.getBoundingClientRect().height : 320;
+    var below = window.innerHeight - r.bottom;
+    var above = r.top;
+    modal.classList.toggle('wn-low',  below >= boxH + 32);
+    modal.classList.toggle('wn-high', below <  boxH + 32 && above >= boxH + 32);
+  }
+
+  function closeWhatsNew() {
+    document.querySelectorAll('.wn-spot').forEach(function (el) { el.classList.remove('wn-spot'); });
+    try { localStorage.setItem(whatsNewKey(), WHATS_NEW_VERSION); } catch (e) {}
+    var m = document.getElementById('whatsnew-modal');
+    if (m) m.classList.add('hidden');
+  }
+
+  function bindWhatsNew() {
+    var next = document.getElementById('wn-next');
+    var skip = document.getElementById('wn-skip');
+    if (next) next.onclick = function () {
+      if (wnIndex >= WHATS_NEW_STEPS.length - 1) return closeWhatsNew();
+      wnIndex++; renderWhatsNew();
+    };
+    if (skip) skip.onclick = closeWhatsNew;
+    document.addEventListener('keydown', function (e) {
+      var m = document.getElementById('whatsnew-modal');
+      if (!m || m.classList.contains('hidden')) return;
+      if (e.key === 'Escape') closeWhatsNew();
+      if (e.key === 'ArrowRight' && next) next.click();
+      if (e.key === 'ArrowLeft' && wnIndex > 0) { wnIndex--; renderWhatsNew(); }
+    });
+  }
+
   // ── Auth ─────────────────────────────────────────────────────
   function checkAuth() {
     if (!_token) return;
@@ -420,6 +621,7 @@
           // /me resolves after the first render, so re-title once it lands.
           adminName = String(data.name).trim().split(/\s+/)[0];
           if (activeSection === 'overview') setPanelTitle('overview');
+          maybeShowWhatsNew();
         }
       });
     loadConfig().then(function () {
@@ -468,6 +670,8 @@
   function bindNav() {
     bindSetupGroup();
     bindEmptyStateCtas();
+    bindAttentionDismiss();
+    bindWhatsNew();
     document.querySelectorAll('.nav-link[data-section]').forEach(function (link) {
       link.addEventListener('click', function (e) {
         e.preventDefault();
@@ -496,6 +700,43 @@
       activeSection = target;
       updateNavActive(target);
       renderPanel(target);
+    });
+  }
+
+  // Dismissing asks WHY, because the reason is the useful part later.
+  function bindAttentionDismiss() {
+    document.addEventListener('click', function (e) {
+      var btn = e.target.closest && e.target.closest('.attn-dismiss[data-dismiss]');
+      if (!btn) return;
+      e.preventDefault();
+      e.stopPropagation();
+
+      var id  = btn.getAttribute('data-dismiss');
+      var row = btn.closest('.attn-row');
+      var what = row ? (row.querySelector('.attn-text') || {}).textContent : 'this item';
+      var note = window.prompt(
+        'Clear this off the dashboard for good?\n\n' + (what || '').trim()
+        + '\n\nWhy? (kept on the booking, e.g. "deal worked out with renter")');
+      if (note === null) return;
+      note = note.trim();
+      if (!note) { showToast('error', 'Reason needed', 'Say why so the decision is not lost.'); return; }
+
+      btn.disabled = true;
+      apiFetch(ADMIN_API + '/bookings/' + id + '/dismiss-attention', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ note: note })
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (!data.ok) throw new Error(data.error || 'Failed');
+          showToast('success', 'Dismissed', 'It will not come back.');
+          renderOverviewPanel();
+        })
+        .catch(function (err) {
+          btn.disabled = false;
+          showToast('error', 'Could not dismiss', err.message);
+        });
     });
   }
 
@@ -571,7 +812,7 @@
     faq:       'FAQ',
     emails:    'Email Templates',
     discounts: 'Discounts',
-    calendar:  'Blocked Dates',
+    calendar:  'Calendar',
     bookings:  'Bookings',
     leads:     'Leads',
     tours:     'Tour Requests',
@@ -835,6 +1076,8 @@
 
     bookings.forEach(function (b) {
       if (OWNER_EMAILS.indexOf((b.email || '').toLowerCase()) !== -1) return;
+      // Dismissed means the owner has already dealt with it off-system.
+      if (b.attention_dismissed_at) return;
 
       var start = b.startDate || b.start_date;
       var end   = b.endDate   || b.end_date;
@@ -933,6 +1176,10 @@
              +    '</div>'
              +    '<button type="button" class="ov-empty-cta"' + target + '>'
              +      esc(it.cta) + '</button>'
+             +    (it.bookingId
+                  ? '<button type="button" class="attn-dismiss" title="Dismiss this"'
+                    + ' aria-label="Dismiss this" data-dismiss="' + esc(it.bookingId) + '">&times;</button>'
+                  : '')
              +  '</div>';
       });
       html += '</div>';
@@ -1429,21 +1676,38 @@
   // ── Calendar panel ───────────────────────────────────────────
   function renderCalendarPanel() {
     // Initialize per-vehicle blocks section
-    renderVehicleBlocksPanel();
+    loadVehicleBlocks();
+    bindCalDisclosures();
+    bindCalDayDismiss();
 
-    // Initialize fleet-wide calendar
+    // Bookings drive the money/availability figures in each cell. Render at
+    // once so the grid appears immediately, then again when they land.
     renderCalendar();
-    renderBlockedList();
-    document.getElementById('cal-prev').onclick = function () {
-      calMonth--;
-      if (calMonth < 0) { calMonth = 11; calYear--; }
+    apiFetch(ADMIN_API + '/bookings')
+      .then(function (r) { return r.json(); })
+      .then(function (rows) { calBookings = Array.isArray(rows) ? rows : []; renderCalendar(); })
+      .catch(function () { calBookings = []; });
+
+    var todayBtn = document.getElementById('cal-today');
+    if (todayBtn) todayBtn.onclick = function () {
+      var n = new Date();
+      calYear = n.getFullYear(); calMonth = n.getMonth();
+      calWeekStart = startOfWeek(n);
       renderCalendar();
     };
-    document.getElementById('cal-next').onclick = function () {
-      calMonth++;
-      if (calMonth > 11) { calMonth = 0; calYear++; }
-      renderCalendar();
-    };
+    document.getElementById('cal-prev').onclick = function () { stepCalendar(-1); };
+    document.getElementById('cal-next').onclick = function () { stepCalendar(1); };
+
+    document.querySelectorAll('.cal-view-btn').forEach(function (btn) {
+      btn.onclick = function () {
+        calView = this.getAttribute('data-view');
+        document.querySelectorAll('.cal-view-btn').forEach(function (b) {
+          b.classList.toggle('active', b.getAttribute('data-view') === calView);
+        });
+        if (calView === 'week' && !calWeekStart) calWeekStart = startOfWeek(new Date());
+        renderCalendar();
+      };
+    });
   }
 
   // ── Per-Vehicle Blocking ─────────────────────────────────────────────────
@@ -1475,114 +1739,19 @@
     return v.color ? base + ' (' + v.color + ')' : base;
   }
 
-  function renderVehicleBlocksPanel() {
-    // Populate vehicle dropdown
-    var vehSelect = document.getElementById('vblock-vehicle');
-    var html = '<option value="">Select vehicle...</option>';
-    Object.keys(cfg.vehicles || {}).forEach(function (key) {
-      var v = cfg.vehicles[key];
-      html += '<option value="' + key + '">' + vehicleDisplayName(v, key) + '</option>';
-    });
-    vehSelect.innerHTML = html;
-
-    // Load existing blocks
-    loadVehicleBlocks();
-
-    // Bind add button
-    document.getElementById('vblock-add-btn').onclick = function () {
-      var vehicle = document.getElementById('vblock-vehicle').value;
-      var start = document.getElementById('vblock-start').value;
-      var end = document.getElementById('vblock-end').value;
-      var reason = document.getElementById('vblock-reason').value;
-
-      if (!vehicle || !start || !end) {
-        alert('Please select a vehicle and enter start/end dates');
-        return;
-      }
-
-      if (start > end) {
-        alert('End date must be after start date');
-        return;
-      }
-
-      addVehicleBlock(vehicle, start, end, reason);
-    };
-  }
 
   function loadVehicleBlocks() {
     apiFetch(ADMIN_API + '/vehicle-blocks')
       .then(function (r) { return r.json(); })
       .then(function (data) {
         vehicleBlocks = data.blocks || [];
-        renderVehicleBlocksList();
+        if (document.getElementById('calendar-grid')) renderCalendar();
       })
       .catch(function (err) {
         console.error('Failed to load vehicle blocks:', err);
       });
   }
 
-  function renderVehicleBlocksList() {
-    var container = document.getElementById('vehicle-blocks-list');
-
-    if (!vehicleBlocks.length) {
-      container.innerHTML = '<p class="vblock-empty">No per-vehicle blocks yet. Add one above to block a specific vehicle while leaving others bookable.</p>';
-      return;
-    }
-
-    // Group by vehicle
-    var grouped = {};
-    vehicleBlocks.forEach(function (block) {
-      if (!grouped[block.vehicle_key]) grouped[block.vehicle_key] = [];
-      grouped[block.vehicle_key].push(block);
-    });
-
-    // Which vehicle a block belongs to must be obvious at ANY scroll position,
-    // including on a phone. Two independent mechanisms, deliberately redundant:
-    //   1. .vblock-group-header is sticky, so the vehicle name stays pinned
-    //      while its rows scroll past.
-    //   2. every row also carries .vblock-row-vehicle with the same name, so
-    //      the answer is on-screen even if sticky ever stops working.
-    var html = '';
-    Object.keys(grouped).forEach(function (vkey) {
-      var vname = vehicleDisplayName(cfg.vehicles && cfg.vehicles[vkey], vkey);
-      var rows  = grouped[vkey];
-
-      html += '<div class="vblock-group">';
-      html += '<div class="vblock-group-header">'
-        + '<span class="vblock-group-name">' + esc(vname) + '</span>'
-        + '<span class="vblock-group-count">' + rows.length + ' block' + (rows.length !== 1 ? 's' : '') + '</span>'
-        + '</div>';
-      html += '<div class="vblock-rows">';
-
-      rows.forEach(function (block) {
-        html += '<div class="vblock-row">';
-        html +=   '<div class="vblock-row-main">';
-        html +=     '<span class="vblock-row-vehicle">' + esc(vname) + '</span>';
-        html +=     '<span class="vblock-row-dates">' + esc(block.start_date)
-          + '<span class="vblock-row-sep">to</span>' + esc(block.end_date) + '</span>';
-        if (block.reason) {
-          html +=   '<span class="vblock-row-reason">' + esc(block.reason) + '</span>';
-        }
-        html +=   '</div>';
-        html +=   '<button class="vblock-delete" data-id="' + esc(block.id) + '">Remove</button>';
-        html += '</div>';
-      });
-
-      html += '</div></div>';
-    });
-
-    container.innerHTML = html;
-
-    // Bind delete buttons
-    container.querySelectorAll('.vblock-delete').forEach(function (btn) {
-      btn.onclick = function () {
-        var id = this.getAttribute('data-id');
-        if (confirm('Remove this block?')) {
-          deleteVehicleBlock(id);
-        }
-      };
-    });
-  }
 
   function addVehicleBlock(vehicleKey, startDate, endDate, reason) {
     apiFetch(ADMIN_API + '/vehicle-blocks', {
@@ -1597,19 +1766,15 @@
     .then(function (r) { return r.json(); })
     .then(function (data) {
       if (data.ok) {
-        // Clear form
-        document.getElementById('vblock-vehicle').value = '';
-        document.getElementById('vblock-start').value = '';
-        document.getElementById('vblock-end').value = '';
-        document.getElementById('vblock-reason').value = '';
-        // Reload list
+        // Reload, then repaint the calendar so the new block shows at once.
         loadVehicleBlocks();
+        showToast('success', 'Vehicle blocked', 'That vehicle is off the calendar for those dates.');
       } else {
-        alert('Failed to add block: ' + (data.error || 'Unknown error'));
+        showToast('error', 'Could not block', data.error || 'Unknown error');
       }
     })
     .catch(function (err) {
-      alert('Failed to add block: ' + err.message);
+      showToast('error', 'Could not block', err.message);
     });
   }
 
@@ -1630,14 +1795,203 @@
     });
   }
 
+  function bindCalDayDismiss() {
+    var back = document.getElementById('cal-day-backdrop');
+    if (back && !back.dataset.bound) {
+      back.dataset.bound = '1';
+      back.addEventListener('click', closeCalDay);
+    }
+    if (!document.body.dataset.calEscBound) {
+      document.body.dataset.calEscBound = '1';
+      document.addEventListener('keydown', function (e) {
+        if (e.key !== 'Escape') return;
+        var host = document.getElementById('cal-day-panel');
+        if (host && !host.hidden) closeCalDay();
+      });
+    }
+  }
+
+  function bindCalDisclosures() {
+    document.querySelectorAll('.cal-disclosure').forEach(function (btn) {
+      if (btn.dataset.bound) return;
+      btn.dataset.bound = '1';
+      btn.addEventListener('click', function () {
+        var body = document.getElementById(this.getAttribute('data-target'));
+        if (!body) return;
+        var open = body.hidden;
+        body.hidden = !open;
+        this.setAttribute('aria-expanded', open ? 'true' : 'false');
+        this.classList.toggle('open', open);
+      });
+    });
+  }
+
+  // Legend plus the one number worth acting on: idle vehicle-days ahead.
+  // Nothing here is predicted. Ten bookings cannot support a forecast, so
+  // this counts what is genuinely on the books and what is genuinely empty.
+  function renderCalLegend() {
+    var host = document.getElementById('calendar-legend');
+    if (!host) return;
+
+    var html = '<div class="cal-key">'
+      + '<span class="cal-key-item"><i class="k-booked"></i>Booked</span>'
+      + '<span class="cal-key-item"><i class="k-idle"></i>Open</span>'
+      + '<span class="cal-key-item"><i class="k-blocked"></i>Blocked</span>'
+      + '<span class="cal-key-item"><i class="k-holiday"></i>Holiday</span>'
+      + '</div>';
+
+    host.innerHTML = html;
+  }
+
+  // US holidays that plausibly drive rentals. Fixed-date ones plus the
+  // floating Monday/Thursday holidays, computed per year rather than listed,
+  // so this does not quietly expire.
+  function holidaysFor(year) {
+    function nthDow(month, dow, n) {           // n-th <dow> of month
+      var d = new Date(year, month, 1);
+      var count = 0;
+      while (d.getMonth() === month) {
+        if (d.getDay() === dow && ++count === n) return fmtLocal(d);
+        d.setDate(d.getDate() + 1);
+      }
+      return null;
+    }
+    function lastDow(month, dow) {
+      var d = new Date(year, month + 1, 0);
+      while (d.getDay() !== dow) d.setDate(d.getDate() - 1);
+      return fmtLocal(d);
+    }
+    var h = {};
+    h[year + '-01-01'] = "New Year's Day";
+    h[lastDow(4, 1)]   = 'Memorial Day';
+    h[year + '-06-19'] = 'Juneteenth';
+    h[year + '-07-04'] = 'Independence Day';
+    h[nthDow(8, 1, 1)] = 'Labor Day';
+    h[nthDow(9, 1, 2)] = 'Columbus Day';
+    h[year + '-11-11'] = 'Veterans Day';
+    h[nthDow(10, 4, 4)] = 'Thanksgiving';
+    h[year + '-12-25'] = 'Christmas';
+    h[year + '-12-31'] = "New Year's Eve";
+    return h;
+  }
+
+  function fmtLocal(d) {
+    return d.getFullYear() + '-'
+      + String(d.getMonth() + 1).padStart(2, '0') + '-'
+      + String(d.getDate()).padStart(2, '0');
+  }
+
+  // Bookings for the calendar. Cached per panel visit so paging months does
+  // not refetch, and a failure degrades to a plain block calendar rather than
+  // breaking availability management.
+  var calBookings = null;
+  var calView     = 'month';   // 'month' | 'week'
+  var calWeekStart = null;     // Sunday of the visible week, in week view
+
+  function bookingsOn(dateStr) {
+    return (calBookings || []).filter(function (b) {
+      var st = b.startDate || b.start_date, en = b.endDate || b.end_date;
+      return st && en && st <= dateStr && en >= dateStr;
+    });
+  }
+
   function renderCalendar() {
+    if (calView === 'week') return renderCalendarWeek();
+    return renderCalendarMonth();
+  }
+
+  // Seven days across, tall enough to name who has which vehicle. This is the
+  // day-to-day operations view: month answers "how full am I", week answers
+  // "what is happening and who do I hand keys to".
+  function renderCalendarWeek() {
+    var DAY_LABELS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    var start = calWeekStart ? new Date(calWeekStart) : startOfWeek(new Date(calYear, calMonth, 1));
+    calWeekStart = new Date(start);
+
+    var end = new Date(start); end.setDate(end.getDate() + 6);
+    var fmt = function (d) { return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); };
+    document.getElementById('cal-month-label').textContent = fmt(start) + ' \u2013 ' + fmt(end) + ', ' + end.getFullYear();
+
+    var grid = document.getElementById('calendar-grid');
+    setGridLayout(grid, true);
+
+    var todayStr = localDateStr(new Date());
+    var holidays = holidaysFor(start.getFullYear());
+    var fleetSize = Object.keys((cfg && cfg.vehicles) || {}).length || 4;
+    var html = '';
+    DAY_LABELS.forEach(function (d) { html += '<div class="cal-day-label">' + d + '</div>'; });
+
+    for (var i = 0; i < 7; i++) {
+      var cur = new Date(start); cur.setDate(cur.getDate() + i);
+      var ds  = localDateStr(cur);
+      var cls = 'cal-day';
+      if (ds < todayStr) cls += ' past';
+      if (ds === todayStr) cls += ' today';
+      var blocked = cfg && cfg.blockedDates && cfg.blockedDates.indexOf(ds) !== -1;
+      if (blocked) cls += ' blocked';
+      var onDay = bookingsOn(ds);
+      if (onDay.length) cls += ' has-bookings';
+      else if (ds >= todayStr && !blocked) cls += ' idle';
+      if (holidays[ds]) cls += ' holiday';
+
+      var body = '<span class="cal-num">' + cur.getDate() + '</span>';
+      if (holidays[ds]) body += '<span class="cal-holiday">' + esc(holidays[ds]) + '</span>';
+      if (blocked) body += '<span class="cal-out">blocked</span>';
+      onDay.forEach(function (b) {
+        body += '<button type="button" class="cal-booking" data-booking-goto="' + esc(b.id) + '">'
+             +    '<b>' + esc(b.name || b.email || 'Booking') + '</b>'
+             +    '<span>' + esc(bookingVehicleName(b)) + '</span>'
+             +    '<span>$' + (b.total || 0).toLocaleString()
+             +      (b.pickup_time ? ' &middot; ' + esc(b.pickup_time) : '') + '</span>'
+             +  '</button>';
+      });
+      if (!onDay.length && !blocked && ds >= todayStr) {
+        body += '<span class="cal-free">' + fleetSize + ' free</span>';
+      }
+      html += '<div class="' + cls + '" data-date="' + ds + '">' + body + '</div>';
+    }
+
+    grid.innerHTML = html;
+    renderCalLegend();
+    bindCalDayClicks(grid);
+  }
+
+  function stepCalendar(dir) {
+    if (calView === 'week') {
+      var w = calWeekStart ? new Date(calWeekStart) : startOfWeek(new Date());
+      w.setDate(w.getDate() + dir * 7);
+      calWeekStart = w;
+      calYear = w.getFullYear(); calMonth = w.getMonth();
+    } else {
+      calMonth += dir;
+      if (calMonth < 0)  { calMonth = 11; calYear--; }
+      if (calMonth > 11) { calMonth = 0;  calYear++; }
+    }
+    renderCalendar();
+  }
+
+  // Toggle only the layout classes. A wholesale className assignment would
+  // also drop classes owned elsewhere, such as the what's-new highlight.
+  function setGridLayout(grid, isWeek) {
+    grid.classList.add('calendar-grid', 'calendar-grid-big');
+    grid.classList.toggle('calendar-grid-week', !!isWeek);
+  }
+
+  function startOfWeek(d) {
+    var x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    x.setDate(x.getDate() - x.getDay());
+    return x;
+  }
+
+  function renderCalendarMonth() {
     var MONTH_NAMES = ['January','February','March','April','May','June',
                        'July','August','September','October','November','December'];
-    var DAY_LABELS  = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+    var DAY_LABELS  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
     document.getElementById('cal-month-label').textContent = MONTH_NAMES[calMonth] + ' ' + calYear;
 
     var grid = document.getElementById('calendar-grid');
+    setGridLayout(grid, false);
     var html = '';
 
     // Day-of-week headers
@@ -1655,65 +2009,282 @@
       html += '<div class="cal-day empty"></div>';
     }
 
+    var holidays   = holidaysFor(calYear);
+    var fleetSize  = Object.keys((cfg && cfg.vehicles) || {}).length || 4;
+
     for (var d = 1; d <= daysInMonth; d++) {
       var dateStr = calYear + '-'
         + String(calMonth + 1).padStart(2,'0') + '-'
         + String(d).padStart(2,'0');
       var cellDate = new Date(calYear, calMonth, d);
       var classes  = 'cal-day';
+      var isPast   = cellDate < today;
 
-      if (cellDate < today)   classes += ' past';
+      if (isPast) classes += ' past';
       if (cellDate.getTime() === today.getTime()) classes += ' today';
-      if (cfg && cfg.blockedDates && cfg.blockedDates.indexOf(dateStr) !== -1) classes += ' blocked';
+      var isBlocked = cfg && cfg.blockedDates && cfg.blockedDates.indexOf(dateStr) !== -1;
+      if (isBlocked) classes += ' blocked';
 
-      html += '<div class="' + classes + '" data-date="' + dateStr + '">' + d + '</div>';
+      // What is actually happening that day.
+      var onDay = (calBookings || []).filter(function (b) {
+        var st = b.startDate || b.start_date, en = b.endDate || b.end_date;
+        return st && en && st <= dateStr && en >= dateStr;
+      });
+      var revenue = onDay.reduce(function (sum, b) { return sum + (b.total || 0); }, 0);
+      var free    = Math.max(0, fleetSize - onDay.length);
+      var holiday = holidays[dateStr];
+
+      if (onDay.length) classes += ' has-bookings';
+      else if (!isPast && !isBlocked) classes += ' idle';
+      if (holiday) classes += ' holiday';
+
+      var body = '<span class="cal-num">' + d + '</span>';
+      if (holiday) body += '<span class="cal-holiday" title="' + esc(holiday) + '">' + esc(holiday) + '</span>';
+      if (onDay.length) {
+        body += '<span class="cal-rev">$' + revenue.toLocaleString() + '</span>';
+        body += '<span class="cal-out">' + onDay.length + ' out &middot; ' + free + ' free</span>';
+      } else if (!isPast && !isBlocked) {
+        body += '<span class="cal-free">' + free + ' free</span>';
+      } else if (isBlocked) {
+        body += '<span class="cal-out">blocked</span>';
+      }
+
+      html += '<div class="' + classes + '" data-date="' + dateStr + '">' + body + '</div>';
     }
 
     grid.innerHTML = html;
+    renderCalLegend();
+    bindCalDayClicks(grid);
+  }
 
-    // Bind click handlers (skip past days)
-    grid.querySelectorAll('.cal-day:not(.empty):not(.past)').forEach(function (cell) {
+  // Clicking a day OPENS it. It never changes availability directly.
+  //
+  // This used to toggle the fleet-wide block on click. On a live availability
+  // calendar that is dangerous: one stray click closes a day the fleet could
+  // have earned on, or reopens a day the owner deliberately closed, with no
+  // confirmation and nothing to undo. Blocking is now an explicit action
+  // inside the day panel, per vehicle or fleet-wide.
+  function bindCalDayClicks(grid) {
+    grid.querySelectorAll('.cal-booking[data-booking-goto]').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        openCalDay(this.closest('.cal-day').getAttribute('data-date'),
+                   this.getAttribute('data-booking-goto'));
+      });
+    });
+
+    grid.querySelectorAll('.cal-day:not(.empty)').forEach(function (cell) {
       cell.addEventListener('click', function () {
-        if (!cfg || !cfg.blockedDates) return;
-        var date = this.getAttribute('data-date');
-        var idx  = cfg.blockedDates.indexOf(date);
-        if (idx === -1) {
-          cfg.blockedDates.push(date);
-          cfg.blockedDates.sort();
-        } else {
-          cfg.blockedDates.splice(idx, 1);
-        }
-        renderCalendar();
-        renderBlockedList();
+        openCalDay(this.getAttribute('data-date'));
       });
     });
   }
 
-  function renderBlockedList() {
-    var container = document.getElementById('blocked-list');
-    if (!cfg.blockedDates.length) {
-      container.innerHTML = '<span class="no-blocked">No dates blocked.</span>';
-      return;
+  // Everything on a given day, and the actions available for it.
+  function openCalDay(dateStr, focusBookingId) {
+    if (!dateStr) return;
+    var host = document.getElementById('cal-day-panel');
+    if (!host) return;
+
+    var todayStr  = localDateStr(new Date());
+    var isPast    = dateStr < todayStr;
+    var blocked   = !!(cfg && cfg.blockedDates && cfg.blockedDates.indexOf(dateStr) !== -1);
+    var onDay     = bookingsOn(dateStr);
+    var holidays  = holidaysFor(Number(dateStr.slice(0, 4)));
+    var vehicles  = (cfg && cfg.vehicles) || {};
+    var vKeys     = Object.keys(vehicles);
+
+    var pretty = new Date(dateStr + 'T12:00:00')
+      .toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+
+    var html = '<div class="cday-head">'
+      + '<div><h4>' + esc(pretty) + '</h4>'
+      + (holidays[dateStr] ? '<span class="cday-holiday">' + esc(holidays[dateStr]) + '</span>' : '')
+      + '</div>'
+      + '<button type="button" class="cday-close" aria-label="Close">&times;</button>'
+      + '</div>';
+
+    // Bookings that day, expandable into the full record.
+    if (onDay.length) {
+      html += '<div class="cday-section"><h5>Bookings</h5>';
+      onDay.forEach(function (b) {
+        html += '<div class="cday-item">'
+          + '<div class="cday-item-main">'
+          +   '<strong>' + esc(b.name || b.email || 'Booking') + '</strong>'
+          +   '<span>' + esc(bookingVehicleName(b)) + '</span>'
+          +   '<span>' + esc((b.startDate || b.start_date) || '') + ' to '
+          +     esc((b.endDate || b.end_date) || '') + ' &middot; $'
+          +     (b.total || 0).toLocaleString()
+          +     (b.pickup_time ? ' &middot; picks up ' + esc(b.pickup_time) : '') + '</span>'
+          + '</div>'
+          + '<button type="button" class="cday-btn" data-open-booking="' + esc(b.id) + '">Open booking</button>'
+          + '</div>';
+      });
+      html += '</div>';
     }
-    var html = '';
-    cfg.blockedDates.forEach(function (date) {
-      html += '<div class="blocked-chip">'
-        + '<span>' + date + '</span>'
-        + '<button class="blocked-chip-remove" data-date="' + date + '" title="Unblock">✕</button>'
-        + '</div>';
-    });
-    container.innerHTML = html;
 
-    container.querySelectorAll('.blocked-chip-remove').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var date = this.getAttribute('data-date');
-        var idx  = cfg.blockedDates.indexOf(date);
-        if (idx !== -1) cfg.blockedDates.splice(idx, 1);
-        renderCalendar();
-        renderBlockedList();
+    // Per-vehicle blocks covering that day.
+    var dayVBlocks = (vehicleBlocks || []).filter(function (vb) {
+      return vb.start_date <= dateStr && vb.end_date >= dateStr;
+    });
+    if (dayVBlocks.length) {
+      html += '<div class="cday-section"><h5>Vehicle blocks</h5>';
+      dayVBlocks.forEach(function (vb) {
+        var v = vehicles[vb.vehicle_key];
+        html += '<div class="cday-item">'
+          + '<div class="cday-item-main">'
+          +   '<strong>' + esc(vehicleDisplayName(v, vb.vehicle_key)) + '</strong>'
+          +   '<span>' + esc(vb.start_date) + ' to ' + esc(vb.end_date)
+          +     (vb.reason ? ' &middot; ' + esc(vb.reason) : '') + '</span>'
+          + '</div>'
+          + '<button type="button" class="cday-btn cday-btn-danger" data-remove-vblock="'
+          +   esc(String(vb.id)) + '">Remove block</button>'
+          + '</div>';
       });
+      html += '</div>';
+    }
+
+    // Availability and the explicit fleet-wide action.
+    html += '<div class="cday-section"><h5>Availability</h5>';
+    if (blocked) {
+      html += '<p class="cday-note">The whole fleet is blocked on this day.</p>';
+      if (!isPast) {
+        html += '<button type="button" class="cday-btn" data-unblock-day="' + esc(dateStr) + '">'
+             +  'Unblock the fleet</button>';
+      }
+    } else {
+      var free = Math.max(0, vKeys.length - onDay.length - dayVBlocks.length);
+      html += '<p class="cday-note">' + free + ' of ' + vKeys.length + ' vehicles available.</p>';
+      if (!isPast) {
+        html += '<div class="cday-actions">'
+             +    '<button type="button" class="cday-btn cday-btn-danger" data-block-day="' + esc(dateStr) + '">'
+             +      'Block whole fleet</button>'
+             +    '<button type="button" class="cday-btn" data-block-vehicle="' + esc(dateStr) + '">'
+             +      'Block one vehicle</button>'
+             +  '</div>';
+
+        // Range form, hidden until asked for. A vehicle block usually spans
+        // more than the day that was clicked, so the end date is editable.
+        html += '<div class="cday-vform" hidden>'
+             +    '<label>Vehicle<select class="cday-veh">'
+             +      '<option value="">Select a vehicle...</option>';
+        vKeys.forEach(function (k) {
+          html += '<option value="' + esc(k) + '">' + esc(vehicleDisplayName(vehicles[k], k)) + '</option>';
+        });
+        html +=   '</select></label>'
+             +    '<div class="cday-vform-dates">'
+             +      '<label>From<input type="date" class="cday-from" value="' + esc(dateStr) + '"></label>'
+             +      '<label>To<input type="date" class="cday-to" value="' + esc(dateStr) + '"></label>'
+             +    '</div>'
+             +    '<label>Reason<input type="text" class="cday-reason" placeholder="e.g. Rented on Turo"></label>'
+             +    '<button type="button" class="cday-btn cday-btn-primary cday-vsave">Block this vehicle</button>'
+             +  '</div>';
+      }
+    }
+    if (isPast) html += '<p class="cday-note cday-hint">This day has passed.</p>';
+    html += '</div>';
+
+    host.innerHTML = html;
+    host.hidden = false;
+    var backdrop = document.getElementById('cal-day-backdrop');
+    if (backdrop) backdrop.hidden = false;
+    bindCalDayPanel(host, dateStr);
+    var firstBtn = host.querySelector('.cday-close');
+    if (firstBtn) firstBtn.focus();
+    if (focusBookingId) {
+      var b = host.querySelector('[data-open-booking="' + focusBookingId + '"]');
+      if (b) b.focus();
+    }
+  }
+
+  function closeCalDay() {
+    var host = document.getElementById('cal-day-panel');
+    var back = document.getElementById('cal-day-backdrop');
+    if (host) host.hidden = true;
+    if (back) back.hidden = true;
+  }
+
+  function bindCalDayPanel(host, dateStr) {
+    var closeBtn = host.querySelector('.cday-close');
+    if (closeBtn) closeBtn.onclick = closeCalDay;
+
+    host.querySelectorAll('[data-open-booking]').forEach(function (btn) {
+      btn.onclick = function () { gotoBooking(this.getAttribute('data-open-booking')); };
+    });
+
+    // Fleet-wide changes are confirmed: this closes or reopens the whole day.
+    var blockBtn = host.querySelector('[data-block-day]');
+    if (blockBtn) blockBtn.onclick = function () {
+      askConfirm({
+        title: 'Block the whole fleet?',
+        text: 'Nobody will be able to book ' + dateStr + ' until you unblock it.',
+        confirmLabel: 'Block the day',
+        danger: true
+      }, function () {
+        if (!cfg.blockedDates) cfg.blockedDates = [];
+        if (cfg.blockedDates.indexOf(dateStr) === -1) { cfg.blockedDates.push(dateStr); cfg.blockedDates.sort(); }
+        afterCalChange(dateStr);
+      });
+    };
+
+    var unblockBtn = host.querySelector('[data-unblock-day]');
+    if (unblockBtn) unblockBtn.onclick = function () {
+      askConfirm({
+        title: 'Reopen this day?',
+        text: dateStr + ' becomes bookable again for the whole fleet.',
+        confirmLabel: 'Unblock the day'
+      }, function () {
+        var idx = (cfg.blockedDates || []).indexOf(dateStr);
+        if (idx !== -1) cfg.blockedDates.splice(idx, 1);
+        afterCalChange(dateStr);
+      });
+    };
+
+    var vehBtn = host.querySelector('[data-block-vehicle]');
+    var vForm  = host.querySelector('.cday-vform');
+    if (vehBtn && vForm) vehBtn.onclick = function () {
+      vForm.hidden = !vForm.hidden;
+      if (!vForm.hidden) { var sel = vForm.querySelector('.cday-veh'); if (sel) sel.focus(); }
+    };
+
+    var vSave = host.querySelector('.cday-vsave');
+    if (vSave) vSave.onclick = function () {
+      var veh    = host.querySelector('.cday-veh').value;
+      var from   = host.querySelector('.cday-from').value;
+      var to     = host.querySelector('.cday-to').value;
+      var reason = host.querySelector('.cday-reason').value;
+      if (!veh)  return showToast('error', 'Pick a vehicle', 'Choose which vehicle to block.');
+      if (!from || !to) return showToast('error', 'Dates needed', 'Set the start and end dates.');
+      if (to < from)    return showToast('error', 'Check the dates', 'The end date is before the start.');
+      this.disabled = true;
+      addVehicleBlock(veh, from, to, reason);
+      closeCalDay();
+    };
+
+    host.querySelectorAll('[data-remove-vblock]').forEach(function (btn) {
+      btn.onclick = function () {
+        var id = this.getAttribute('data-remove-vblock');
+        askConfirm({
+          title: 'Remove this block?',
+          text: 'That vehicle becomes bookable again for those dates.',
+          confirmLabel: 'Remove block',
+          danger: true
+        }, function () {
+          deleteVehicleBlock(id);
+          closeCalDay();
+        });
+      };
     });
   }
+
+  // Fleet-wide blocks live in cfg and are saved with Save & Publish, same as
+  // before. Say so, rather than letting the owner assume it is already live.
+  function afterCalChange(dateStr) {
+    renderCalendar();
+    openCalDay(dateStr);   // reopens with the backdrop still up
+    showToast('info', 'Not saved yet', 'Hit Save & Publish to put this live.');
+  }
+
 
   // ── Bookings panel ──────────────────────────────────────────
   function renderBookingsPanel() {
@@ -1761,6 +2332,16 @@
               deliveryBadges += '<span class="source-badge" style="background:var(--success-soft);color:var(--success);border-color:var(--success-line);margin-left:4px;font-size:10px;">💵 Deposit held</span>';
             }
           }
+          // Dismissed from the dashboard queue. Shown here so the booking list
+          // stays the full picture: hidden on the dashboard, never hidden here.
+          if (b.attention_dismissed_at) {
+            var dnote = b.attention_dismissed_note || 'no reason given';
+            deliveryBadges += '<span class="source-badge" title="' + esc(dnote)
+              + (b.attention_dismissed_by ? ' \u2014 ' + esc(b.attention_dismissed_by) : '')
+              + '" style="background:var(--surface-3);color:var(--text-2);border-color:var(--border-strong);margin-left:4px;font-size:10px;">'
+              + '\u2713 Cleared</span>';
+          }
+
           // Additional driver badge (free, no price impact)
           if (b.additional_driver_name) {
             if (b.driver2_id_upload_status === 'received') {
@@ -1936,10 +2517,16 @@
         tbody.querySelectorAll('.lead-delete-btn').forEach(function (btn) {
           btn.addEventListener('click', function () {
             var id = this.getAttribute('data-id');
-            if (!confirm('Remove this lead?')) return;
-            apiFetch(ADMIN_API + '/leads/' + id, { method: 'DELETE' })
-              .then(function (r) { return r.json(); })
-              .then(function (data) { if (data.ok) renderLeadsPanel(); });
+            askConfirm({
+              title: 'Remove this lead?',
+              text: 'They come off the list permanently.',
+              confirmLabel: 'Remove lead',
+              danger: true
+            }, function () {
+              apiFetch(ADMIN_API + '/leads/' + id, { method: 'DELETE' })
+                .then(function (r) { return r.json(); })
+                .then(function (data) { if (data.ok) renderLeadsPanel(); });
+            });
           });
         });
 
@@ -2072,10 +2659,16 @@
         tbody.querySelectorAll('.tour-delete-btn').forEach(function (btn) {
           btn.addEventListener('click', function () {
             var id = this.getAttribute('data-id');
-            if (!confirm('Delete this tour request? This cannot be undone.')) return;
-            apiFetch(ADMIN_API + '/tour-requests/' + id, { method: 'DELETE' })
-              .then(function (r) { return r.json(); })
-              .then(function (data) { if (data.ok) renderTourRequestsPanel(); });
+            askConfirm({
+              title: 'Delete this tour request?',
+              text: 'This cannot be undone.',
+              confirmLabel: 'Delete request',
+              danger: true
+            }, function () {
+              apiFetch(ADMIN_API + '/tour-requests/' + id, { method: 'DELETE' })
+                .then(function (r) { return r.json(); })
+                .then(function (data) { if (data.ok) renderTourRequestsPanel(); });
+            });
           });
         });
 
@@ -2887,8 +3480,17 @@
   function refundDeposit() {
     if (!currentBooking) return;
     var dollars = '$' + ((currentBooking.deposit_cents || 0) / 100).toLocaleString();
-    if (!confirm('Refund the ' + dollars + ' deposit to ' + (currentBooking.name || currentBooking.email) + '? This sends the money back to their card and cannot be undone.')) return;
+    askConfirm({
+      title: 'Refund the ' + dollars + ' deposit?',
+      text: 'This sends the money back to ' + (currentBooking.name || currentBooking.email)
+          + ' on their original card. It cannot be undone.',
+      confirmLabel: 'Refund ' + dollars,
+      danger: true
+    }, doRefundDeposit);
+  }
 
+  function doRefundDeposit() {
+    var dollars = '$' + ((currentBooking.deposit_cents || 0) / 100).toLocaleString();
     var btn = document.getElementById('bd-refund-deposit');
     btn.disabled = true;
     btn.textContent = 'Refunding…';
@@ -3041,13 +3643,14 @@
 
         if (!res.ok) {
           if (res.body && res.body.warning === 'price_mismatch') {
-            var proceed = confirm(res.body.error + '\n\nProceed anyway without changing the amount charged?');
-            if (proceed) {
-              rescheduleBooking(true);
-              return;
-            }
+            askConfirm({
+              title: 'The price does not match',
+              text: res.body.error + ' Proceed anyway without changing the amount charged?',
+              confirmLabel: 'Reschedule anyway',
+              danger: true
+            }, function () { rescheduleBooking(true); });
             msgEl.style.color = 'var(--warn)';
-            msgEl.textContent = 'Reschedule cancelled — price mismatch not confirmed.';
+            msgEl.textContent = 'Waiting on the price mismatch above.';
             return;
           }
           throw new Error((res.body && res.body.error) || 'Failed to reschedule');

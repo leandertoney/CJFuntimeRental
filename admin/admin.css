@@ -953,6 +953,286 @@ body.logged-in #admin-shell { display: flex; }
   font-weight: 700;
 }
 
+/* ── BIG CALENDAR ───────────────────────────────────────────── */
+/* The calendar is the panel now, so it gets the full width and cells tall
+   enough to carry money and availability instead of just a number. */
+/* The calendar keeps the full width. Day detail opens as a popover centred
+   over it, dismissible, so nothing permanently steals space from the grid. */
+/* The calendar is the only place availability is managed, so it keeps the
+   full width, centred with room to breathe. */
+.calendar-wrap-big {
+  position: relative;
+  min-width: 0;
+  max-width: 1180px;
+  margin: 8px auto 0;
+  padding: 0 8px 8px;
+}
+.calendar-wrap-big .calendar-nav {
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.cal-view-toggle { flex-shrink: 0; }
+.cal-today-btn   { flex-shrink: 0; }
+
+.calendar-grid-big {
+  max-width: none;
+  width: 100%;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.calendar-grid-big .cal-day {
+  aspect-ratio: auto;
+  min-height: 104px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.calendar-grid-big .cal-num { font-size: 15px; font-weight: 600; line-height: 1.1; }
+.calendar-grid-big .cal-rev { font-size: 13px; font-weight: 700; color: var(--success); }
+.calendar-grid-big .cal-out { font-size: 11px; color: var(--text-3); }
+.calendar-grid-big .cal-free { font-size: 11px; color: var(--text-4); }
+.calendar-grid-big .cal-holiday {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--purple);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Booked days read as earning; open future days read as available capacity. */
+.calendar-grid-big .cal-day.has-bookings {
+  background: var(--success-soft);
+  border-color: var(--success-line);
+}
+.calendar-grid-big .cal-day.idle { background: var(--surface); border-style: dashed; }
+.calendar-grid-big .cal-day.holiday { box-shadow: inset 0 2px 0 var(--purple-line); }
+.calendar-grid-big .cal-day.past .cal-rev { color: var(--text-4); }
+
+.cal-nav-spacer { width: 8px; }
+.cal-today-btn {
+  font: inherit; font-size: 13px; font-weight: 600;
+  color: var(--text); background: var(--surface);
+  border: 1px solid var(--border-strong); border-radius: 8px;
+  padding: 6px 14px; cursor: pointer;
+}
+.cal-today-btn:hover { background: var(--surface-3); }
+
+.cal-legend { margin-bottom: 8px; }
+.cal-key { display: flex; flex-wrap: wrap; gap: 18px; margin-bottom: 10px; justify-content: center; }
+.cal-key-item { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: var(--text-3); }
+.cal-key-item i { width: 12px; height: 12px; border-radius: 3px; border: 1px solid var(--border); display: inline-block; }
+.cal-key-item .k-booked  { background: var(--success-soft); border-color: var(--success-line); }
+.cal-key-item .k-idle    { background: var(--surface); border-style: dashed; border-color: var(--border-strong); }
+.cal-key-item .k-blocked { background: var(--danger-soft);  border-color: var(--danger-line); }
+.cal-key-item .k-holiday { background: #fff; border-color: var(--purple-line); box-shadow: inset 0 2px 0 var(--purple-line); }
+
+.cal-summary {
+  text-align: center;
+  font-size: 13px; color: var(--text-2);
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 14px;
+}
+.cal-summary strong { color: var(--text); }
+.cal-hint { font-size: 12px; color: var(--text-4); margin-top: 10px; text-align: center; }
+
+/* ── In-app confirm ─────────────────────────────────────────── */
+.confirm-box { max-width: 400px; width: calc(100% - 32px); padding: 24px 26px 20px; }
+.confirm-box .modal-title { font-size: 17px; line-height: 1.3; margin-bottom: 8px; }
+.confirm-text { font-size: 14px; line-height: 1.55; color: var(--text-2); }
+.confirm-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+.confirm-cancel, .confirm-ok {
+  font: inherit; font-size: 13px; font-weight: 600;
+  border-radius: 8px; padding: 9px 16px; cursor: pointer;
+}
+.confirm-cancel { color: var(--text-2); background: var(--surface); border: 1px solid var(--border-strong); }
+.confirm-cancel:hover { background: var(--surface-3); }
+.confirm-ok { color: var(--on-orange); background: var(--orange); border: 1px solid var(--orange); }
+.confirm-ok:hover { filter: brightness(1.06); }
+/* Destructive actions look destructive. */
+.confirm-ok.is-danger { background: var(--danger-solid); border-color: var(--danger-solid); color: #fff; }
+
+/* ── What's new wizard ──────────────────────────────────────── */
+#whatsnew-modal { background: rgba(16,24,40,0.42); align-items: center; }
+.whatsnew-box {
+  max-width: 380px; width: calc(100% - 32px); padding: 0; overflow: hidden;
+  transition: transform 0.25s ease;
+}
+/* Keep the dialog clear of whatever it is pointing at. */
+/* The card must always be fully on screen. Anchoring to flex-end with a
+   viewport-relative pad was clipping the title off the bottom. */
+#whatsnew-modal { align-items: center; padding: 24px; }
+#whatsnew-modal.wn-low  { align-items: flex-end; }
+#whatsnew-modal.wn-high { align-items: flex-start; }
+#whatsnew-modal.wn-low .whatsnew-box { margin-bottom: 8px; }
+.whatsnew-box.wn-shifted { transform: none; }
+
+/* The real element, ringed on the real screen. */
+.wn-spot {
+  position: relative;
+  z-index: 10001;          /* above .modal-overlay (10000) so it reads clearly */
+  background: var(--surface);
+  border-radius: 12px;
+  box-shadow: 0 0 0 3px var(--orange), 0 0 0 12px rgba(255,107,0,0.18);
+  transition: box-shadow 0.2s ease;
+}
+.wn-progress { height: 3px; background: var(--surface-3); }
+.wn-progress span { display: block; height: 100%; width: 20%; background: var(--orange); transition: width 0.25s ease; }
+.wn-body { padding: 20px 24px 12px; }
+.wn-eyebrow {
+  display: block; font-size: 11px; font-weight: 700; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--orange-ink); margin-bottom: 8px;
+}
+.whatsnew-box .modal-title { font-size: 17px; line-height: 1.3; margin-bottom: 6px; }
+.wn-text { font-size: 14px; line-height: 1.55; color: var(--text-2); }
+
+
+.wn-actions { display: flex; align-items: center; gap: 12px; padding: 10px 24px 18px; }
+.wn-skip {
+  font: inherit; font-size: 13px; color: var(--text-3);
+  background: none; border: none; cursor: pointer; padding: 8px 4px;
+}
+.wn-skip:hover { color: var(--text); text-decoration: underline; }
+.wn-dots { flex: 1; display: flex; justify-content: center; gap: 6px; }
+.wn-dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--border-strong); display: block; }
+.wn-dots i.on { background: var(--orange); }
+.wn-actions .btn-primary-admin { min-width: 96px; }
+
+/* ── Day detail panel ───────────────────────────────────────── */
+/* Clicking a day opens this rather than mutating availability. Every action
+   that changes what customers can book is explicit and confirmed. */
+.cday-backdrop {
+  position: absolute; inset: 0;
+  background: rgba(16,24,40,0.28);
+  border-radius: 12px;
+  z-index: 40;
+}
+.cday-panel {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(460px, calc(100% - 32px));
+  max-height: calc(100% - 24px);
+  overflow-y: auto;
+  z-index: 41;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  padding: 18px 20px;
+  box-shadow: var(--shadow-lg);
+  text-align: left;
+}
+.cday-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
+.cday-head h4 { font-size: 16px; font-weight: 700; color: var(--text); }
+.cday-holiday { font-size: 12px; font-weight: 600; color: var(--purple); }
+.cday-close {
+  font: inherit; font-size: 22px; line-height: 1; color: var(--text-4);
+  background: none; border: none; cursor: pointer; padding: 0 4px;
+}
+.cday-close:hover { color: var(--text); }
+
+.cday-section { margin-top: 16px; }
+.cday-section h5 {
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+  color: var(--text-3); margin-bottom: 8px;
+}
+.cday-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--surface-2); margin-bottom: 8px;
+}
+.cday-item-main { min-width: 0; }
+.cday-item-main strong { display: block; font-size: 14px; color: var(--text); }
+.cday-item-main span   { display: block; font-size: 12px; color: var(--text-3); }
+.cday-note { font-size: 13px; color: var(--text-2); margin-bottom: 10px; }
+.cday-hint { font-size: 12px; color: var(--text-4); }
+.cday-btn {
+  flex-shrink: 0; font: inherit; font-size: 13px; font-weight: 600;
+  color: var(--text); background: var(--surface);
+  border: 1px solid var(--border-strong); border-radius: 8px;
+  padding: 8px 14px; cursor: pointer;
+}
+.cday-btn:hover { background: var(--surface-3); }
+.cday-btn-danger { color: var(--danger); border-color: var(--danger-line); }
+.cday-btn-danger:hover { background: var(--danger-soft); }
+.cday-btn-primary {
+  background: var(--orange); color: var(--on-orange);
+  border-color: var(--orange); width: 100%; margin-top: 4px;
+}
+.cday-btn-primary:hover { filter: brightness(1.06); background: var(--orange); }
+
+.cday-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* Blocking one vehicle happens here, prefilled with the day you clicked,
+   so the calendar is the only place availability is managed. */
+.cday-vform {
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 10px;
+}
+.cday-vform label {
+  display: block; font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-3);
+}
+.cday-vform input, .cday-vform select {
+  display: block; width: 100%; margin-top: 4px;
+  font: inherit; font-size: 13px; text-transform: none; letter-spacing: 0;
+  color: var(--text); background: var(--surface);
+  border: 1px solid var(--border-strong); border-radius: 8px; padding: 8px 10px;
+}
+.cday-vform-dates { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* Month / week toggle */
+.cal-view-toggle { display: inline-flex; border: 1px solid var(--border-strong); border-radius: 8px; overflow: hidden; }
+.cal-view-btn {
+  font: inherit; font-size: 13px; font-weight: 600;
+  color: var(--text-3); background: var(--surface);
+  border: none; padding: 6px 14px; cursor: pointer;
+}
+.cal-view-btn + .cal-view-btn { border-left: 1px solid var(--border-strong); }
+.cal-view-btn:hover { background: var(--surface-3); color: var(--text); }
+.cal-view-btn.active { background: var(--orange-soft); color: var(--orange-ink); }
+
+/* Week view: seven tall columns carrying who is out. */
+.calendar-grid-week { grid-template-columns: repeat(7, 1fr); }
+.calendar-grid-week .cal-day { min-height: 200px; align-items: stretch; }
+.cal-booking {
+  display: block; width: 100%; text-align: left; font: inherit;
+  font-size: 11px; line-height: 1.35;
+  background: var(--surface); border: 1px solid var(--success-line);
+  border-radius: 6px; padding: 5px 7px; margin-top: 4px; cursor: pointer;
+}
+.cal-booking:hover { background: var(--success-soft); }
+.cal-booking b { display: block; font-size: 11.5px; color: var(--text); margin-bottom: 1px; }
+.cal-booking span { display: block; color: var(--text-3); }
+
+/* Secondary tools: present, not in the way. */
+.cal-secondary { border-top: 1px solid var(--border); padding-top: 4px; }
+.cal-disclosure {
+  width: 100%; text-align: left; font: inherit; font-size: 13px; font-weight: 600;
+  color: var(--text-2); background: none; border: none; cursor: pointer;
+  padding: 12px 0; display: flex; align-items: center; gap: 8px;
+}
+.cal-disclosure::before { content: '\25B8'; color: var(--text-4); transition: transform 0.15s ease; }
+.cal-disclosure.open::before { transform: rotate(90deg); }
+.cal-disclosure:hover { color: var(--text); }
+.cal-disclosure-body { padding: 4px 0 20px; }
+
+@media (max-width: 900px) {
+  .calendar-grid-big { gap: 4px; }
+  .calendar-grid-big .cal-day { min-height: 64px; padding: 6px; }
+  .calendar-grid-big .cal-holiday { display: none; }
+  .calendar-grid-big .cal-out, .calendar-grid-big .cal-free { font-size: 10px; }
+}
+
 /* ── BLOCKED LIST ───────────────────────────────────────────── */
 .blocked-list-wrap {
   margin-top: 8px;
@@ -1500,6 +1780,19 @@ body.logged-in #admin-shell { display: flex; }
   background: var(--border-strong);
 }
 .attn-high .attn-dot { background: var(--warn-solid); }
+
+.attn-dismiss {
+  flex-shrink: 0;
+  width: 30px; height: 30px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font: inherit; font-size: 20px; line-height: 1;
+  color: var(--text-4);
+  background: none; border: 1px solid transparent; border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.attn-dismiss:hover { background: var(--surface); color: var(--text); border-color: var(--border-strong); }
+.attn-dismiss:disabled { opacity: 0.4; cursor: default; }
 
 .attn-body { flex: 1; min-width: 0; }
 .attn-text { font-size: 14px; font-weight: 600; color: var(--text); }
