@@ -186,6 +186,17 @@ async function promoRecipients() {
 // Mirrors promoDaysLabel() in checkout/index.ts. The email must never advertise
 // days the server would reject, so the wording comes from the same config array
 // rather than a sentence typed into the template.
+
+// "2026-10-31" is a database value, not something to put in front of a
+// customer. Parsed from the parts so the label cannot shift a day through UTC.
+function promoDateLabel(ymd: string): string {
+  const MONTHS = ['January','February','March','April','May','June',
+                  'July','August','September','October','November','December'];
+  const [y, m, d] = String(ymd).split('-').map(Number);
+  if (!y || !m || !d) return String(ymd);
+  return `${MONTHS[m - 1]} ${d}`;
+}
+
 const PROMO_DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const PROMO_DAY_ABBR = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -223,6 +234,9 @@ function promoEmailHTML(code: string, percentOff: number, expiresLabel: string, 
           <div style="font-size:13px;color:#aaa;margin-top:10px;">${percentOff}% off the rental${weekdays ? ' &nbsp;·&nbsp; ' + promoDaysLabel(weekdays, true) : ''} &nbsp;·&nbsp; ${expiresLabel}</div>
         </div>
         <p style="font-size:15px;color:rgba(255,255,255,0.72);margin:0 0 8px;line-height:1.7;">
+          No motorcycle license required, 300 miles per trip, a full tank at pickup, and insurance included. Pickup and return right in Lancaster.
+        </p>
+        <p style="font-size:13px;color:rgba(255,255,255,0.45);margin:0 0 18px;line-height:1.6;">
           The refundable deposit and any delivery fee are not discounted.
         </p>
         <p style="font-size:14px;color:rgba(255,255,255,0.55);margin:0 0 10px;line-height:1.7;">
@@ -331,7 +345,7 @@ async function executeToolCall(name: string, input: Record<string, unknown>) {
         return { error: `Code ${code} is not in site_config.pricing.promoCodes, so it would be rejected at checkout. Add it before sending.` };
       }
       const pct = Number(promo.percentOff) || 0;
-      const expiresLabel = promo.expires ? `Through ${promo.expires}` : 'No expiry';
+      const expiresLabel = promo.expires ? `Through ${promoDateLabel(promo.expires)}` : 'No expiry';
       await resend.emails.send({
         from: "CJ's Fun Time Rental <bookings@cjfuntimerentals.com>",
         to: input.email as string,
@@ -354,7 +368,7 @@ async function executeToolCall(name: string, input: Record<string, unknown>) {
         return { error: `Code ${code} is not in site_config.pricing.promoCodes, so every recipient would get a code the checkout rejects. Add it first.` };
       }
       const pct = Number(promo.percentOff) || 0;
-      const expiresLabel = promo.expires ? `Through ${promo.expires}` : 'No expiry';
+      const expiresLabel = promo.expires ? `Through ${promoDateLabel(promo.expires)}` : 'No expiry';
       const recipients = await promoRecipients();
 
       if (input.confirmSend !== true) {
