@@ -416,6 +416,11 @@
       .then(function (data) {
         var el = document.getElementById('sidebar-user-name');
         if (el && data.name) el.textContent = data.name;
+        if (data.name) {
+          // /me resolves after the first render, so re-title once it lands.
+          adminName = String(data.name).trim().split(/\s+/)[0];
+          if (activeSection === 'overview') setPanelTitle('overview');
+        }
       });
     loadConfig().then(function () {
       document.body.className = 'logged-in';
@@ -525,7 +530,7 @@
 
   // ── Panel router ─────────────────────────────────────────────
   var PANEL_TITLES = {
-    overview:  'Overview',
+    overview:  'Dashboard',
     sections:  'Show / Hide Sections',
     pricing:   'Pricing & Availability',
     copy:      'Edit Copy',
@@ -539,6 +544,28 @@
     analytics: 'Analytics'
   };
 
+  var adminName = '';
+
+  // The dashboard greets whoever is signed in. Every other panel keeps its
+  // plain label, and the greeting falls back to a bare "Good morning" until
+  // /me resolves so the heading never flashes an empty name.
+  function setPanelTitle(name) {
+    var el = document.getElementById('panel-title');
+    if (!el) return;
+    if (name === 'overview') {
+      el.textContent = greeting() + (adminName ? ', ' + adminName : '');
+    } else {
+      el.textContent = PANEL_TITLES[name] || '';
+    }
+  }
+
+  function greeting() {
+    var h = new Date().getHours();
+    if (h < 12) return 'Good morning';
+    if (h < 17) return 'Good afternoon';
+    return 'Good evening';
+  }
+
   // Panels that edit site config are the only ones "Save & Publish" applies to.
   // On a read-only panel the button implies unsaved work that does not exist.
   var SAVEABLE = ['sections','pricing','copy','faq','emails','discounts'];
@@ -547,7 +574,7 @@
     document.querySelectorAll('.admin-panel').forEach(function (p) {
       p.classList.toggle('active', p.id === 'panel-' + name);
     });
-    document.getElementById('panel-title').textContent = PANEL_TITLES[name] || '';
+    setPanelTitle(name);
 
     var saveBtn = document.getElementById('save-btn');
     var saveMsg = document.getElementById('save-status');
