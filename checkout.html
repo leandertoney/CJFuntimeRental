@@ -599,7 +599,11 @@
             validatePromoOnly: true, promoCode: code,
             vehicleKey: bookingData.vehicleKey,
             durationType: bookingData.durationType,
-            startDate: bookingData.startDate
+            startDate: bookingData.startDate,
+            // Needed for weekday-only codes: the server checks every day of the
+            // rental, so a Thursday multi-day ending Sunday is caught here and
+            // not after the customer has filled in the rest of the form.
+            endDate: bookingData.endDate || bookingData.startDate
           })
         })
           .then(function (r) { return r.json(); })
@@ -607,7 +611,8 @@
             if (d && d.ok) {
               appliedPromo = { code: d.code, percentOff: d.percentOff };
               refreshTotals();
-              showPromoMsg(d.label + ' applied. The deposit and any delivery fee are not discounted.', 'ok');
+              showPromoMsg(d.label + ' applied.' + (d.restriction ? ' ' + d.restriction + '.' : '') +
+                ' The deposit and any delivery fee are not discounted.', 'ok');
               promoInput.disabled = true;
               promoApply.textContent = 'Applied';
             } else {
