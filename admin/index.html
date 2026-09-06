@@ -65,11 +65,18 @@
       <div class="sidebar-brand">
         <img src="/cj_funtime_logo.png" alt="CJ's Fun Time Rental">
         <span class="sidebar-brand-text">Admin</span>
+        <button id="sidebar-collapse" class="sidebar-collapse-btn" type="button"
+                aria-label="Collapse sidebar" aria-expanded="true" title="Collapse sidebar">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M10 3 L5 8 L10 13"/>
+          </svg>
+        </button>
       </div>
       <nav class="sidebar-nav">
         <a href="#" class="nav-link active" data-section="overview">
           <svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zm6-4a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zm6-3a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/></svg>
-          <span>Overview</span>
+          <span>Dashboard</span>
         </a>
         <a href="#" class="nav-link" data-section="bookings">
           <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm2 10a1 1 0 10-2 0v3a1 1 0 102 0v-3zm2-3a1 1 0 011 1v5a1 1 0 11-2 0v-5a1 1 0 011-1zm4-1a1 1 0 10-2 0v6a1 1 0 102 0V8z" clip-rule="evenodd"/></svg>
@@ -313,6 +320,7 @@
               <tbody id="bookings-tbody"></tbody>
             </table>
             <div id="bookings-empty" class="leads-empty hidden">No bookings yet — they'll appear here after customers complete checkout.</div>
+            <div id="bookings-pager" class="pager" hidden></div>
           </div>
         </section>
 
@@ -339,6 +347,7 @@
               <tbody id="leads-tbody"></tbody>
             </table>
             <div id="leads-empty" class="leads-empty hidden">No leads yet. They'll appear here when visitors submit the discount form.</div>
+            <div id="leads-pager" class="pager" hidden></div>
           </div>
         </section>
 
@@ -378,6 +387,7 @@
               <tbody id="tours-tbody"></tbody>
             </table>
             <div id="tours-empty" class="leads-empty hidden">No tour requests yet. They'll appear here when someone submits the form on /tours.</div>
+            <div id="tours-pager" class="pager" hidden></div>
           </div>
         </section>
 

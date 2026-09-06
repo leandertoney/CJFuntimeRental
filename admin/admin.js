@@ -198,13 +198,38 @@
 
   function bindSidebarToggle() {
     var sidebar = document.getElementById('sidebar');
-    sidebar.classList.add('collapsed');
-    sidebar.addEventListener('mouseenter', function () {
-      sidebar.classList.remove('collapsed');
+    var btn     = document.getElementById('sidebar-collapse');
+
+    // Deliberate click, not hover. Hover-expand meant the sidebar opened
+    // whenever the pointer crossed it on the way somewhere else.
+    var collapsed = false;
+    try { collapsed = localStorage.getItem('cjfr_admin_sidebar_collapsed') === '1'; } catch (e) {}
+    setSidebarCollapsed(collapsed);
+
+    // Each nav item carries its own text as a tooltip for the collapsed rail.
+    document.querySelectorAll('#sidebar .nav-link[data-section]').forEach(function (link) {
+      var label = (link.textContent || '').trim();
+      if (label) link.setAttribute('data-label', label);
     });
-    sidebar.addEventListener('mouseleave', function () {
-      sidebar.classList.add('collapsed');
-    });
+
+    if (btn) {
+      btn.addEventListener('click', function () {
+        setSidebarCollapsed(!sidebar.classList.contains('collapsed'));
+      });
+    }
+  }
+
+  function setSidebarCollapsed(collapsed) {
+    var sidebar = document.getElementById('sidebar');
+    var btn     = document.getElementById('sidebar-collapse');
+    if (!sidebar) return;
+    sidebar.classList.toggle('collapsed', collapsed);
+    if (btn) {
+      btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+      btn.setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+      btn.setAttribute('title',      collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+    }
+    try { localStorage.setItem('cjfr_admin_sidebar_collapsed', collapsed ? '1' : '0'); } catch (e) {}
   }
 
   // ── Auth ─────────────────────────────────────────────────────
@@ -391,6 +416,11 @@
       .then(function (data) {
         var el = document.getElementById('sidebar-user-name');
         if (el && data.name) el.textContent = data.name;
+        if (data.name) {
+          // /me resolves after the first render, so re-title once it lands.
+          adminName = String(data.name).trim().split(/\s+/)[0];
+          if (activeSection === 'overview') setPanelTitle('overview');
+        }
       });
     loadConfig().then(function () {
       document.body.className = 'logged-in';
@@ -437,6 +467,7 @@
   // ── Navigation ───────────────────────────────────────────────
   function bindNav() {
     bindSetupGroup();
+    bindEmptyStateCtas();
     document.querySelectorAll('.nav-link[data-section]').forEach(function (link) {
       link.addEventListener('click', function (e) {
         e.preventDefault();
@@ -446,6 +477,54 @@
         renderPanel(activeSection);
       });
     });
+  }
+
+  // Empty-state buttons reuse the nav path so there is one way to switch panels.
+  function bindEmptyStateCtas() {
+    document.addEventListener('click', function (e) {
+      var btn = e.target.closest && e.target.closest('.ov-empty-cta, .ov-card-link');
+      if (!btn) return;
+      e.preventDefault();
+
+      // Attention rows jump straight to the booking they are about.
+      var bookingId = btn.getAttribute('data-booking-goto');
+      if (bookingId) return gotoBooking(bookingId);
+
+      var target = btn.getAttribute('data-goto');
+      if (!target) return;
+      collectFormData();
+      activeSection = target;
+      updateNavActive(target);
+      renderPanel(target);
+    });
+  }
+
+  // Open the Bookings panel and the detail modal for one booking. The panel
+  // fetches its own data, so wait for the row to exist rather than guessing.
+  function gotoBooking(bookingId) {
+    collectFormData();
+    activeSection = 'bookings';
+    updateNavActive('bookings');
+
+    // Bookings is paginated, so the target row may not be on the page the
+    // panel would open by default. Find which page holds it first, otherwise
+    // the wait below would spin against a row that is never drawn.
+    apiFetch(ADMIN_API + '/bookings')
+      .then(function (r) { return r.json(); })
+      .then(function (all) {
+        var idx = (all || []).findIndex(function (b) { return b.id === bookingId; });
+        if (idx >= 0) listPage.bookings = Math.floor(idx / ROWS_PER_PAGE) + 1;
+      })
+      .catch(function () { /* fall back to whatever page is current */ })
+      .then(function () {
+        renderPanel('bookings');
+        var tries = 0;
+        (function open() {
+          var row = document.querySelector('[data-booking-id="' + bookingId + '"]');
+          if (row) return row.click();
+          if (++tries < 40) setTimeout(open, 100);
+        })();
+      });
   }
 
   function updateNavActive(name) {
@@ -485,7 +564,7 @@
 
   // ── Panel router ─────────────────────────────────────────────
   var PANEL_TITLES = {
-    overview:  'Overview',
+    overview:  'Dashboard',
     sections:  'Show / Hide Sections',
     pricing:   'Pricing & Availability',
     copy:      'Edit Copy',
@@ -499,6 +578,28 @@
     analytics: 'Analytics'
   };
 
+  var adminName = '';
+
+  // The dashboard greets whoever is signed in. Every other panel keeps its
+  // plain label, and the greeting falls back to a bare "Good morning" until
+  // /me resolves so the heading never flashes an empty name.
+  function setPanelTitle(name) {
+    var el = document.getElementById('panel-title');
+    if (!el) return;
+    if (name === 'overview') {
+      el.textContent = greeting() + (adminName ? ', ' + adminName : '');
+    } else {
+      el.textContent = PANEL_TITLES[name] || '';
+    }
+  }
+
+  function greeting() {
+    var h = new Date().getHours();
+    if (h < 12) return 'Good morning';
+    if (h < 17) return 'Good afternoon';
+    return 'Good evening';
+  }
+
   // Panels that edit site config are the only ones "Save & Publish" applies to.
   // On a read-only panel the button implies unsaved work that does not exist.
   var SAVEABLE = ['sections','pricing','copy','faq','emails','discounts'];
@@ -507,7 +608,7 @@
     document.querySelectorAll('.admin-panel').forEach(function (p) {
       p.classList.toggle('active', p.id === 'panel-' + name);
     });
-    document.getElementById('panel-title').textContent = PANEL_TITLES[name] || '';
+    setPanelTitle(name);
 
     var saveBtn = document.getElementById('save-btn');
     var saveMsg = document.getElementById('save-status');
@@ -534,7 +635,7 @@
   // ── Notification badges ──────────────────────────────────────
   function updateNotificationBadges(bookings, leads) {
     var now = new Date();
-    var todayStr = now.toISOString().split('T')[0];
+    var todayStr = localDateStr(now);
     var sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
     // Count active rentals (happening today)
@@ -602,15 +703,15 @@
       var tours    = Array.isArray(results[2]) ? results[2] : [];
       updateNotificationBadges(bookings, leads);
       updateTourBadge(tours);
-      container.innerHTML = buildOverviewHTML(bookings, leads);
+      container.innerHTML = buildOverviewHTML(bookings, leads, tours);
     }).catch(function () {
       container.innerHTML = '<div class="overview-loading">Could not load data.</div>';
     });
   }
 
-  function buildOverviewHTML(bookings, leads) {
+  function buildOverviewHTML(bookings, leads, tours) {
     var now       = new Date();
-    var todayStr  = now.toISOString().split('T')[0];
+    var todayStr  = localDateStr(now);
 
     // ── Booking stats ────────────────────────────────────────────
     var totalRevenue    = 0;
@@ -620,9 +721,17 @@
 
     var thisMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
 
+    // Same month last year is meaningless with one season of data, so the
+    // comparison is the month just gone. A plain fact, not a trend claim.
+    var prev      = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    var prevMonth = prev.getFullYear() + '-' + String(prev.getMonth() + 1).padStart(2, '0');
+    var prevMonthRev = 0;
+    var prevMonthName = prev.toLocaleString('default', { month: 'long' });
+
     bookings.forEach(function (b) {
       totalRevenue += b.total || 0;
       if ((b.createdAt || '').startsWith(thisMonth)) thisMonthRev += b.total || 0;
+      if ((b.createdAt || '').startsWith(prevMonth)) prevMonthRev += b.total || 0;
 
       // Active rentals: happening today (start <= today AND end >= today)
       if (b.startDate <= todayStr && b.endDate >= todayStr) {
@@ -654,20 +763,36 @@
     var html = '';
 
     // Stat cards row
+    // This month leads, because that is the number Chris actually checks.
+    // All time sits underneath it rather than competing as a second hero.
     html += '<div class="ov-cards">';
-    html += ovCard('Total Revenue',  '$' + totalRevenue.toLocaleString(), 'All time', 'green');
-    html += ovCard('This Month',     '$' + thisMonthRev.toLocaleString(), now.toLocaleString('default', { month: 'long' }), 'orange');
-    html += ovCard('Total Bookings', bookings.length,                     'All time', 'blue');
-    html += ovCard('Leads',          leads.length,                        leadsThisMonth + ' this month', 'purple');
-    html += ovCard('Vehicles',       availCount + ' / ' + vKeys.length,  'Available now', availCount > 0 ? 'green' : 'red');
-    html += ovCard('Upcoming',       upcoming.length,                     'Future bookings', 'blue');
+    html += '<button type="button" class="ov-card ov-card-hero ov-card-link" data-goto="analytics">'
+         +    '<div class="ov-card-label">' + now.toLocaleString('default', { month: 'long' }) + ' Revenue</div>'
+         +    '<div class="ov-card-value">$' + thisMonthRev.toLocaleString() + '</div>'
+         +    '<div class="ov-card-sub">$' + prevMonthRev.toLocaleString() + ' in ' + prevMonthName
+         +      ' &middot; $' + totalRevenue.toLocaleString() + ' all time</div>'
+         +  '</button>';
+    html += ovCard('Total Bookings', bookings.length,                    'All time',
+                   null, 'bookings');
+    html += ovCard('Upcoming',       upcoming.length,                    'Future bookings',
+                   null, 'bookings');
+    html += ovCard('Leads',          leads.length,                       leadsThisMonth + ' this month',
+                   null, 'leads');
+    // Vehicles keeps semantic colour: none available is a real problem.
+    html += ovCard('Vehicles',       availCount + ' / ' + vKeys.length, 'Available now',
+                   availCount > 0 ? 'green' : 'red', 'pricing');
     html += '</div>';
 
     // Row 1: Active Rentals (full width, prominent)
-    html += '<div class="ov-section ov-section-prominent">';
+    html += buildAttentionHTML(bookings, leads, tours, todayStr);
+
+    // Tint only when a rental is genuinely out. An orange alarm panel over
+    // "nothing happening" trained the eye to ignore the colour.
+    html += '<div class="ov-section' + (activeNow.length ? ' ov-section-prominent' : '') + '">';
     html += '<h3 class="ov-section-title">Active Rentals Right Now</h3>';
     if (activeNow.length === 0) {
-      html += '<div class="ov-empty">No rentals active today.</div>';
+      html += ovEmpty('Nothing out on the road today.',
+                      'Blocked Dates', 'calendar', 'Manage availability');
     } else {
       html += '<div class="ov-list">';
       activeNow.forEach(function (b) { html += ovBookingRow(b); });
@@ -679,7 +804,8 @@
     html += '<div class="ov-section">';
     html += '<h3 class="ov-section-title">Upcoming Bookings</h3>';
     if (upcoming.length === 0) {
-      html += '<div class="ov-empty">No upcoming bookings yet.</div>';
+      html += ovEmpty('No upcoming bookings on the books.',
+                      'Bookings', 'bookings', 'View all bookings');
     } else {
       html += '<div class="ov-list">';
       upcoming.slice(0, 8).forEach(function (b) { html += ovBookingRow(b); });
@@ -690,12 +816,174 @@
     return html;
   }
 
-  function ovCard(label, value, sub, color) {
-    return '<div class="ov-card ov-card-' + color + '">'
+  // ── Needs your attention ─────────────────────────────────────
+  // Deterministic checks over booking workflow state, not predictions: ten
+  // bookings is far too little to forecast anything, but these fields are a
+  // state machine and money genuinely gets stranded in it.
+  //
+  // Deliberately NOT flagged:
+  //   - post-rental review emails, which a cron sends ~24h after return
+  //     (migration 20260408000002_followup_cron), so a "missing" one here
+  //     would fire during the window the automation still owns;
+  //   - anything older than STALE_DAYS, so early owner test bookings age out.
+  var ATTN_STALE_DAYS = 45;
+  var OWNER_EMAILS = ['leandertoney@gmail.com', 'chrisjohnson839@gmail.com'];
+
+  function buildAttentionHTML(bookings, leads, tours, todayStr) {
+    var items = [];
+    var cutoff = shiftDate(todayStr, -ATTN_STALE_DAYS);
+
+    bookings.forEach(function (b) {
+      if (OWNER_EMAILS.indexOf((b.email || '').toLowerCase()) !== -1) return;
+
+      var start = b.startDate || b.start_date;
+      var end   = b.endDate   || b.end_date;
+
+      // 1. Money sitting in Stripe after the vehicle is back.
+      if (b.deposit_cents && !b.deposit_refunded_at && end && end < todayStr && end >= cutoff) {
+        items.push({
+          urgency: 'high',
+          text: '$' + (b.deposit_cents / 100).toFixed(0) + ' deposit still held for '
+              + esc(b.name || b.email || 'a customer'),
+          meta: 'Returned ' + relativeDays(end, todayStr),
+          bookingId: b.id,
+          cta: 'Refund deposit'
+        });
+      }
+
+      // 2. Pre-pickup blockers: no ID on file, or an unverified Can-Am licence.
+      if (start && start >= todayStr) {
+        if ((b.id_upload_status || 'pending') !== 'received') {
+          items.push({
+            urgency: 'high',
+            text: 'No ID uploaded yet for ' + esc(b.name || b.email || 'a customer'),
+            meta: 'Picks up ' + relativeDays(start, todayStr),
+            bookingId: b.id,
+            cta: 'Open booking'
+          });
+        }
+        if (b.requires_canam_license_check && !b.canam_license_verified) {
+          items.push({
+            urgency: 'high',
+            text: "Can-Am licence not verified for " + esc(b.name || b.email || 'a customer'),
+            meta: 'Motorcycle endorsement required. Picks up ' + relativeDays(start, todayStr),
+            bookingId: b.id,
+            cta: 'Open booking'
+          });
+        }
+      }
+    });
+
+    // 3. Tour requests nobody has actioned. Same definition of open as the
+    // sidebar badge: anything not yet paid or closed. V1 tour payment is a
+    // manual Stripe link, so these sit until a human sends one.
+    (tours || []).forEach(function (t) {
+      var status = t.status || 'new';
+      if (status === 'paid' || status === 'closed') return;
+      var when = (t.created_at || '').slice(0, 10);
+      var route = TOUR_ROUTES[t.route] || t.route || 'a tour';
+      var bits  = [route];
+      if (t.group_size) bits.push(t.group_size + ' guests');
+      if (t.preferred_date) bits.push(t.preferred_date);
+      items.push({
+        urgency: 'high',
+        text: 'Tour request from ' + esc(t.name || t.email || 'someone'),
+        meta: bits.join(' \u00b7 ')
+            + (when ? ' \u00b7 asked ' + relativeDays(when, todayStr) : ''),
+        section: 'tours',
+        cta: 'Open request'
+      });
+    });
+
+    // 4. Leads who never converted. One row, not one per lead.
+    var bookedEmails = {};
+    bookings.forEach(function (b) { bookedEmails[(b.email || '').toLowerCase()] = 1; });
+    var unconverted = (leads || []).filter(function (l) {
+      return !bookedEmails[(l.email || '').toLowerCase()];
+    }).length;
+    if (unconverted > 0) {
+      items.push({
+        urgency: 'low',
+        text: unconverted + ' lead' + (unconverted === 1 ? '' : 's') + ' never booked',
+        meta: 'Signed up for the discount and did not come back',
+        section: 'leads',
+        cta: 'View leads'
+      });
+    }
+
+    var order = { high: 0, low: 1 };
+    items.sort(function (a, b) { return order[a.urgency] - order[b.urgency]; });
+
+    var html = '<div class="ov-section">';
+    html += '<h3 class="ov-section-title">Needs Your Attention</h3>';
+    if (!items.length) {
+      html += '<div class="ov-empty"><span class="ov-empty-msg">'
+           +  'Nothing needs you right now.</span></div>';
+    } else {
+      html += '<div class="attn-list">';
+      items.forEach(function (it) {
+        var target = it.bookingId
+          ? ' data-booking-goto="' + esc(it.bookingId) + '"'
+          : ' data-goto="' + it.section + '"';
+        html += '<div class="attn-row attn-' + it.urgency + '">'
+             +    '<span class="attn-dot" aria-hidden="true"></span>'
+             +    '<div class="attn-body">'
+             +      '<div class="attn-text">' + it.text + '</div>'
+             +      '<div class="attn-meta">' + esc(it.meta) + '</div>'
+             +    '</div>'
+             +    '<button type="button" class="ov-empty-cta"' + target + '>'
+             +      esc(it.cta) + '</button>'
+             +  '</div>';
+      });
+      html += '</div>';
+    }
+    html += '</div>';
+    return html;
+  }
+
+  function shiftDate(dateStr, deltaDays) {
+    var d = new Date(dateStr + 'T12:00:00');
+    d.setDate(d.getDate() + deltaDays);
+    return localDateStr(d);
+  }
+
+  function relativeDays(dateStr, todayStr) {
+    var a = new Date(dateStr  + 'T12:00:00');
+    var b = new Date(todayStr + 'T12:00:00');
+    var n = Math.round((a - b) / 86400000);
+    if (n === 0)  return 'today';
+    if (n === 1)  return 'tomorrow';
+    if (n === -1) return 'yesterday';
+    return n > 0 ? 'in ' + n + ' days' : n * -1 + ' days ago';
+  }
+
+  // Local calendar date. toISOString() is UTC, which after ~8pm Eastern
+  // rolls the dashboard to tomorrow and makes a rental that ends today
+  // look already returned.
+  function localDateStr(d) {
+    d = d || new Date();
+    return d.getFullYear() + '-'
+         + String(d.getMonth() + 1).padStart(2, '0') + '-'
+         + String(d.getDate()).padStart(2, '0');
+  }
+
+  function ovEmpty(message, _unused, section, cta) {
+    return '<div class="ov-empty">'
+      + '<span class="ov-empty-msg">' + esc(message) + '</span>'
+      + '<button type="button" class="ov-empty-cta" data-goto="' + section + '">'
+      + esc(cta) + '</button>'
+      + '</div>';
+  }
+
+  function ovCard(label, value, sub, color, goto) {
+    var tag  = goto ? 'button' : 'div';
+    var attr = goto ? ' type="button" data-goto="' + goto + '"' : '';
+    return '<' + tag + ' class="ov-card' + (color ? ' ov-card-' + color : '')
+      + (goto ? ' ov-card-link' : '') + '"' + attr + '>'
       + '<div class="ov-card-value">' + value + '</div>'
       + '<div class="ov-card-label">' + label + '</div>'
       + '<div class="ov-card-sub">' + sub + '</div>'
-      + '</div>';
+      + '</' + tag + '>';
   }
 
   function ovBookingRow(b, type) {
@@ -1440,7 +1728,8 @@
     apiFetch(ADMIN_API + '/bookings')
       .then(function (r) { return r.json(); })
       .then(function (bookings) {
-        count.textContent = bookings.length + ' booking' + (bookings.length !== 1 ? 's' : '');
+        var pg = paginate('bookings', bookings, renderBookingsPanel);
+        count.textContent = pg.countLabel('booking');
 
         if (!bookings.length) {
           tbody.innerHTML = '';
@@ -1451,7 +1740,8 @@
 
         expBtn.disabled = false;
         var html = '';
-        bookings.forEach(function (b, idx) {
+        pg.rows.forEach(function (b, i) {
+          var idx = pg.offset + i;
           var d = new Date(b.created_at);
           var statusClass = b.status === 'confirmed' ? 'status-confirmed' : 'status-pending';
 
@@ -1547,6 +1837,61 @@
   }
 
   // ── Leads panel ─────────────────────────────────────────────
+  // 25 rows a page, never infinite scroll: these lists are scanned and acted
+  // on, and a row deleted from page 3 must not silently move everything up.
+  var ROWS_PER_PAGE = 25;
+  var listPage = { leads: 1, bookings: 1, tours: 1 };
+
+  // Slice one page out of a list and render its pager. Returns the rows to
+  // draw plus the offset, so row numbering stays continuous across pages.
+  // Every list panel re-fetches on page change, so `rerender` is the panel's
+  // own render function.
+  function paginate(key, rows, rerender) {
+    var totalPages = Math.max(1, Math.ceil(rows.length / ROWS_PER_PAGE));
+    // A deletion can empty the last page; step back rather than show nothing.
+    if (listPage[key] > totalPages) listPage[key] = totalPages;
+    var page   = listPage[key];
+    var offset = (page - 1) * ROWS_PER_PAGE;
+
+    renderPager(key, page, totalPages, rerender);
+
+    return {
+      rows: rows.slice(offset, offset + ROWS_PER_PAGE),
+      offset: offset,
+      // "Showing 1-25 of 52 leads" once there is more than one page.
+      countLabel: function (noun) {
+        var plural = noun + (rows.length !== 1 ? 's' : '');
+        if (rows.length <= ROWS_PER_PAGE) return rows.length + ' ' + plural;
+        return 'Showing ' + (offset + 1) + '-' + Math.min(offset + ROWS_PER_PAGE, rows.length)
+             + ' of ' + rows.length + ' ' + plural;
+      }
+    };
+  }
+
+  function renderPager(key, page, totalPages, rerender) {
+    var host = document.getElementById(key + '-pager');
+    if (!host) return;
+    if (totalPages <= 1) { host.innerHTML = ''; host.hidden = true; return; }
+    host.hidden = false;
+
+    host.innerHTML =
+        '<button type="button" class="pager-btn" data-page="' + (page - 1) + '"'
+      + (page === 1 ? ' disabled' : '') + '>Previous</button>'
+      + '<span class="pager-status">Page ' + page + ' of ' + totalPages + '</span>'
+      + '<button type="button" class="pager-btn" data-page="' + (page + 1) + '"'
+      + (page === totalPages ? ' disabled' : '') + '>Next</button>';
+
+    host.querySelectorAll('.pager-btn[data-page]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        if (this.disabled) return;
+        listPage[key] = parseInt(this.getAttribute('data-page'), 10);
+        rerender();
+        var panel = document.getElementById('panel-' + (key === 'tours' ? 'tours' : key));
+        if (panel) panel.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      });
+    });
+  }
+
   function renderLeadsPanel() {
     var tbody   = document.getElementById('leads-tbody');
     var empty   = document.getElementById('leads-empty');
@@ -1559,7 +1904,8 @@
     apiFetch(ADMIN_API + '/leads')
       .then(function (r) { return r.json(); })
       .then(function (leads) {
-        count.textContent = leads.length + ' lead' + (leads.length !== 1 ? 's' : '');
+        var pg = paginate('leads', leads, renderLeadsPanel);
+        count.textContent = pg.countLabel('lead');
 
         if (!leads.length) {
           tbody.innerHTML = '';
@@ -1569,8 +1915,10 @@
         }
 
         expBtn.disabled = false;
+
         var html = '';
-        leads.forEach(function (lead, idx) {
+        pg.rows.forEach(function (lead, i) {
+          var idx = pg.offset + i;
           var d = new Date(lead.created_at || lead.date);
           var dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
           var timeStr = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
@@ -1599,7 +1947,8 @@
         expBtn.onclick = function () {
           var rows = [['#', 'Email', 'Source', 'Date']];
           leads.forEach(function (l, i) {
-            rows.push([i + 1, l.email, l.source || 'Website', new Date(l.date).toLocaleString()]);
+            rows.push([i + 1, l.email, l.source || 'Website',
+                       new Date(l.created_at || l.date).toLocaleString()]);
           });
           var csv = rows.map(function (r) {
             return r.map(function (v) { return '"' + String(v).replace(/"/g, '""') + '"'; }).join(',');
@@ -1658,7 +2007,8 @@
       .then(function (r) { return r.json(); })
       .then(function (rows) {
         if (!Array.isArray(rows)) throw new Error('bad payload');
-        count.textContent = rows.length + ' request' + (rows.length !== 1 ? 's' : '');
+        var pg = paginate('tours', rows, renderTourRequestsPanel);
+        count.textContent = pg.countLabel('request');
 
         if (!rows.length) {
           tbody.innerHTML = '';
@@ -1669,7 +2019,8 @@
         expBtn.disabled = false;
 
         var html = '';
-        rows.forEach(function (t, idx) {
+        pg.rows.forEach(function (t, i) {
+          var idx = pg.offset + i;
           var d = new Date(t.created_at);
           var dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
           var timeStr = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });

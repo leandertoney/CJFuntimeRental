@@ -208,6 +208,85 @@ body.logged-in #admin-shell { display: flex; }
 
 #sidebar.collapsed { width: 64px; }
 
+/* ── FLOATING SIDEBAR (desktop only) ────────────────────────────
+   Detached inset card over --bg rather than a full-height column
+   flush to the window edge. Scoped to >=769px so the mobile
+   off-canvas drawer below keeps its own fixed positioning. */
+@media (min-width: 769px) {
+  #admin-shell { padding: 12px; gap: 12px; background: var(--bg); }
+
+  #sidebar {
+    height: auto;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+  }
+  #sidebar.collapsed { overflow: visible; }
+
+  .sidebar-nav { overflow-y: auto; }
+
+  #admin-main {
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--surface);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+}
+
+/* Collapse toggle sits in the brand row */
+.sidebar-collapse-btn {
+  margin-left: auto;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-3);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.sidebar-collapse-btn:hover { background: var(--surface-3); color: var(--text); }
+.sidebar-collapse-btn svg { width: 15px; height: 15px; transition: transform 0.25s ease; }
+#sidebar.collapsed .sidebar-brand {
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 8px 14px;
+  overflow: visible;
+}
+#sidebar.collapsed .sidebar-collapse-btn { margin-left: 0; }
+#sidebar.collapsed .sidebar-collapse-btn svg { transform: rotate(180deg); }
+@media (max-width: 768px) { .sidebar-collapse-btn { display: none; } }
+
+/* Icon-rail tooltips, so a collapsed sidebar stays navigable */
+@media (min-width: 769px) {
+  #sidebar.collapsed .sidebar-nav { overflow: visible; }
+  #sidebar.collapsed .nav-link,
+  #sidebar.collapsed .nav-group-toggle { position: relative; overflow: visible; }
+  #sidebar.collapsed .nav-link[data-label]:hover::after {
+    content: attr(data-label);
+    position: absolute;
+    left: calc(100% + 10px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--text);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    padding: 6px 10px;
+    border-radius: 6px;
+    box-shadow: var(--shadow-md);
+    z-index: 1200;
+    pointer-events: none;
+  }
+}
+
 .sidebar-brand {
   display: flex;
   align-items: center;
@@ -1225,9 +1304,11 @@ body.logged-in #admin-shell { display: flex; }
 
 .ov-cards {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  /* Hero takes two columns, the four supporting stats take one each. */
+  grid-template-columns: 1.6fr repeat(4, 1fr);
   gap: 16px;
   margin-bottom: 32px;
+  align-items: stretch;
 }
 
 .ov-card {
@@ -1245,6 +1326,45 @@ body.logged-in #admin-shell { display: flex; }
 .ov-card-blue   { border-color: var(--info-line); }
 .ov-card-purple { border-color: var(--purple-line); }
 .ov-card-red    { border-color: var(--danger-line); }
+
+/* Clickable cards. Buttons for keyboard and screen-reader support, so they
+   need the browser's button styling stripped back to the card look. */
+.ov-card-link {
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+.ov-card-link:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+.ov-card-link:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 2px;
+}
+.ov-card-hero.ov-card-link:hover { border-color: var(--orange); }
+
+/* Hero: the one number worth reading first. */
+.ov-card-hero {
+  background: var(--orange-soft);
+  border-color: var(--orange-line);
+  justify-content: center;
+  padding: 22px;
+}
+.ov-card-hero .ov-card-label {
+  margin-top: 0;
+  margin-bottom: 2px;
+  color: var(--orange-ink);
+}
+.ov-card-hero .ov-card-value {
+  font-size: 40px;
+  letter-spacing: -0.5px;
+  color: var(--text);
+}
+.ov-card-hero .ov-card-sub { color: var(--text-2); font-weight: 500; }
 
 .ov-card-value {
   font-size: 28px;
@@ -1280,8 +1400,9 @@ body.logged-in #admin-shell { display: flex; }
 }
 
 .ov-section {
-  margin-bottom: 0;
+  margin-bottom: 28px;
 }
+.ov-section:last-child { margin-bottom: 0; }
 
 .ov-section-prominent {
   background: var(--orange-soft);
@@ -1305,10 +1426,88 @@ body.logged-in #admin-shell { display: flex; }
 }
 
 .ov-empty {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
   font-size: 14px;
   color: var(--text-3);
-  font-style: italic;
-  padding: 16px 0;
+  padding: 18px 20px;
+  background: var(--surface-2);
+  border: 1px dashed var(--border-strong);
+  border-radius: 10px;
+}
+.ov-empty-msg { color: var(--text-2); }
+.ov-empty-cta {
+  flex-shrink: 0;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.ov-empty-cta:hover { background: var(--surface-3); border-color: var(--text-4); }
+
+/* ── Pager ──────────────────────────────────────────────────── */
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 18px 0 4px;
+}
+.pager-btn {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.pager-btn:hover:not(:disabled) { background: var(--surface-3); border-color: var(--text-4); }
+.pager-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.pager-status { font-size: 13px; color: var(--text-3); }
+
+/* ── Needs your attention ───────────────────────────────────── */
+.attn-list { display: flex; flex-direction: column; gap: 8px; }
+
+.attn-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.attn-row.attn-high { border-color: var(--warn-line); background: var(--warn-soft); }
+
+.attn-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border-strong);
+}
+.attn-high .attn-dot { background: var(--warn-solid); }
+
+.attn-body { flex: 1; min-width: 0; }
+.attn-text { font-size: 14px; font-weight: 600; color: var(--text); }
+.attn-meta { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+
+@media (max-width: 640px) {
+  .attn-row { flex-wrap: wrap; }
+  .attn-row .ov-empty-cta { width: 100%; }
 }
 
 .ov-list {
@@ -2061,6 +2260,9 @@ body.logged-in #admin-shell { display: flex; }
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
   }
+  /* Hero spans the full row so it stays the first thing read. */
+  .ov-card-hero { grid-column: 1 / -1; }
+  .ov-card-hero .ov-card-value { font-size: 34px; }
 
   /* Stack overview grid sections */
   .ov-grid {
@@ -2458,6 +2660,11 @@ body.logged-in #admin-shell { display: flex; }
 
 /* Narrow screens: one column, scrolling is fine there because a phone cannot
    show a dashboard at a glance anyway. */
+@media (min-width: 769px) and (max-width: 1180px) {
+  .ov-cards { grid-template-columns: repeat(2, 1fr); }
+  .ov-card-hero { grid-column: 1 / -1; }
+}
+
 @media (max-width: 1100px) {
   .an-grid { grid-template-columns:1fr; }
   .an-card-trend { grid-row:auto; }
@@ -2497,6 +2704,9 @@ body.logged-in #admin-shell { display: flex; }
 .nav-group-toggle span { flex: 1; transition: opacity 0.2s; }
 #sidebar.collapsed .nav-group-toggle span,
 #sidebar.collapsed .nav-chevron { opacity: 0; }
+/* Fully remove them: the collapsed rail lets overflow through for tooltips,
+   so opacity alone would leave the chevron floating outside the sidebar. */
+#sidebar.collapsed .nav-chevron { display: none; }
 
 .nav-chevron { transition: transform 0.2s; opacity: 0.5 !important; }
 .nav-group-toggle[aria-expanded="true"] .nav-chevron { transform: rotate(180deg); }
