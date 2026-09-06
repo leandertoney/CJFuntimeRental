@@ -479,6 +479,14 @@
     if (pickupDateInput) {
       pickupDateInput.addEventListener('change', function() {
         if (this.value) {
+          // Keep state in sync with the input. state.startDate used to be set
+          // only inside showDateFields(), which runs when a DURATION is chosen,
+          // so changing just the date left the old value behind. That was
+          // invisible until the promo preview started reading these dates to
+          // decide whether a weekday-only discount applies, at which point a
+          // Friday could still show a discounted price.
+          state.startDate = this.value;
+          if (state.durationType !== 'multi') state.endDate = this.value;
           // Show duration section when date is picked
           if (durationSection) durationSection.style.display = 'block';
           updatePricing();
@@ -490,6 +498,7 @@
 
     if (dropoffDateInput) {
       dropoffDateInput.addEventListener('change', function() {
+        if (this.value) state.endDate = this.value;
         updatePricing();
       });
     }
