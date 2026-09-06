@@ -198,13 +198,38 @@
 
   function bindSidebarToggle() {
     var sidebar = document.getElementById('sidebar');
-    sidebar.classList.add('collapsed');
-    sidebar.addEventListener('mouseenter', function () {
-      sidebar.classList.remove('collapsed');
+    var btn     = document.getElementById('sidebar-collapse');
+
+    // Deliberate click, not hover. Hover-expand meant the sidebar opened
+    // whenever the pointer crossed it on the way somewhere else.
+    var collapsed = false;
+    try { collapsed = localStorage.getItem('cjfr_admin_sidebar_collapsed') === '1'; } catch (e) {}
+    setSidebarCollapsed(collapsed);
+
+    // Each nav item carries its own text as a tooltip for the collapsed rail.
+    document.querySelectorAll('#sidebar .nav-link[data-section]').forEach(function (link) {
+      var label = (link.textContent || '').trim();
+      if (label) link.setAttribute('data-label', label);
     });
-    sidebar.addEventListener('mouseleave', function () {
-      sidebar.classList.add('collapsed');
-    });
+
+    if (btn) {
+      btn.addEventListener('click', function () {
+        setSidebarCollapsed(!sidebar.classList.contains('collapsed'));
+      });
+    }
+  }
+
+  function setSidebarCollapsed(collapsed) {
+    var sidebar = document.getElementById('sidebar');
+    var btn     = document.getElementById('sidebar-collapse');
+    if (!sidebar) return;
+    sidebar.classList.toggle('collapsed', collapsed);
+    if (btn) {
+      btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+      btn.setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+      btn.setAttribute('title',      collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+    }
+    try { localStorage.setItem('cjfr_admin_sidebar_collapsed', collapsed ? '1' : '0'); } catch (e) {}
   }
 
   // ── Auth ─────────────────────────────────────────────────────
@@ -437,6 +462,7 @@
   // ── Navigation ───────────────────────────────────────────────
   function bindNav() {
     bindSetupGroup();
+    bindEmptyStateCtas();
     document.querySelectorAll('.nav-link[data-section]').forEach(function (link) {
       link.addEventListener('click', function (e) {
         e.preventDefault();
@@ -445,6 +471,20 @@
         updateNavActive(activeSection);
         renderPanel(activeSection);
       });
+    });
+  }
+
+  // Empty-state buttons reuse the nav path so there is one way to switch panels.
+  function bindEmptyStateCtas() {
+    document.addEventListener('click', function (e) {
+      var btn = e.target.closest && e.target.closest('.ov-empty-cta[data-goto]');
+      if (!btn) return;
+      e.preventDefault();
+      var target = btn.getAttribute('data-goto');
+      collectFormData();
+      activeSection = target;
+      updateNavActive(target);
+      renderPanel(target);
     });
   }
 
@@ -654,20 +694,30 @@
     var html = '';
 
     // Stat cards row
+    // This month leads, because that is the number Chris actually checks.
+    // All time sits underneath it rather than competing as a second hero.
     html += '<div class="ov-cards">';
-    html += ovCard('Total Revenue',  '$' + totalRevenue.toLocaleString(), 'All time', 'green');
-    html += ovCard('This Month',     '$' + thisMonthRev.toLocaleString(), now.toLocaleString('default', { month: 'long' }), 'orange');
-    html += ovCard('Total Bookings', bookings.length,                     'All time', 'blue');
-    html += ovCard('Leads',          leads.length,                        leadsThisMonth + ' this month', 'purple');
-    html += ovCard('Vehicles',       availCount + ' / ' + vKeys.length,  'Available now', availCount > 0 ? 'green' : 'red');
-    html += ovCard('Upcoming',       upcoming.length,                     'Future bookings', 'blue');
+    html += '<div class="ov-card ov-card-hero">'
+         +    '<div class="ov-card-label">' + now.toLocaleString('default', { month: 'long' }) + ' Revenue</div>'
+         +    '<div class="ov-card-value">$' + thisMonthRev.toLocaleString() + '</div>'
+         +    '<div class="ov-card-sub">$' + totalRevenue.toLocaleString() + ' all time</div>'
+         +  '</div>';
+    html += ovCard('Total Bookings', bookings.length,                    'All time');
+    html += ovCard('Upcoming',       upcoming.length,                    'Future bookings');
+    html += ovCard('Leads',          leads.length,                       leadsThisMonth + ' this month');
+    // Vehicles keeps semantic colour: none available is a real problem.
+    html += ovCard('Vehicles',       availCount + ' / ' + vKeys.length, 'Available now',
+                   availCount > 0 ? 'green' : 'red');
     html += '</div>';
 
     // Row 1: Active Rentals (full width, prominent)
-    html += '<div class="ov-section ov-section-prominent">';
+    // Tint only when a rental is genuinely out. An orange alarm panel over
+    // "nothing happening" trained the eye to ignore the colour.
+    html += '<div class="ov-section' + (activeNow.length ? ' ov-section-prominent' : '') + '">';
     html += '<h3 class="ov-section-title">Active Rentals Right Now</h3>';
     if (activeNow.length === 0) {
-      html += '<div class="ov-empty">No rentals active today.</div>';
+      html += ovEmpty('Nothing out on the road today.',
+                      'Blocked Dates', 'calendar', 'Manage availability');
     } else {
       html += '<div class="ov-list">';
       activeNow.forEach(function (b) { html += ovBookingRow(b); });
@@ -679,7 +729,8 @@
     html += '<div class="ov-section">';
     html += '<h3 class="ov-section-title">Upcoming Bookings</h3>';
     if (upcoming.length === 0) {
-      html += '<div class="ov-empty">No upcoming bookings yet.</div>';
+      html += ovEmpty('No upcoming bookings on the books.',
+                      'Bookings', 'bookings', 'View all bookings');
     } else {
       html += '<div class="ov-list">';
       upcoming.slice(0, 8).forEach(function (b) { html += ovBookingRow(b); });
@@ -690,8 +741,16 @@
     return html;
   }
 
+  function ovEmpty(message, _unused, section, cta) {
+    return '<div class="ov-empty">'
+      + '<span class="ov-empty-msg">' + esc(message) + '</span>'
+      + '<button type="button" class="ov-empty-cta" data-goto="' + section + '">'
+      + esc(cta) + '</button>'
+      + '</div>';
+  }
+
   function ovCard(label, value, sub, color) {
-    return '<div class="ov-card ov-card-' + color + '">'
+    return '<div class="ov-card' + (color ? ' ov-card-' + color : '') + '">'
       + '<div class="ov-card-value">' + value + '</div>'
       + '<div class="ov-card-label">' + label + '</div>'
       + '<div class="ov-card-sub">' + sub + '</div>'
