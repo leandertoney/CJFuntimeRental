@@ -50,7 +50,10 @@ Deno.serve(async (req) => {
       const today = new Date().toISOString().split('T')[0];
       const { data: bookings } = await supabase
         .from('bookings')
-        .select('vehicle, start_date, end_date')
+        // vehicle_key is what the widget matches on. `vehicle` holds a display
+        // NAME, so matching on it alone never worked and booked dates were
+        // never greyed out. Older rows have a NULL key, hence both.
+        .select('vehicle, vehicle_key, start_date, end_date')
         .eq('status', 'confirmed')
         .gte('end_date', today);
       if (bookings && bookings.length > 0) upcomingBookings = bookings;
@@ -62,7 +65,10 @@ Deno.serve(async (req) => {
       const today = new Date().toISOString().split('T')[0];
       const { data: blocks } = await supabase
         .from('vehicle_blocks')
-        .select('vehicle_key, start_date, end_date, reason')
+        // `reason` is deliberately NOT selected. This payload is public, and
+        // the reasons are internal notes ("Rented", "Turo rental", "vacation").
+        // A customer only needs to know the vehicle is unavailable.
+        .select('vehicle_key, start_date, end_date')
         .gte('end_date', today);
       if (blocks && blocks.length > 0) vehicleBlocks = blocks;
     } catch { /* no vehicle blocks yet */ }

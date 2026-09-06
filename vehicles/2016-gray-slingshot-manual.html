@@ -14,6 +14,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600&display=swap" onload="this.onload=null;this.rel='stylesheet'">
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600&display=swap"></noscript>
+  <!-- flatpickr first: booking-widget.css overrides its disabled-day colours -->
+  <link rel="stylesheet" href="/vendor/flatpickr.min.css">
   <link rel="stylesheet" href="/booking-widget.css">
   <style>
     /* Turo-Inspired Design System */
@@ -315,6 +317,7 @@
     })();
   </script>
   <!-- Load booking widget -->
+  <script src="/vendor/flatpickr.min.js"></script>
   <script src="/booking-widget.js"></script>
 
   <!-- Tab Navigation JavaScript -->

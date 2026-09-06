@@ -101,63 +101,68 @@
     return Promise.resolve();
   }
 
+  // One message for every reason a date is closed. The customer needs to know
+  // the vehicle is not available; they do not need to know it is on a Turo
+  // rental or that the owner is on vacation, and telling them when someone
+  // else has it booked is nobody's business either.
+  var UNAVAILABLE_MSG = 'This vehicle is not available on those dates. Please choose different dates.';
+
+  // Does a booking or block row belong to the vehicle on this page?
+  // `bookings.vehicle` holds a display NAME ("2016 Polaris Slingshot") while
+  // vehicleKey is a KEY ("slingshot_2020"), so the old comparison never matched
+  // and booked dates were never greyed out. vehicle_key is authoritative when
+  // present; older rows only have the name.
+  function rowMatchesVehicle(row, vehicleKey) {
+    if (row.vehicle_key) return row.vehicle_key === vehicleKey;
+    var name = row.vehicle || '';
+    if (!name) return false;
+    var v = (window.SITE_CONFIG && window.SITE_CONFIG.vehicles && window.SITE_CONFIG.vehicles[vehicleKey]) || {};
+    return name === v.name || name === v.label || name === vehicleKey;
+  }
+
+  // Every date this vehicle cannot be rented, as {from,to} ranges the date
+  // picker can grey out. Same three sources the bottom-of-form check uses, so
+  // the calendar and the validation can never disagree.
+  function unavailableRanges(vehicleKey) {
+    var out = [], i;
+    for (i = 0; i < existingBookings.length; i++) {
+      if (!rowMatchesVehicle(existingBookings[i], vehicleKey)) continue;
+      out.push({ from: existingBookings[i].start_date, to: existingBookings[i].end_date || existingBookings[i].start_date });
+    }
+    for (i = 0; i < vehicleBlocks.length; i++) {
+      if (vehicleBlocks[i].vehicle_key !== vehicleKey) continue;
+      out.push({ from: vehicleBlocks[i].start_date, to: vehicleBlocks[i].end_date || vehicleBlocks[i].start_date });
+    }
+    if (window.CJFR_BLOCKED_DATES && window.CJFR_BLOCKED_DATES.length) {
+      for (i = 0; i < window.CJFR_BLOCKED_DATES.length; i++) {
+        out.push({ from: window.CJFR_BLOCKED_DATES[i], to: window.CJFR_BLOCKED_DATES[i] });
+      }
+    }
+    return out;
+  }
+
+  // Local calendar date, never toISOString(): that resolves in UTC and rolls
+  // the day over in the evening Eastern.
+  function localDateStr(d) {
+    return d.getFullYear() + '-' +
+      String(d.getMonth() + 1).padStart(2, '0') + '-' +
+      String(d.getDate()).padStart(2, '0');
+  }
+
   function isDateRangeAvailable(startDate, endDate, vehicleKey) {
     if (!startDate) return { available: true };
 
     var reqStart = new Date(startDate + 'T00:00:00');
     var reqEnd = new Date((endDate || startDate) + 'T23:59:59');
 
-    // Check existing bookings
-    for (var i = 0; i < existingBookings.length; i++) {
-      var booking = existingBookings[i];
-      if (booking.vehicle !== vehicleKey && !vehicleKey.includes(booking.vehicle)) continue;
-
-      var bStart = new Date(booking.start_date + 'T00:00:00');
-      var bEnd = new Date(booking.end_date + 'T23:59:59');
-
-      if (reqStart <= bEnd && reqEnd >= bStart) {
-        return {
-          available: false,
-          message: 'This vehicle is already booked from ' + formatDate(booking.start_date) +
-                   ' to ' + formatDate(booking.end_date) + '. Please choose different dates.'
-        };
+    var ranges = unavailableRanges(vehicleKey);
+    for (var i = 0; i < ranges.length; i++) {
+      var rStart = new Date(ranges[i].from + 'T00:00:00');
+      var rEnd = new Date(ranges[i].to + 'T23:59:59');
+      if (reqStart <= rEnd && reqEnd >= rStart) {
+        return { available: false, message: UNAVAILABLE_MSG };
       }
     }
-
-    // Check vehicle-specific blocks
-    for (var j = 0; j < vehicleBlocks.length; j++) {
-      var block = vehicleBlocks[j];
-      if (block.vehicle_key !== vehicleKey && !vehicleKey.includes(block.vehicle_key)) continue;
-
-      var blockStart = new Date(block.start_date + 'T00:00:00');
-      var blockEnd = new Date(block.end_date + 'T23:59:59');
-
-      if (reqStart <= blockEnd && reqEnd >= blockStart) {
-        var reasonMsg = block.reason ? ' (' + block.reason + ')' : '';
-        return {
-          available: false,
-          message: 'This vehicle is unavailable from ' + formatDate(block.start_date) +
-                   ' to ' + formatDate(block.end_date) + reasonMsg +
-                   '. Please choose different dates or try another vehicle.'
-        };
-      }
-    }
-
-    // Check global blocked dates
-    if (window.CJFR_BLOCKED_DATES && window.CJFR_BLOCKED_DATES.length) {
-      var current = new Date(reqStart);
-      while (current <= reqEnd) {
-        var dateStr = current.toISOString().split('T')[0];
-        if (window.CJFR_BLOCKED_DATES.indexOf(dateStr) !== -1) {
-          return {
-            available: false,
-            message: 'The date ' + formatDate(dateStr) + ' is unavailable. Please choose different dates.'
-          };
-        }
-        current.setDate(current.getDate() + 1);
-      }
-    }
-
     return { available: true };
   }
 
@@ -275,7 +280,7 @@
 
     var html = '<div class="bw-container">'
       + '<div class="bw-header">'
-      + '<div class="bw-price-display" id="bw-price-display">Pick your dates to see availability</div>'
+      + '<div class="bw-price-display" id="bw-price-display">Pick your dates</div>'
       + '</div>'
 
       // Up-front ID disclosure — no surprises at pickup
@@ -347,6 +352,10 @@
 
     // Restore previous booking state if exists
     restoreBookingState();
+
+    // Grey out unavailable days in the calendar. Runs after the widget markup
+    // exists and after fetchExistingBookings() has populated the two arrays.
+    initDatePickers();
 
     // If the visitor arrived from a promo link, ask the server whether the code
     // is good and show the discounted price alongside the original.
@@ -653,7 +662,7 @@
     var hasPickupDate = pickupInput && pickupInput.value;
 
     if (!hasPickupDate) {
-      if (priceDisplay) priceDisplay.textContent = 'Pick your dates to see availability';
+      if (priceDisplay) priceDisplay.textContent = 'Pick your dates';
       if (ctaBtn) {
         ctaBtn.disabled = true;
         ctaBtn.textContent = 'Select dates to continue';
@@ -792,6 +801,68 @@
         }
       })
       .catch(function () { /* preview only: never block booking */ });
+  }
+
+
+  // ── Date picker ───────────────────────────────────────────────────────────
+  // Replaces <input type="date"> with flatpickr so unavailable days are GREYED
+  // OUT in the calendar itself. Previously a customer picked a date, scrolled
+  // to the bottom of the form, and only then learned the vehicle was taken.
+  //
+  // disableMobile:true is essential. flatpickr otherwise detects a phone and
+  // hands back the native <input type="date">, which is the iOS wheel that
+  // shows no availability at all, so the whole feature would silently do
+  // nothing on the devices most of this traffic uses.
+  var pickupFp = null, dropoffFp = null;
+
+  function initDatePickers() {
+    if (typeof window.flatpickr !== 'function') return;   // vendor script missing: keep native input
+    var pickupInput = $('bw-pickup-date');
+    var dropoffInput = $('bw-dropoff-date');
+    if (!pickupInput) return;
+
+    var disabled = unavailableRanges(state.vehicleKey);
+
+    if (pickupFp) { pickupFp.destroy(); pickupFp = null; }
+    if (dropoffFp) { dropoffFp.destroy(); dropoffFp = null; }
+
+    var common = {
+      dateFormat: 'Y-m-d',        // existing handlers read input.value in this format
+      minDate: 'today',
+      disable: disabled,
+      disableMobile: true,
+      showMonths: 1
+    };
+
+    pickupFp = window.flatpickr(pickupInput, Object.assign({}, common, {
+      onChange: function (dates, str) {
+        if (!dropoffFp || !str) return;
+        // A multi-day rental must not be allowed to span a closed day, which
+        // would otherwise only fail at the bottom of the form. Cap the return
+        // date at the day before the next unavailable range.
+        dropoffFp.set('minDate', str);
+        var after = nextUnavailableAfter(str, disabled);
+        dropoffFp.set('maxDate', after || null);
+      }
+    }));
+
+    if (dropoffInput) {
+      dropoffFp = window.flatpickr(dropoffInput, Object.assign({}, common, {}));
+    }
+  }
+
+  // The last selectable day for a rental starting on startStr: the day before
+  // the next unavailable range begins, or null when nothing blocks it.
+  function nextUnavailableAfter(startStr, ranges) {
+    var start = new Date(startStr + 'T00:00:00');
+    var best = null;
+    for (var i = 0; i < ranges.length; i++) {
+      var from = new Date(ranges[i].from + 'T00:00:00');
+      if (from > start && (!best || from < best)) best = from;
+    }
+    if (!best) return null;
+    best.setDate(best.getDate() - 1);
+    return localDateStr(best);
   }
 
   function proceedToCheckout() {
