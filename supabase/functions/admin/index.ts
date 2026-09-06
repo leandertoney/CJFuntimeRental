@@ -145,10 +145,10 @@ function promoReplyTo(addr: string) {
 // and the widget drops any query string when it redirects to checkout, so a
 // promo link must point at a vehicle page or the code silently does not apply.
 const PROMO_VEHICLE_LINKS = [
-  { name: '2024 Polaris Slingshot SL AutoDrive', path: '/2024-orange-slingshot-autodrive' },
-  { name: '2016 Polaris Slingshot S Manual (Gray)', path: '/2016-gray-slingshot-manual' },
-  { name: '2016 Polaris Slingshot S Manual (Red)', path: '/2016-red-slingshot-manual' },
-  { name: '2021 Can-Am Spyder F3 Limited', path: '/2021-canam-spyder-f3' }
+  { name: '2024 Polaris Slingshot SL AutoDrive', path: '/2024-orange-slingshot-autodrive', img: '/cj_orange_sling.jpg' },
+  { name: '2016 Polaris Slingshot S Manual (Gray)', path: '/2016-gray-slingshot-manual', img: '/gray_polaris_front.png' },
+  { name: '2016 Polaris Slingshot S Manual (Red)', path: '/2016-red-slingshot-manual', img: '/red_polaris_slingshot.png' },
+  { name: '2021 Can-Am Spyder F3 Limited', path: '/2021-canam-spyder-f3', img: '/Can_Am_Spyder_F3_Limited.png' }
 ];
 
 function promoLink(path: string, code: string) {
@@ -212,48 +212,87 @@ function promoDaysLabel(weekdays: number[] | null, abbr = false): string {
 }
 
 function promoEmailHTML(code: string, percentOff: number, expiresLabel: string, weekdays: number[] | null = null) {
-  const rows = PROMO_VEHICLE_LINKS.map((v) =>
-    `<tr><td style="padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.07);">
-       <a href="${promoLink(v.path, code)}" style="color:#FF6B00;text-decoration:none;font-size:15px;">${v.name} &nbsp;&middot;&nbsp; See pricing &rarr;</a>
-     </td></tr>`).join('');
+  const dayRule = weekdays ? promoDaysLabel(weekdays, true) : '';
 
-  return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#0f0f0f;font-family:'Helvetica Neue',Arial,sans-serif;color:#fff;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f0f0f;padding:40px 0;">
-    <tr><td align="center"><table width="580" cellpadding="0" cellspacing="0" style="max-width:580px;width:100%;">
-      <tr><td style="padding:0 0 28px 0;text-align:center;border-bottom:1px solid rgba(255,255,255,0.07);">
-        <a href="${promoLink(PROMO_VEHICLE_LINKS[0].path, code)}"><img src="https://cjfuntimerentals.com/cj_funtime_logo.png" alt="CJ's Fun Time Rental" width="140" style="display:block;height:auto;margin:0 auto;"></a>
-      </td></tr>
-      <tr><td style="padding:32px 0 0;">
-        <h1 style="font-family:Impact,Arial,sans-serif;font-size:32px;letter-spacing:2px;margin:0 0 18px;">LABOR DAY SPECIAL</h1>
-        <p style="font-size:15px;color:rgba(255,255,255,0.72);margin:0 0 18px;line-height:1.7;">
-          Summer is winding down and the roads around Lancaster are about as good as they get right now. We are running ${percentOff}% off${weekdays ? ' ' + promoDaysLabel(weekdays) + ' rentals' : ''} through the end of October. These things are a blast.
-        </p>
-        <div style="background:#1a1a1a;border:1px solid rgba(255,107,0,0.3);border-radius:10px;padding:24px;text-align:center;margin:0 0 20px;">
-          <div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#FF6B00;margin-bottom:8px;">Your Code</div>
-          <div style="font-family:Impact,Arial,sans-serif;font-size:38px;letter-spacing:5px;color:#FF6B00;">${code}</div>
-          <div style="font-size:13px;color:#aaa;margin-top:10px;">${percentOff}% off the rental${weekdays ? ' &nbsp;·&nbsp; ' + promoDaysLabel(weekdays, true) : ''} &nbsp;·&nbsp; ${expiresLabel}</div>
-        </div>
-        <p style="font-size:15px;color:rgba(255,255,255,0.72);margin:0 0 8px;line-height:1.7;">
-          No motorcycle license required, 300 miles per trip, a full tank at pickup, and insurance included. Pickup and return right in Lancaster.
-        </p>
-        <p style="font-size:13px;color:rgba(255,255,255,0.45);margin:0 0 18px;line-height:1.6;">
-          The refundable deposit and any delivery fee are not discounted.
-        </p>
-        <p style="font-size:14px;color:rgba(255,255,255,0.55);margin:0 0 10px;line-height:1.7;">
-          Pick your ride to see pricing. The code is applied for you:
-        </p>
-        <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 26px;">${rows}</table>
-        <p style="font-size:14px;color:rgba(255,255,255,0.55);margin:0;line-height:1.7;">
-          Questions, or want to book a group ride? Just reply to this email.
-        </p>
-      </td></tr>
-      <tr><td style="padding:26px 0 0 0;border-top:1px solid rgba(255,255,255,0.07);text-align:center;">
-        <p style="font-size:11px;color:#555;margin:0 0 6px;">CJ's Fun Time Rental &nbsp;·&nbsp; Lancaster, PA &nbsp;·&nbsp; Polaris Slingshot &amp; Can-Am Spyder Rentals</p>
-        <p style="font-size:11px;color:#555;margin:0;">You are getting this because you requested a discount code on our site. Reply with "unsubscribe" and we will take you off the list.</p>
-      </td></tr>
-    </table></td></tr>
+  // One card per vehicle: photo, name, and a button. Bare underlined links in
+  // a list read like classifieds, and a link is also a smaller tap target than
+  // a button on a phone.
+  const cards = PROMO_VEHICLE_LINKS.map((v) => `
+    <tr><td style="padding:0 0 14px 0;">
+      <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#1a1a1a;border:1px solid rgba(255,255,255,0.08);border-radius:12px;">
+        <tr><td style="padding:0;">
+          <a href="${promoLink(v.path, code)}" style="text-decoration:none;display:block;">
+            <img src="https://cjfuntimerentals.com${v.img}" alt="${v.name}" width="516" height="200" style="display:block;width:100%;max-width:516px;height:200px;object-fit:cover;object-position:center;border-radius:12px 12px 0 0;border:0;background:#0f0f0f;">
+          </a>
+        </td></tr>
+        <tr><td style="padding:16px 20px 18px 20px;">
+          <div style="font-size:16px;font-weight:700;color:#ffffff;line-height:1.35;margin:0 0 12px;">${v.name}</div>
+          <a href="${promoLink(v.path, code)}" style="display:inline-block;background:#FF6B00;color:#000000;font-weight:700;font-size:14px;letter-spacing:0.4px;padding:12px 22px;border-radius:6px;text-decoration:none;">See pricing</a>
+        </td></tr>
+      </table>
+    </td></tr>`).join('');
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- This email is dark by design. Declaring the scheme stops Gmail and Apple
+     Mail from running their own dark-mode inversion over it, which is what
+     turns a designed dark email into muddy grey. -->
+<meta name="color-scheme" content="dark">
+<meta name="supported-color-schemes" content="dark">
+</head>
+<body style="margin:0;padding:0;background:#0f0f0f;">
+  <!-- The outer cell carries the side padding. Without it the table collapses
+       to the screen width on a phone and every line runs edge to edge. -->
+  <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#0f0f0f;">
+    <tr><td align="center" style="padding:32px 20px;">
+      <table width="516" cellpadding="0" cellspacing="0" role="presentation" style="max-width:516px;width:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+
+        <tr><td align="center" style="padding:0 0 26px 0;">
+          <img src="https://cjfuntimerentals.com/cj_funtime_logo.png" alt="CJ's Fun Time Rental" width="120" style="display:block;height:auto;border:0;">
+        </td></tr>
+
+        <tr><td style="background:#1a1a1a;border:1px solid rgba(255,107,0,0.35);border-radius:12px;padding:26px 22px;">
+          <div style="font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#FF6B00;font-weight:700;margin:0 0 10px;">Labor Day Special</div>
+          <div style="font-size:26px;line-height:1.25;font-weight:700;color:#ffffff;margin:0 0 14px;">${percentOff}% off${dayRule ? ' ' + dayRule : ''} rides</div>
+          <div style="font-size:15px;line-height:1.6;color:rgba(255,255,255,0.68);margin:0 0 22px;">Summer is winding down and the roads around Lancaster are about as good as they get right now.</div>
+          <div style="background:#0f0f0f;border:1px dashed rgba(255,107,0,0.5);border-radius:8px;padding:16px;text-align:center;">
+            <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.45);margin:0 0 6px;">Your code</div>
+            <div style="font-size:26px;letter-spacing:3px;font-weight:700;color:#FF6B00;">${code}</div>
+          </div>
+          <div style="font-size:13px;line-height:1.6;color:rgba(255,255,255,0.45);text-align:center;margin:12px 0 0;">${expiresLabel}</div>
+        </td></tr>
+
+        <tr><td style="padding:26px 4px 14px 4px;font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.4);font-weight:700;">Pick your ride</td></tr>
+
+        ${cards}
+
+        <tr><td style="padding:8px 4px 0 4px;">
+          <div style="font-size:13px;line-height:1.9;color:rgba(255,255,255,0.55);">
+            No motorcycle license required<br>
+            300 miles per trip &nbsp;·&nbsp; Full tank at pickup<br>
+            Insurance included &nbsp;·&nbsp; Pickup in Lancaster
+          </div>
+        </td></tr>
+
+        <tr><td style="padding:22px 4px 0 4px;">
+          <div style="font-size:12px;line-height:1.6;color:rgba(255,255,255,0.3);">Discount applies to the rental only. The refundable deposit and any delivery fee are not discounted.</div>
+        </td></tr>
+
+        <tr><td style="padding:26px 4px 0 4px;border-top:1px solid rgba(255,255,255,0.08);">
+          <div style="font-size:11px;line-height:1.7;color:rgba(255,255,255,0.3);">
+            CJ's Fun Time Rental &nbsp;·&nbsp; Lancaster, PA<br>
+            You are getting this because you asked us for a discount code. <a href="mailto:${PROMO_REPLY_TO}?subject=Unsubscribe" style="color:rgba(255,255,255,0.5);text-decoration:underline;">Unsubscribe</a>.
+          </div>
+        </td></tr>
+
+      </table>
+    </td></tr>
   </table>
-</body></html>`;
+</body>
+</html>`;
 }
 
 async function readConfig() {
