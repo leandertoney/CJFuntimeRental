@@ -71,7 +71,15 @@ Deno.serve(async (req) => {
       sections:      cfg.sections,
       sectionOrder:  cfg.sectionOrder,
       vehicles:      cfg.vehicles,
-      pricing:       cfg.pricing,
+      // Everything in `pricing` is served publicly to every visitor, so the
+      // promo code table is stripped out here. Publishing it would let anyone
+      // read the active codes out of the page source and take the discount we
+      // meant for a specific campaign. Codes are validated server-side in the
+      // checkout function, which reads site_config directly.
+      pricing:       (function () {
+        const { promoCodes: _promoCodes, ...publicPricing } = (cfg.pricing || {});
+        return publicPricing;
+      })(),
       copy:          cfg.copy,
       faqs:          cfg.faqs,
       discounts:     cfg.discounts,

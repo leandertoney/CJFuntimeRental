@@ -28,6 +28,16 @@
     .summary-row:last-child { border:none; }
     .summary-label { color:var(--muted); }
     .summary-value { font-weight:600; }
+    .promo-wrap { padding:14px 0; border-bottom:1px solid var(--border); }
+    .promo-toggle { background:none; border:none; color:var(--muted); font-size:13px; text-decoration:underline; cursor:pointer; padding:0; font-family:inherit; }
+    .promo-toggle:hover { color:var(--white); }
+    .promo-field { display:flex; gap:8px; margin-top:10px; }
+    .promo-field input { flex:1; min-width:0; padding:10px 12px; border-radius:8px; border:1px solid var(--border); background:rgba(255,255,255,0.05); color:var(--white); font-size:14px; font-family:inherit; text-transform:uppercase; }
+    .promo-field button { padding:10px 16px; border-radius:8px; border:none; background:var(--orange); color:#fff; font-weight:600; font-size:14px; cursor:pointer; font-family:inherit; }
+    .promo-field button:disabled { opacity:.5; cursor:default; }
+    .promo-msg { font-size:12.5px; margin-top:8px; line-height:1.45; }
+    .promo-msg.err { color:#ff8a8a; }
+    .promo-msg.ok { color:#6ee7a8; }
     .btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; font-family:var(--body); font-weight:700; font-size:16px; border-radius:8px; padding:16px 32px; cursor:pointer; border:none; transition:all 0.2s; width:100%; margin-top:24px; }
     .btn-primary { background:var(--orange); color:#000; }
     .btn-primary:hover { filter:brightness(1.1); transform:translateY(-1px); }
@@ -470,6 +480,10 @@
       var depositAmount = depositEnabled ? (Number(depositCfg.amount) || 100) : 0;
 
       html += '<div class="summary-row"><span class="summary-label">Base Price</span><span class="summary-value" style="font-weight:600;color:var(--white);">' + formatCurrency(bookingData.basePrice * 100) + '</span></div>';
+      // Discount row. Hidden until a code is accepted by the server; the
+      // amount shown is always recomputed from the server's percentage, never
+      // from anything the customer typed.
+      html += '<div class="summary-row" id="summary-promo-row" style="display:none;"><span class="summary-label" id="summary-promo-label">Discount</span><span class="summary-value" id="summary-promo-value" style="font-weight:600;color:#6ee7a8;"></span></div>';
       if (bookingData.deliveryFee > 0) {
         html += '<div class="summary-row"><span class="summary-label">Delivery</span><span class="summary-value" style="font-weight:600;color:var(--white);">' + formatCurrency(bookingData.deliveryFee * 100) + '</span></div>';
       }
@@ -479,7 +493,16 @@
       // Additional driver is free. This row is display only and is deliberately
       // NOT added into any total below.
       html += '<div class="summary-row" id="summary-driver2-row" style="display:none;"><span class="summary-label">Additional Driver</span><span class="summary-value" style="font-weight:600;color:var(--white);">Free</span></div>';
-      html += '<div class="summary-row" style="margin-top:16px;padding-top:20px;"><span class="summary-label" style="color:var(--white);font-weight:600;">Total Due Today</span><span class="summary-value" style="font-size:1.5rem;font-weight:700;color:var(--orange);">' + formatCurrency((bookingData.total + depositAmount) * 100) + '</span></div>';
+      html += '<div class="promo-wrap">';
+      html += '<button type="button" class="promo-toggle" id="promo-toggle">Have a promo code?</button>';
+      html += '<div class="promo-field" id="promo-field" style="display:none;">';
+      html += '<input type="text" id="promo-input" placeholder="Enter code" autocomplete="off" spellcheck="false" maxlength="32">';
+      html += '<button type="button" id="promo-apply">Apply</button>';
+      html += '</div>';
+      html += '<div class="promo-msg" id="promo-msg" style="display:none;"></div>';
+      html += '</div>';
+
+      html += '<div class="summary-row" style="margin-top:16px;padding-top:20px;"><span class="summary-label" style="color:var(--white);font-weight:600;">Total Due Today</span><span class="summary-value" id="summary-total-value" style="font-size:1.5rem;font-weight:700;color:var(--orange);">' + formatCurrency((bookingData.total + depositAmount) * 100) + '</span></div>';
       if (depositAmount > 0) {
         html += '<div style="font-size:12px;color:var(--muted);line-height:1.5;margin-top:8px;">The ' + formatCurrency(depositAmount * 100) + ' deposit is fully refunded to your card after the vehicle is returned in good condition.</div>';
       }
@@ -510,6 +533,115 @@
       var driver2Front   = document.getElementById('driver2-front');
       var driver2Back    = document.getElementById('driver2-back');
       var summaryD2Row   = document.getElementById('summary-driver2-row');
+
+      // ── Promo code ────────────────────────────────────────────────────────
+      // appliedPromo holds ONLY the code string and the percentage the server
+      // returned. The percentage is used for display; the server recomputes
+      // the discount from the code at checkout, so editing these values here
+      // just causes a price-mismatch 409 rather than a cheaper booking.
+      var appliedPromo = null;
+      var promoToggle = document.getElementById('promo-toggle');
+      var promoField  = document.getElementById('promo-field');
+      var promoInput  = document.getElementById('promo-input');
+      var promoApply  = document.getElementById('promo-apply');
+      var promoMsg    = document.getElementById('promo-msg');
+      var promoRow    = document.getElementById('summary-promo-row');
+      var promoLabel  = document.getElementById('summary-promo-label');
+      var promoValue  = document.getElementById('summary-promo-value');
+      var totalValue  = document.getElementById('summary-total-value');
+
+      // Discount applies to the rental only. Delivery is a real cost and the
+      // deposit comes back to the customer, so neither is discounted. Rounding
+      // MUST match the server (checkout/index.ts) or checkout 409s.
+      function discountedBase() {
+        if (!appliedPromo) return bookingData.basePrice;
+        return bookingData.basePrice - Math.round(bookingData.basePrice * appliedPromo.percentOff) / 100;
+      }
+
+      function refreshTotals() {
+        var base = discountedBase();
+        var off  = bookingData.basePrice - base;
+        if (appliedPromo && off > 0) {
+          promoRow.style.display = '';
+          promoLabel.textContent = appliedPromo.code + ' (' + appliedPromo.percentOff + '% off rental)';
+          promoValue.textContent = '-' + formatCurrency(off * 100);
+        } else {
+          promoRow.style.display = 'none';
+        }
+        var deliv = bookingData.deliveryFee || 0;
+        totalValue.textContent = formatCurrency((base + deliv + depositAmount) * 100);
+      }
+
+      function showPromoMsg(text, kind) {
+        promoMsg.textContent = text;
+        promoMsg.className = 'promo-msg ' + (kind || '');
+        promoMsg.style.display = text ? '' : 'none';
+      }
+
+      promoToggle.addEventListener('click', function () {
+        var open = promoField.style.display !== 'none';
+        promoField.style.display = open ? 'none' : 'flex';
+        if (!open) promoInput.focus();
+      });
+
+      function applyPromo() {
+        var code = promoInput.value.trim().toUpperCase();
+        if (!code) { showPromoMsg('Enter a code first.', 'err'); return; }
+        promoApply.disabled = true;
+        promoApply.textContent = 'Checking…';
+        showPromoMsg('', '');
+        fetch(SUPABASE_FUNCTIONS + '/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          // vehicleKey/durationType/startDate are required by the function's
+          // field check even though the promo lookup does not use them.
+          body: JSON.stringify({
+            validatePromoOnly: true, promoCode: code,
+            vehicleKey: bookingData.vehicleKey,
+            durationType: bookingData.durationType,
+            startDate: bookingData.startDate
+          })
+        })
+          .then(function (r) { return r.json(); })
+          .then(function (d) {
+            if (d && d.ok) {
+              appliedPromo = { code: d.code, percentOff: d.percentOff };
+              refreshTotals();
+              showPromoMsg(d.label + ' applied. The deposit and any delivery fee are not discounted.', 'ok');
+              promoInput.disabled = true;
+              promoApply.textContent = 'Applied';
+            } else {
+              appliedPromo = null;
+              refreshTotals();
+              showPromoMsg((d && d.error) || 'That code is not valid.', 'err');
+              promoApply.disabled = false;
+              promoApply.textContent = 'Apply';
+            }
+          })
+          .catch(function () {
+            appliedPromo = null;
+            refreshTotals();
+            showPromoMsg('Could not check that code right now. You can still book at the regular price.', 'err');
+            promoApply.disabled = false;
+            promoApply.textContent = 'Apply';
+          });
+      }
+
+      promoApply.addEventListener('click', applyPromo);
+      promoInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); applyPromo(); }
+      });
+
+      // Prefill from ?promo= so an emailed link applies the code automatically.
+      (function () {
+        var qp = new URLSearchParams(window.location.search).get('promo');
+        if (!qp && bookingData.promoCode) qp = bookingData.promoCode;
+        if (qp) {
+          promoField.style.display = 'flex';
+          promoInput.value = qp.trim().toUpperCase();
+          applyPromo();
+        }
+      })();
 
       function driver2Requested() { return addDriverCheck.checked; }
       function driver2Complete() {
@@ -711,8 +843,9 @@
                 startDate: bookingData.startDate,
                 endDate: bookingData.endDate || bookingData.startDate,
                 pickupTime: bookingData.pickupTime || bookingData.startTime,
-                totalCents: Math.round(bookingData.total * 100),
-                baseCents: Math.round(bookingData.basePrice * 100),
+                totalCents: Math.round((discountedBase() + (bookingData.deliveryFee || 0)) * 100),
+                baseCents: Math.round(discountedBase() * 100),
+                promoCode: appliedPromo ? appliedPromo.code : null,
                 deliveryDropoff: bookingData.deliveryDropoff,
                 deliveryPickup: bookingData.deliveryPickup,
                 deliveryFee: bookingData.deliveryFee ? Math.round(bookingData.deliveryFee * 100) : 0,

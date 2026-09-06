@@ -46,11 +46,45 @@ Deno.serve(async (req) => {
       startDate, endDate, pickupTime,
       totalCents, baseCents,
       deliveryDropoff, deliveryPickup, deliveryFee,
-      promoCode, bookingRef, attribution
+      promoCode, bookingRef, attribution, validatePromoOnly
     } = body;
 
     if (!vehicleKey || !durationType || !startDate) {
       return new Response(JSON.stringify({ error: 'Missing fields' }), { status: 400, headers: { ...CORS, 'Content-Type': 'application/json' } });
+    }
+
+    // ── Promo lookup, used by the checkout page's "Apply" button ────────────
+    // Returns just the percentage so the page can show the discounted total
+    // before the customer commits. Deliberately answers BEFORE the ID gate
+    // below, because a customer checks a code before uploading anything.
+    //
+    // This returns only a percentage for a code the caller already knows. It
+    // never lists codes, so it cannot be used to discover them, and it is not
+    // authorization to charge: the checkout path re-resolves the code from
+    // config on its own and never trusts a percentage sent by the client.
+    if (validatePromoOnly) {
+      let vCfg: Record<string, unknown> = {};
+      try {
+        const { data } = await supabase.from('site_config').select('config').eq('id', 1).single();
+        vCfg = data?.config?.pricing || {};
+      } catch { /* fall through: unknown code */ }
+      const vCodes = (vCfg.promoCodes || {}) as Record<string, Record<string, unknown>>;
+      const vKey = String(promoCode || '').trim().toUpperCase();
+      const vPromo = vCodes[vKey];
+      const vNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
+      const vToday = vNow.getFullYear() + '-' +
+        String(vNow.getMonth() + 1).padStart(2, '0') + '-' +
+        String(vNow.getDate()).padStart(2, '0');
+      const vPct = vPromo ? Number(vPromo.percentOff) || 0 : 0;
+      const vExpired = vPromo && vPromo.expires ? String(vPromo.expires) < vToday : false;
+      if (!vPromo || vPct <= 0 || vPct > 100 || vPromo.enabled === false || vExpired) {
+        return new Response(JSON.stringify({ ok: false, error: 'That code is not valid or has expired.' }),
+          { status: 200, headers: { ...CORS, 'Content-Type': 'application/json' } });
+      }
+      return new Response(JSON.stringify({
+        ok: true, code: vKey, percentOff: vPct,
+        label: String(vPromo.label || (vPct + '% off your rental'))
+      }), { status: 200, headers: { ...CORS, 'Content-Type': 'application/json' } });
     }
 
     // ── Hard gate: no checkout without an uploaded ID + accepted agreement ─────
@@ -164,6 +198,47 @@ Deno.serve(async (req) => {
       const tier = multiDay.find((t) => t.enabled && d >= t.minDays);
       const perDay = tier ? (tier[vehicleType as 'slingshot' | 'canam'] || 0) : (dailyRate[vehicleType] || PRICING_DEFAULTS.dailyRate[vehicleType] || 250);
       expectedBaseDollars = perDay * d;
+    }
+
+    // ── Promo codes ─────────────────────────────────────────────────────────
+    // Codes live in site_config.pricing.promoCodes as
+    //   { "COMEBACK15": { percentOff: 15, expires: "2026-10-31", label: "..." } }
+    // and are resolved HERE, on the server, from the code string alone. The
+    // client sends only the code; it never sends a percentage or a discounted
+    // amount, so a customer editing devtools cannot invent their own discount.
+    //
+    // The discount applies to the RENTAL ONLY. It deliberately does not touch
+    // the refundable deposit (that money comes back to the customer, so
+    // discounting it just shrinks our security hold) or delivery (a real cost
+    // we pay to drive the vehicle). This is exactly why we do not use Stripe
+    // coupons here: coupon 6pEsbmdK is unrestricted (applies_to: null), so
+    // handing it to Stripe would take 15% off the deposit and both delivery
+    // legs as well.
+    const promoCodes = (cfgPricing.promoCodes || {}) as Record<string, Record<string, unknown>>;
+    let promoPercentOff = 0;
+    let promoApplied = '';
+    if (promoCode) {
+      const key = String(promoCode).trim().toUpperCase();
+      const promo = promoCodes[key];
+      // Local calendar date, not toISOString(): a UTC date string rolls over
+      // in the evening Eastern and would expire a code a day early.
+      const nowET = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
+      const todayET = nowET.getFullYear() + '-' +
+        String(nowET.getMonth() + 1).padStart(2, '0') + '-' +
+        String(nowET.getDate()).padStart(2, '0');
+      const pct = promo ? Number(promo.percentOff) || 0 : 0;
+      const expired = promo && promo.expires ? String(promo.expires) < todayET : false;
+      if (!promo || pct <= 0 || pct > 100 || promo.enabled === false || expired) {
+        return new Response(
+          JSON.stringify({ error: 'That promo code is not valid. Remove it to continue, or check the code and try again.' }),
+          { status: 400, headers: { ...CORS, 'Content-Type': 'application/json' } }
+        );
+      }
+      promoPercentOff = pct;
+      promoApplied = key;
+      // Round the discount the same way the client does (checkout.html), or
+      // the price-match check below fails by a cent on odd amounts.
+      expectedBaseDollars = expectedBaseDollars - Math.round(expectedBaseDollars * pct) / 100;
     }
     const expectedBaseCents = Math.round(expectedBaseDollars * 100);
 
@@ -289,24 +364,18 @@ Deno.serve(async (req) => {
       sessionBody[`line_items[${lineIdx}][quantity]`] = '1';
     }
 
-    // Promo code handling
-    if (promoCode) {
-      const promoRes = await fetch(
-        'https://api.stripe.com/v1/promotion_codes?code=' + encodeURIComponent(promoCode) + '&limit=1&active=true',
-        { headers: { 'Authorization': 'Bearer ' + stripeKey } }
-      );
-      const promoData = await promoRes.json();
-      const promoId = promoData?.data?.[0]?.id;
-      if (promoId) {
-        sessionBody['discounts[0][promotion_code]'] = promoId;
-      } else {
-        return new Response(
-          JSON.stringify({ error: 'Promo code "' + promoCode + '" is invalid or expired.' }),
-          { status: 400, headers: { ...CORS, 'Content-Type': 'application/json' } }
-        );
-      }
-    } else {
-      sessionBody['allow_promotion_codes'] = 'true';
+    // The discount is already baked into the rental line item above, so there
+    // is nothing to hand Stripe here beyond a record of which code was used.
+    //
+    // allow_promotion_codes is deliberately NOT set. It used to be, which put
+    // Stripe's own promo box on the payment page — and the one coupon in this
+    // account (6pEsbmdK) is unrestricted, so anyone who got hold of a
+    // FIRST10-* code could have taken 10% off the refundable deposit and the
+    // delivery fees too. Discounts belong on our checkout page, where we
+    // control what they apply to.
+    if (promoApplied) {
+      sessionBody['metadata[promoCode]'] = promoApplied;
+      sessionBody['metadata[promoPercentOff]'] = String(promoPercentOff);
     }
 
     const stripeRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {
