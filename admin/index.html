@@ -265,6 +265,17 @@
 
         <!-- PANEL: Email Templates -->
         <section id="panel-emails" class="admin-panel">
+          <!-- Marketing sends, so the owners can see what went out to the lead
+               list and what it produced, without asking anyone. -->
+          <h2 class="section-heading">Campaigns sent</h2>
+          <div class="panel-intro">
+            <p>One-off marketing emails sent to leads who have not booked yet. Results are counted from real bookings and Stripe, not estimates.</p>
+          </div>
+          <div id="campaigns-container" class="campaigns-wrap">
+            <div class="campaigns-empty">Loading…</div>
+          </div>
+
+          <h2 class="section-heading" style="margin-top:36px;">Automated emails</h2>
           <div class="panel-intro">
             <p>Customize automated email templates. Use variables like <code>{{firstName}}</code>, <code>{{vehicleName}}</code>, <code>{{startDate}}</code>, etc. to personalize messages.</p>
           </div>

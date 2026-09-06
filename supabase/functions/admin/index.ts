@@ -539,6 +539,60 @@ Deno.serve(async (req) => {
   }
 
   // ── Leads ───────────────────────────────────────────────────────────────────
+  // ── Campaigns ───────────────────────────────────────────────────────────
+  // Lets the owners see what marketing went out and what it produced. Chris is
+  // trusting Leander to run this; before now a send left no trace they could
+  // see. Results are computed live from bookings and Stripe rather than stored,
+  // so there is never a second number drifting from the first.
+  if (path === '/campaigns' && req.method === 'GET') {
+    const { data: campaigns, error } = await supabase
+      .from('campaigns').select('*').order('sent_at', { ascending: false });
+    if (error) return json({ error: error.message }, 500);
+
+    const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
+    const out = [];
+    for (const c of (campaigns ?? [])) {
+      const sentAt = new Date(c.sent_at);
+
+      // Bookings created after the send that carry this campaign tag, plus any
+      // booking whose Stripe session used the promo code.
+      const { data: after } = await supabase
+        .from('bookings')
+        .select('email, total, status, created_at, attr_campaign, stripe_session_id')
+        .gte('created_at', c.sent_at);
+
+      const tagged = (after ?? []).filter((b: Record<string, unknown>) =>
+        String(b.attr_campaign || '').toLowerCase() === String(c.promo_code || '').toLowerCase());
+
+      // Checkouts started with the code, paid or not. Server-written metadata,
+      // so this survives a cleared browser in a way a UTM does not.
+      let started = 0, paid = 0, revenue = 0;
+      if (stripeKey && c.promo_code) {
+        try {
+          const since = Math.floor(sentAt.getTime() / 1000);
+          const r = await fetch(
+            `https://api.stripe.com/v1/checkout/sessions?limit=100&created[gte]=${since}`,
+            { headers: { Authorization: 'Bearer ' + stripeKey } });
+          const j = await r.json();
+          for (const sess of (j.data ?? [])) {
+            if (String(sess?.metadata?.promoCode || '').toUpperCase() !== String(c.promo_code).toUpperCase()) continue;
+            started++;
+            if (sess.payment_status === 'paid') { paid++; revenue += (sess.amount_total || 0) / 100; }
+          }
+        } catch { /* Stripe unreachable: report what we have */ }
+      }
+
+      out.push({
+        ...c,
+        checkoutsStarted: started,
+        bookingsPaid: paid,
+        revenue: Math.round(revenue * 100) / 100,
+        taggedBookings: tagged.length
+      });
+    }
+    return json(out);
+  }
+
   if (path === '/leads' && req.method === 'GET') {
     const { data, error } = await supabase.from('leads').select('*').order('created_at', { ascending: false });
     if (error) return json({ error: error.message }, 500);

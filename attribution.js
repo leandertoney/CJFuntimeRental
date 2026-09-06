@@ -54,6 +54,26 @@
       'youtube.com': 'youtube', 'pinterest.com': 'pinterest', 'nextdoor.com': 'nextdoor'
     };
 
+    // AI assistants. A real booking arrived from chatgpt.com on 2026-09-06 and
+    // was recorded with medium=null because this list did not exist, so it fell
+    // through to the generic referral branch. These are worth naming separately
+    // from search: it is a different channel and, for this business, a growing
+    // one. NOTE: a chatgpt.com referrer proves the click came FROM the
+    // assistant, not that the assistant recommended us; someone could have
+    // pasted the link into a chat themselves.
+    var AI = {
+      'chatgpt.com': 'chatgpt', 'chat.openai.com': 'chatgpt',
+      'perplexity.ai': 'perplexity', 'www.perplexity.ai': 'perplexity',
+      'claude.ai': 'claude', 'gemini.google.com': 'gemini',
+      'copilot.microsoft.com': 'copilot', 'bard.google.com': 'gemini',
+      'you.com': 'you.com', 'poe.com': 'poe'
+    };
+    for (var a in AI) {
+      if (host === a || host.indexOf('.' + a) !== -1) {
+        return { source: AI[a], medium: 'ai', campaign: '', detail: 'ai-referrer' };
+      }
+    }
+
     for (var i = 0; i < SEARCH.length; i++) {
       if (host.indexOf(SEARCH[i]) === 0 || host.indexOf('.' + SEARCH[i]) !== -1) {
         return { source: host, medium: 'organic', campaign: '', detail: 'search-referrer' };
