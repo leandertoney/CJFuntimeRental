@@ -394,7 +394,6 @@
         <!-- PANEL: Blocked Dates -->
         <section id="panel-calendar" class="admin-panel">
 
-          <div class="cal-layout">
           <!-- Calendar leads and stays as large as possible. The day detail
                opens as a popover OVER it rather than stealing width. -->
           <div id="calendar-wrap" class="calendar-wrap-big">
@@ -414,53 +413,6 @@
             <p class="cal-hint">Click any day to see what is on it. Nothing changes until you choose an action.</p>
             <div id="cal-day-backdrop" class="cday-backdrop" hidden></div>
             <div id="cal-day-panel" class="cday-panel" hidden role="dialog" aria-modal="true"></div>
-          </div>
-
-          <aside class="cal-rail">
-          <div class="cal-secondary">
-            <button class="cal-disclosure open" type="button" data-target="cal-blocked-panel"
-                    aria-expanded="true">Blocked dates</button>
-            <div id="cal-blocked-panel" class="cal-disclosure-body">
-              <div id="blocked-list-wrap" class="blocked-list-wrap">
-                <div id="blocked-list" class="blocked-list"></div>
-              </div>
-            </div>
-
-            <button class="cal-disclosure open" type="button" data-target="cal-vblocks-panel"
-                    aria-expanded="true">Block a vehicle</button>
-            <div id="cal-vblocks-panel" class="cal-disclosure-body">
-              <div class="panel-intro">
-                <p>Block specific vehicles for specific dates (e.g. when rented on Turo, maintenance). Other vehicles remain available.</p>
-              </div>
-              <div class="vehicle-block-form vblock-form">
-                <div class="vblock-form-grid">
-                  <div class="vblock-field">
-                    <label for="vblock-vehicle">Vehicle</label>
-                    <select id="vblock-vehicle">
-                      <option value="">Select vehicle...</option>
-                    </select>
-                  </div>
-                  <div class="vblock-field">
-                    <label for="vblock-start">Start Date</label>
-                    <input type="date" id="vblock-start">
-                  </div>
-                  <div class="vblock-field">
-                    <label for="vblock-end">End Date</label>
-                    <input type="date" id="vblock-end">
-                  </div>
-                  <div class="vblock-field">
-                    <label for="vblock-reason">Reason (optional)</label>
-                    <input type="text" id="vblock-reason" placeholder="e.g. Rented on Turo, Maintenance">
-                  </div>
-                  <div class="vblock-field">
-                    <button id="vblock-add-btn" class="vblock-add-btn">Add Block</button>
-                  </div>
-                </div>
-              </div>
-              <div id="vehicle-blocks-list" style="margin-top:16px"></div>
-            </div>
-          </div>
-          </aside>
           </div>
 
         </section>

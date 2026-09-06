@@ -958,35 +958,9 @@ body.logged-in #admin-shell { display: flex; }
    enough to carry money and availability instead of just a number. */
 /* The calendar keeps the full width. Day detail opens as a popover centred
    over it, dismissible, so nothing permanently steals space from the grid. */
-/* Calendar takes the room; the block tools ride a narrow rail beside it so
-   they are always visible without competing for width. */
-.cal-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 244px;
-  gap: 20px;
-  align-items: start;
-}
+/* The calendar is the only place availability is managed, so it keeps the
+   full width and nothing sits beside it. */
 .calendar-wrap-big { margin-bottom: 0; position: relative; min-width: 0; }
-
-.cal-rail { min-width: 0; font-size: 13px; }
-.cal-rail .cal-secondary { border-top: none; padding-top: 0; }
-.cal-rail .cal-disclosure { font-size: 12px; padding: 10px 0; }
-.cal-rail .cal-disclosure-body { padding: 2px 0 14px; }
-.cal-rail .panel-intro p { font-size: 11.5px; line-height: 1.5; color: var(--text-4); margin-bottom: 10px; }
-.cal-rail .vblock-form-grid { grid-template-columns: 1fr; gap: 8px; }
-.cal-rail .vblock-field label { font-size: 11px; }
-.cal-rail .vblock-field input,
-.cal-rail .vblock-field select { font-size: 12px; padding: 7px 9px; }
-.cal-rail .vblock-add-btn { width: 100%; font-size: 12px; padding: 8px; }
-.cal-rail .blocked-list { max-height: 220px; overflow-y: auto; }
-.cal-rail .blocked-list-wrap h4 { font-size: 12px; }
-
-/* Below this the rail would squeeze the grid, so it drops underneath. */
-@media (max-width: 1200px) {
-  .cal-layout { grid-template-columns: 1fr; }
-  .cal-rail { border-top: 1px solid var(--border); padding-top: 8px; }
-  .cal-rail .vblock-form-grid { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
-}
 .calendar-wrap-big .calendar-nav {
   justify-content: center;
   gap: 12px;
@@ -1167,6 +1141,32 @@ body.logged-in #admin-shell { display: flex; }
 .cday-btn:hover { background: var(--surface-3); }
 .cday-btn-danger { color: var(--danger); border-color: var(--danger-line); }
 .cday-btn-danger:hover { background: var(--danger-soft); }
+.cday-btn-primary {
+  background: var(--orange); color: var(--on-orange);
+  border-color: var(--orange); width: 100%; margin-top: 4px;
+}
+.cday-btn-primary:hover { filter: brightness(1.06); background: var(--orange); }
+
+.cday-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* Blocking one vehicle happens here, prefilled with the day you clicked,
+   so the calendar is the only place availability is managed. */
+.cday-vform {
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 10px;
+}
+.cday-vform label {
+  display: block; font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-3);
+}
+.cday-vform input, .cday-vform select {
+  display: block; width: 100%; margin-top: 4px;
+  font: inherit; font-size: 13px; text-transform: none; letter-spacing: 0;
+  color: var(--text); background: var(--surface);
+  border: 1px solid var(--border-strong); border-radius: 8px; padding: 8px 10px;
+}
+.cday-vform-dates { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
 /* Month / week toggle */
 .cal-view-toggle { display: inline-flex; border: 1px solid var(--border-strong); border-radius: 8px; overflow: hidden; }

@@ -1642,14 +1642,13 @@
   // ── Calendar panel ───────────────────────────────────────────
   function renderCalendarPanel() {
     // Initialize per-vehicle blocks section
-    renderVehicleBlocksPanel();
+    loadVehicleBlocks();
     bindCalDisclosures();
     bindCalDayDismiss();
 
     // Bookings drive the money/availability figures in each cell. Render at
     // once so the grid appears immediately, then again when they land.
     renderCalendar();
-    renderBlockedList();
     apiFetch(ADMIN_API + '/bookings')
       .then(function (r) { return r.json(); })
       .then(function (rows) { calBookings = Array.isArray(rows) ? rows : []; renderCalendar(); })
@@ -1706,114 +1705,19 @@
     return v.color ? base + ' (' + v.color + ')' : base;
   }
 
-  function renderVehicleBlocksPanel() {
-    // Populate vehicle dropdown
-    var vehSelect = document.getElementById('vblock-vehicle');
-    var html = '<option value="">Select vehicle...</option>';
-    Object.keys(cfg.vehicles || {}).forEach(function (key) {
-      var v = cfg.vehicles[key];
-      html += '<option value="' + key + '">' + vehicleDisplayName(v, key) + '</option>';
-    });
-    vehSelect.innerHTML = html;
-
-    // Load existing blocks
-    loadVehicleBlocks();
-
-    // Bind add button
-    document.getElementById('vblock-add-btn').onclick = function () {
-      var vehicle = document.getElementById('vblock-vehicle').value;
-      var start = document.getElementById('vblock-start').value;
-      var end = document.getElementById('vblock-end').value;
-      var reason = document.getElementById('vblock-reason').value;
-
-      if (!vehicle || !start || !end) {
-        alert('Please select a vehicle and enter start/end dates');
-        return;
-      }
-
-      if (start > end) {
-        alert('End date must be after start date');
-        return;
-      }
-
-      addVehicleBlock(vehicle, start, end, reason);
-    };
-  }
 
   function loadVehicleBlocks() {
     apiFetch(ADMIN_API + '/vehicle-blocks')
       .then(function (r) { return r.json(); })
       .then(function (data) {
         vehicleBlocks = data.blocks || [];
-        renderVehicleBlocksList();
+        if (document.getElementById('calendar-grid')) renderCalendar();
       })
       .catch(function (err) {
         console.error('Failed to load vehicle blocks:', err);
       });
   }
 
-  function renderVehicleBlocksList() {
-    var container = document.getElementById('vehicle-blocks-list');
-
-    if (!vehicleBlocks.length) {
-      container.innerHTML = '<p class="vblock-empty">No per-vehicle blocks yet. Add one above to block a specific vehicle while leaving others bookable.</p>';
-      return;
-    }
-
-    // Group by vehicle
-    var grouped = {};
-    vehicleBlocks.forEach(function (block) {
-      if (!grouped[block.vehicle_key]) grouped[block.vehicle_key] = [];
-      grouped[block.vehicle_key].push(block);
-    });
-
-    // Which vehicle a block belongs to must be obvious at ANY scroll position,
-    // including on a phone. Two independent mechanisms, deliberately redundant:
-    //   1. .vblock-group-header is sticky, so the vehicle name stays pinned
-    //      while its rows scroll past.
-    //   2. every row also carries .vblock-row-vehicle with the same name, so
-    //      the answer is on-screen even if sticky ever stops working.
-    var html = '';
-    Object.keys(grouped).forEach(function (vkey) {
-      var vname = vehicleDisplayName(cfg.vehicles && cfg.vehicles[vkey], vkey);
-      var rows  = grouped[vkey];
-
-      html += '<div class="vblock-group">';
-      html += '<div class="vblock-group-header">'
-        + '<span class="vblock-group-name">' + esc(vname) + '</span>'
-        + '<span class="vblock-group-count">' + rows.length + ' block' + (rows.length !== 1 ? 's' : '') + '</span>'
-        + '</div>';
-      html += '<div class="vblock-rows">';
-
-      rows.forEach(function (block) {
-        html += '<div class="vblock-row">';
-        html +=   '<div class="vblock-row-main">';
-        html +=     '<span class="vblock-row-vehicle">' + esc(vname) + '</span>';
-        html +=     '<span class="vblock-row-dates">' + esc(block.start_date)
-          + '<span class="vblock-row-sep">to</span>' + esc(block.end_date) + '</span>';
-        if (block.reason) {
-          html +=   '<span class="vblock-row-reason">' + esc(block.reason) + '</span>';
-        }
-        html +=   '</div>';
-        html +=   '<button class="vblock-delete" data-id="' + esc(block.id) + '">Remove</button>';
-        html += '</div>';
-      });
-
-      html += '</div></div>';
-    });
-
-    container.innerHTML = html;
-
-    // Bind delete buttons
-    container.querySelectorAll('.vblock-delete').forEach(function (btn) {
-      btn.onclick = function () {
-        var id = this.getAttribute('data-id');
-        if (confirm('Remove this block?')) {
-          deleteVehicleBlock(id);
-        }
-      };
-    });
-  }
 
   function addVehicleBlock(vehicleKey, startDate, endDate, reason) {
     apiFetch(ADMIN_API + '/vehicle-blocks', {
@@ -1828,19 +1732,15 @@
     .then(function (r) { return r.json(); })
     .then(function (data) {
       if (data.ok) {
-        // Clear form
-        document.getElementById('vblock-vehicle').value = '';
-        document.getElementById('vblock-start').value = '';
-        document.getElementById('vblock-end').value = '';
-        document.getElementById('vblock-reason').value = '';
-        // Reload list
+        // Reload, then repaint the calendar so the new block shows at once.
         loadVehicleBlocks();
+        showToast('success', 'Vehicle blocked', 'That vehicle is off the calendar for those dates.');
       } else {
-        alert('Failed to add block: ' + (data.error || 'Unknown error'));
+        showToast('error', 'Could not block', data.error || 'Unknown error');
       }
     })
     .catch(function (err) {
-      alert('Failed to add block: ' + err.message);
+      showToast('error', 'Could not block', err.message);
     });
   }
 
@@ -2222,9 +2122,29 @@
       var free = Math.max(0, vKeys.length - onDay.length - dayVBlocks.length);
       html += '<p class="cday-note">' + free + ' of ' + vKeys.length + ' vehicles available.</p>';
       if (!isPast) {
-        html += '<button type="button" class="cday-btn cday-btn-danger" data-block-day="' + esc(dateStr) + '">'
-             +  'Block the whole fleet</button>';
-        html += '<p class="cday-note cday-hint">To block one vehicle, use Per-vehicle blocks below.</p>';
+        html += '<div class="cday-actions">'
+             +    '<button type="button" class="cday-btn cday-btn-danger" data-block-day="' + esc(dateStr) + '">'
+             +      'Block whole fleet</button>'
+             +    '<button type="button" class="cday-btn" data-block-vehicle="' + esc(dateStr) + '">'
+             +      'Block one vehicle</button>'
+             +  '</div>';
+
+        // Range form, hidden until asked for. A vehicle block usually spans
+        // more than the day that was clicked, so the end date is editable.
+        html += '<div class="cday-vform" hidden>'
+             +    '<label>Vehicle<select class="cday-veh">'
+             +      '<option value="">Select a vehicle...</option>';
+        vKeys.forEach(function (k) {
+          html += '<option value="' + esc(k) + '">' + esc(vehicleDisplayName(vehicles[k], k)) + '</option>';
+        });
+        html +=   '</select></label>'
+             +    '<div class="cday-vform-dates">'
+             +      '<label>From<input type="date" class="cday-from" value="' + esc(dateStr) + '"></label>'
+             +      '<label>To<input type="date" class="cday-to" value="' + esc(dateStr) + '"></label>'
+             +    '</div>'
+             +    '<label>Reason<input type="text" class="cday-reason" placeholder="e.g. Rented on Turo"></label>'
+             +    '<button type="button" class="cday-btn cday-btn-primary cday-vsave">Block this vehicle</button>'
+             +  '</div>';
       }
     }
     if (isPast) html += '<p class="cday-note cday-hint">This day has passed.</p>';
@@ -2275,6 +2195,27 @@
       afterCalChange(dateStr);
     };
 
+    var vehBtn = host.querySelector('[data-block-vehicle]');
+    var vForm  = host.querySelector('.cday-vform');
+    if (vehBtn && vForm) vehBtn.onclick = function () {
+      vForm.hidden = !vForm.hidden;
+      if (!vForm.hidden) { var sel = vForm.querySelector('.cday-veh'); if (sel) sel.focus(); }
+    };
+
+    var vSave = host.querySelector('.cday-vsave');
+    if (vSave) vSave.onclick = function () {
+      var veh    = host.querySelector('.cday-veh').value;
+      var from   = host.querySelector('.cday-from').value;
+      var to     = host.querySelector('.cday-to').value;
+      var reason = host.querySelector('.cday-reason').value;
+      if (!veh)  return showToast('error', 'Pick a vehicle', 'Choose which vehicle to block.');
+      if (!from || !to) return showToast('error', 'Dates needed', 'Set the start and end dates.');
+      if (to < from)    return showToast('error', 'Check the dates', 'The end date is before the start.');
+      this.disabled = true;
+      addVehicleBlock(veh, from, to, reason);
+      closeCalDay();
+    };
+
     host.querySelectorAll('[data-remove-vblock]').forEach(function (btn) {
       btn.onclick = function () {
         var id = this.getAttribute('data-remove-vblock');
@@ -2289,36 +2230,10 @@
   // before. Say so, rather than letting the owner assume it is already live.
   function afterCalChange(dateStr) {
     renderCalendar();
-    renderBlockedList();
     openCalDay(dateStr);   // reopens with the backdrop still up
     showToast('info', 'Not saved yet', 'Hit Save & Publish to put this live.');
   }
 
-  function renderBlockedList() {
-    var container = document.getElementById('blocked-list');
-    if (!cfg.blockedDates.length) {
-      container.innerHTML = '<span class="no-blocked">No dates blocked.</span>';
-      return;
-    }
-    var html = '';
-    cfg.blockedDates.forEach(function (date) {
-      html += '<div class="blocked-chip">'
-        + '<span>' + date + '</span>'
-        + '<button class="blocked-chip-remove" data-date="' + date + '" title="Unblock">✕</button>'
-        + '</div>';
-    });
-    container.innerHTML = html;
-
-    container.querySelectorAll('.blocked-chip-remove').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var date = this.getAttribute('data-date');
-        var idx  = cfg.blockedDates.indexOf(date);
-        if (idx !== -1) cfg.blockedDates.splice(idx, 1);
-        renderCalendar();
-        renderBlockedList();
-      });
-    });
-  }
 
   // ── Bookings panel ──────────────────────────────────────────
   function renderBookingsPanel() {
