@@ -1027,6 +1027,52 @@ body.logged-in #admin-shell { display: flex; }
 .cal-summary strong { color: var(--text); }
 .cal-hint { font-size: 12px; color: var(--text-4); margin-top: 10px; text-align: center; }
 
+/* ── Day detail panel ───────────────────────────────────────── */
+/* Clicking a day opens this rather than mutating availability. Every action
+   that changes what customers can book is explicit and confirmed. */
+.cday-panel {
+  margin-top: 18px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  padding: 18px 20px;
+  box-shadow: var(--shadow-md);
+  text-align: left;
+}
+.cday-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
+.cday-head h4 { font-size: 16px; font-weight: 700; color: var(--text); }
+.cday-holiday { font-size: 12px; font-weight: 600; color: var(--purple); }
+.cday-close {
+  font: inherit; font-size: 22px; line-height: 1; color: var(--text-4);
+  background: none; border: none; cursor: pointer; padding: 0 4px;
+}
+.cday-close:hover { color: var(--text); }
+
+.cday-section { margin-top: 16px; }
+.cday-section h5 {
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+  color: var(--text-3); margin-bottom: 8px;
+}
+.cday-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--surface-2); margin-bottom: 8px;
+}
+.cday-item-main { min-width: 0; }
+.cday-item-main strong { display: block; font-size: 14px; color: var(--text); }
+.cday-item-main span   { display: block; font-size: 12px; color: var(--text-3); }
+.cday-note { font-size: 13px; color: var(--text-2); margin-bottom: 10px; }
+.cday-hint { font-size: 12px; color: var(--text-4); }
+.cday-btn {
+  flex-shrink: 0; font: inherit; font-size: 13px; font-weight: 600;
+  color: var(--text); background: var(--surface);
+  border: 1px solid var(--border-strong); border-radius: 8px;
+  padding: 8px 14px; cursor: pointer;
+}
+.cday-btn:hover { background: var(--surface-3); }
+.cday-btn-danger { color: var(--danger); border-color: var(--danger-line); }
+.cday-btn-danger:hover { background: var(--danger-soft); }
+
 /* Month / week toggle */
 .cal-view-toggle { display: inline-flex; border: 1px solid var(--border-strong); border-radius: 8px; overflow: hidden; }
 .cal-view-btn {

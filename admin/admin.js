@@ -1960,31 +1960,165 @@
     bindCalDayClicks(grid);
   }
 
-  // Clicking a day blocks or unblocks the fleet; clicking a booking inside a
-  // day opens that booking instead, so the two do not fight each other.
+  // Clicking a day OPENS it. It never changes availability directly.
+  //
+  // This used to toggle the fleet-wide block on click. On a live availability
+  // calendar that is dangerous: one stray click closes a day the fleet could
+  // have earned on, or reopens a day the owner deliberately closed, with no
+  // confirmation and nothing to undo. Blocking is now an explicit action
+  // inside the day panel, per vehicle or fleet-wide.
   function bindCalDayClicks(grid) {
     grid.querySelectorAll('.cal-booking[data-booking-goto]').forEach(function (btn) {
       btn.addEventListener('click', function (e) {
         e.stopPropagation();
-        gotoBooking(this.getAttribute('data-booking-goto'));
+        openCalDay(this.closest('.cal-day').getAttribute('data-date'),
+                   this.getAttribute('data-booking-goto'));
       });
     });
 
-    grid.querySelectorAll('.cal-day:not(.empty):not(.past)').forEach(function (cell) {
+    grid.querySelectorAll('.cal-day:not(.empty)').forEach(function (cell) {
       cell.addEventListener('click', function () {
-        if (!cfg || !cfg.blockedDates) return;
-        var date = this.getAttribute('data-date');
-        var idx  = cfg.blockedDates.indexOf(date);
-        if (idx === -1) {
-          cfg.blockedDates.push(date);
-          cfg.blockedDates.sort();
-        } else {
-          cfg.blockedDates.splice(idx, 1);
-        }
-        renderCalendar();
-        renderBlockedList();
+        openCalDay(this.getAttribute('data-date'));
       });
     });
+  }
+
+  // Everything on a given day, and the actions available for it.
+  function openCalDay(dateStr, focusBookingId) {
+    if (!dateStr) return;
+    var host = document.getElementById('cal-day-panel');
+    if (!host) return;
+
+    var todayStr  = localDateStr(new Date());
+    var isPast    = dateStr < todayStr;
+    var blocked   = !!(cfg && cfg.blockedDates && cfg.blockedDates.indexOf(dateStr) !== -1);
+    var onDay     = bookingsOn(dateStr);
+    var holidays  = holidaysFor(Number(dateStr.slice(0, 4)));
+    var vehicles  = (cfg && cfg.vehicles) || {};
+    var vKeys     = Object.keys(vehicles);
+
+    var pretty = new Date(dateStr + 'T12:00:00')
+      .toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+
+    var html = '<div class="cday-head">'
+      + '<div><h4>' + esc(pretty) + '</h4>'
+      + (holidays[dateStr] ? '<span class="cday-holiday">' + esc(holidays[dateStr]) + '</span>' : '')
+      + '</div>'
+      + '<button type="button" class="cday-close" aria-label="Close">&times;</button>'
+      + '</div>';
+
+    // Bookings that day, expandable into the full record.
+    if (onDay.length) {
+      html += '<div class="cday-section"><h5>Bookings</h5>';
+      onDay.forEach(function (b) {
+        html += '<div class="cday-item">'
+          + '<div class="cday-item-main">'
+          +   '<strong>' + esc(b.name || b.email || 'Booking') + '</strong>'
+          +   '<span>' + esc(bookingVehicleName(b)) + '</span>'
+          +   '<span>' + esc((b.startDate || b.start_date) || '') + ' to '
+          +     esc((b.endDate || b.end_date) || '') + ' &middot; $'
+          +     (b.total || 0).toLocaleString()
+          +     (b.pickup_time ? ' &middot; picks up ' + esc(b.pickup_time) : '') + '</span>'
+          + '</div>'
+          + '<button type="button" class="cday-btn" data-open-booking="' + esc(b.id) + '">Open booking</button>'
+          + '</div>';
+      });
+      html += '</div>';
+    }
+
+    // Per-vehicle blocks covering that day.
+    var dayVBlocks = (vehicleBlocks || []).filter(function (vb) {
+      return vb.start_date <= dateStr && vb.end_date >= dateStr;
+    });
+    if (dayVBlocks.length) {
+      html += '<div class="cday-section"><h5>Vehicle blocks</h5>';
+      dayVBlocks.forEach(function (vb) {
+        var v = vehicles[vb.vehicle_key];
+        html += '<div class="cday-item">'
+          + '<div class="cday-item-main">'
+          +   '<strong>' + esc(vehicleDisplayName(v, vb.vehicle_key)) + '</strong>'
+          +   '<span>' + esc(vb.start_date) + ' to ' + esc(vb.end_date)
+          +     (vb.reason ? ' &middot; ' + esc(vb.reason) : '') + '</span>'
+          + '</div>'
+          + '<button type="button" class="cday-btn cday-btn-danger" data-remove-vblock="'
+          +   esc(String(vb.id)) + '">Remove block</button>'
+          + '</div>';
+      });
+      html += '</div>';
+    }
+
+    // Availability and the explicit fleet-wide action.
+    html += '<div class="cday-section"><h5>Availability</h5>';
+    if (blocked) {
+      html += '<p class="cday-note">The whole fleet is blocked on this day.</p>';
+      if (!isPast) {
+        html += '<button type="button" class="cday-btn" data-unblock-day="' + esc(dateStr) + '">'
+             +  'Unblock the fleet</button>';
+      }
+    } else {
+      var free = Math.max(0, vKeys.length - onDay.length - dayVBlocks.length);
+      html += '<p class="cday-note">' + free + ' of ' + vKeys.length + ' vehicles available.</p>';
+      if (!isPast) {
+        html += '<button type="button" class="cday-btn cday-btn-danger" data-block-day="' + esc(dateStr) + '">'
+             +  'Block the whole fleet</button>';
+        html += '<p class="cday-note cday-hint">To block one vehicle, use Per-vehicle blocks below.</p>';
+      }
+    }
+    if (isPast) html += '<p class="cday-note cday-hint">This day has passed.</p>';
+    html += '</div>';
+
+    host.innerHTML = html;
+    host.hidden = false;
+    bindCalDayPanel(host, dateStr);
+    host.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    if (focusBookingId) {
+      var b = host.querySelector('[data-open-booking="' + focusBookingId + '"]');
+      if (b) b.focus();
+    }
+  }
+
+  function bindCalDayPanel(host, dateStr) {
+    var closeBtn = host.querySelector('.cday-close');
+    if (closeBtn) closeBtn.onclick = function () { host.hidden = true; };
+
+    host.querySelectorAll('[data-open-booking]').forEach(function (btn) {
+      btn.onclick = function () { gotoBooking(this.getAttribute('data-open-booking')); };
+    });
+
+    // Fleet-wide changes are confirmed: this closes or reopens the whole day.
+    var blockBtn = host.querySelector('[data-block-day]');
+    if (blockBtn) blockBtn.onclick = function () {
+      if (!confirm('Block ALL vehicles on ' + dateStr + '?\n\nNobody will be able to book this day until you unblock it.')) return;
+      if (!cfg.blockedDates) cfg.blockedDates = [];
+      if (cfg.blockedDates.indexOf(dateStr) === -1) { cfg.blockedDates.push(dateStr); cfg.blockedDates.sort(); }
+      afterCalChange(dateStr);
+    };
+
+    var unblockBtn = host.querySelector('[data-unblock-day]');
+    if (unblockBtn) unblockBtn.onclick = function () {
+      if (!confirm('Unblock ' + dateStr + ' and make the fleet bookable again?')) return;
+      var idx = (cfg.blockedDates || []).indexOf(dateStr);
+      if (idx !== -1) cfg.blockedDates.splice(idx, 1);
+      afterCalChange(dateStr);
+    };
+
+    host.querySelectorAll('[data-remove-vblock]').forEach(function (btn) {
+      btn.onclick = function () {
+        var id = this.getAttribute('data-remove-vblock');
+        if (!confirm('Remove this vehicle block? That vehicle becomes bookable again.')) return;
+        deleteVehicleBlock(id);
+        host.hidden = true;
+      };
+    });
+  }
+
+  // Fleet-wide blocks live in cfg and are saved with Save & Publish, same as
+  // before. Say so, rather than letting the owner assume it is already live.
+  function afterCalChange(dateStr) {
+    renderCalendar();
+    renderBlockedList();
+    openCalDay(dateStr);
+    showToast('info', 'Not saved yet', 'Hit Save & Publish to put this live.');
   }
 
   function renderBlockedList() {
