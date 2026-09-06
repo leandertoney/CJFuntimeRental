@@ -146,6 +146,13 @@
     }
     @media(max-width:640px) { .specs-grid{grid-template-columns:1fr;} }
   </style>
+  <!-- Analytics. These four vehicle pages carry the booking widget, so every
+       booking starts here, yet they were the only public pages loading neither
+       script: that is why 9 of the first 10 bookings recorded no source at all.
+       attribution.js must come first so first touch is stored before the
+       widget can hand off to checkout. -->
+  <script src="/attribution.js"></script>
+  <script src="/ga4.js"></script>
 </head>
 <body>
 

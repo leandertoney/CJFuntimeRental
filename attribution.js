@@ -83,10 +83,19 @@
   var existing = read();
   var incoming = parseSource();
 
-  // FIRST TOUCH WINS. Only write when there is nothing stored yet, so an
-  // internal click never overwrites the real source. `incoming` is null for
-  // same-site navigation, which is exactly when we want to leave it alone.
-  if (!existing && incoming) {
+  // FIRST TOUCH WINS, with one exception. Only write when there is nothing
+  // stored yet, so an internal click never overwrites the real source.
+  // `incoming` is null for same-site navigation, which is exactly when we want
+  // to leave it alone.
+  //
+  // The exception is an explicit ?utm_source= link. Someone we email a campaign
+  // to has almost always been here before, so their months-old first touch is
+  // stored and the campaign would get no credit for the booking it caused.
+  // A tagged link is a deliberate, current click and is the more useful answer
+  // to "what made this booking happen", so it overwrites. Untagged referrer
+  // traffic still never overwrites.
+  var explicitCampaign = incoming && incoming.detail === 'utm';
+  if ((!existing || explicitCampaign) && incoming) {
     try {
       localStorage.setItem(KEY, JSON.stringify({
         source: incoming.source,
