@@ -1243,9 +1243,9 @@ Deno.serve(async (req) => {
 
         const resend = new Resend(Deno.env.get('RESEND_API_KEY')!);
         const { error: mailErr } = await resend.emails.send({
-          // Deliberately no-reply: this is a one-way confirmation, not a
-          // conversation. cjfuntimerentals.com has no mailboxes, so the body
-          // points at a real address instead of inviting a reply into a void.
+          // Deliberately no-reply, with no Reply-To and no contact line: this
+          // is a one-way confirmation that closes the loop and asks nothing of
+          // the customer. Nothing here needs a response.
           from: 'CJ Funtime Rentals <no-reply@cjfuntimerentals.com>',
           to: booking.email,
           subject: `Your ${amount} deposit has been refunded`,
@@ -1263,11 +1263,7 @@ Deno.serve(async (req) => {
                 not there immediately.
               </p>
               <p style="font-size:15px;line-height:1.6;">
-                Nothing else is needed from you. If you have any questions, contact us at
-                <a href="mailto:${PROMO_REPLY_TO}" style="color:#FF6B00;">${PROMO_REPLY_TO}</a>.
-              </p>
-              <p style="font-size:13px;line-height:1.6;color:#888;margin-top:20px;">
-                This message is sent from an unmonitored address, so please do not reply to it.
+                Nothing else is needed from you.
               </p>
               <p style="font-size:15px;line-height:1.6;margin-top:24px;">
                 Thanks again,<br>CJ Funtime Rentals
