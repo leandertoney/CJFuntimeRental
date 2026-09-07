@@ -147,6 +147,19 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
+      # Idempotent (IF NOT EXISTS) - safe to run on every deploy. Must run
+      # BEFORE the admin and resend-webhook functions deploy, since both
+      # read/write campaign_emails.
+      - name: Apply campaign emails migration
+        run: |
+          SQL=$(jq -Rs . < supabase/migrations/20260907000001_campaign_emails.sql)
+          curl -sf -X POST "https://api.supabase.com/v1/projects/yzdtevrwystezhbmgcwn/database/query" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"query\": $SQL}"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
       - name: Apply attention dismissal migration
         run: |
           SQL=$(jq -Rs . < supabase/migrations/20260906000001_attention_dismissal.sql)
@@ -174,6 +187,14 @@ jobs:
 
       - name: Deploy Admin Function
         run: supabase functions deploy admin --project-ref yzdtevrwystezhbmgcwn
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      # Receives open/delivery/bounce events from Resend. --no-verify-jwt
+      # because Resend does not send a Supabase JWT; the function verifies the
+      # Svix signature itself, using RESEND_WEBHOOK_SECRET.
+      - name: Deploy Resend Webhook Function
+        run: supabase functions deploy resend-webhook --project-ref yzdtevrwystezhbmgcwn --no-verify-jwt
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 

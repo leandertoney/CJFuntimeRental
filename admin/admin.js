@@ -1539,6 +1539,23 @@
               '<div class="campaign-stat-lbl">' + label + '</div></div>';
           };
           var money = '$' + (Number(c.revenue) || 0).toFixed(2);
+
+          // Opens only exist for sends made after open-tracking was wired up.
+          // For older campaigns there is no data rather than zero data, so show
+          // a dash: a "0" would read as "nobody opened it", which is a
+          // different and wrong claim.
+          var openedStat = function () {
+            if (!c.tracked) {
+              return '<div class="campaign-stat is-zero" title="This campaign was sent before open tracking was enabled.">' +
+                '<div class="campaign-stat-num">&mdash;</div>' +
+                '<div class="campaign-stat-lbl">Opened</div></div>';
+            }
+            var pctOpen = Math.round((c.opened / c.tracked) * 100);
+            return '<div class="campaign-stat' + (c.opened ? '' : ' is-zero') + '"' +
+              ' title="' + c.opened + ' of ' + c.tracked + ' recipients. Approximate: Apple Mail loads the tracking pixel automatically, which counts as an open.">' +
+              '<div class="campaign-stat-num">' + c.opened + ' <span style="font-size:12px;font-weight:600;opacity:0.6;">(' + pctOpen + '%)</span></div>' +
+              '<div class="campaign-stat-lbl">Opened</div></div>';
+          };
           return '<div class="campaign-card">' +
             '<div class="campaign-top">' +
               '<span class="campaign-name">' + esc(c.name) + '</span>' +
@@ -1552,6 +1569,7 @@
             '</div>' +
             '<div class="campaign-stats">' +
               stat(c.recipients, 'Sent to') +
+              openedStat() +
               stat(c.checkoutsStarted, 'Started checkout') +
               stat(c.bookingsPaid, 'Booked') +
               '<div class="campaign-stat' + ((Number(c.revenue) || 0) ? '' : ' is-zero') + '">' +

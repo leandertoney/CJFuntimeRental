@@ -320,7 +320,7 @@ async function writeConfig(cfg: unknown) {
   await supabase.from('site_config').upsert({ id: 1, config: cfg, updated_at: new Date().toISOString() });
 }
 
-async function executeToolCall(name: string, input: Record<string, unknown>) {
+async function executeToolCall(name: string, input: Record<string, unknown>, actorEmail?: string) {
   switch (name) {
     case 'get_vehicles': {
       const cfg = await readConfig();
@@ -438,23 +438,61 @@ async function executeToolCall(name: string, input: Record<string, unknown>) {
         };
       }
 
+      const subject = `Labor Day special: ${pct}% off a Slingshot`;
+
+      // Record the campaign BEFORE sending. If the send dies halfway we still
+      // want the row, and the per-recipient rows written so far still point at
+      // a real campaign. Recipient counts are corrected afterwards.
+      const { data: campaignRow } = await supabase
+        .from('campaigns')
+        .insert({
+          name: `${code} promo`,
+          promo_code: code,
+          subject,
+          recipients: 0,
+          failed: 0,
+          sent_by: actorEmail ?? null
+        })
+        .select('id')
+        .maybeSingle();
+      const campaignId = campaignRow?.id ?? null;
+
       const resend = new Resend(Deno.env.get('RESEND_API_KEY')!);
       const results = [];
+      const sentRows = [];
       for (const email of recipients) {
         try {
-          await resend.emails.send({
+          // Keep Resend's message id. It is the only thing that ties an
+          // inbound open/delivery webhook back to this campaign, and throwing
+          // it away is why opens could not be counted before.
+          const { data: sendData, error: sendErr } = await resend.emails.send({
             from: "CJ's Fun Time Rental <bookings@cjfuntimerentals.com>",
             to: email,
-            subject: `Labor Day special: ${pct}% off a Slingshot`,
+            subject,
             html: promoEmailHTML(code, pct, expiresLabel, Array.isArray(promo.weekdays) ? promo.weekdays : null),
             ...promoReplyTo(PROMO_REPLY_TO)
           });
-          results.push({ email, sent: true });
+          if (sendErr) throw new Error(sendErr.message);
+          const emailId = sendData?.id ?? null;
+          if (campaignId && emailId) {
+            sentRows.push({ email_id: emailId, campaign_id: campaignId, recipient: email });
+          }
+          results.push({ email, sent: true, emailId });
         } catch (e) {
           results.push({ email, sent: false, error: (e as Error).message });
         }
       }
-      return { ok: true, code, sent: results.filter((r) => r.sent).length, results };
+
+      const sentCount = results.filter((r) => r.sent).length;
+      if (campaignId) {
+        if (sentRows.length) await supabase.from('campaign_emails').insert(sentRows);
+        await supabase
+          .from('campaigns')
+          .update({ recipients: sentCount, failed: results.length - sentCount })
+          .eq('id', campaignId);
+      }
+
+      return { ok: true, code, campaignId, sent: sentCount, results };
     }
     case 'get_discounts': {
       const cfg = await readConfig();
@@ -586,12 +624,29 @@ Deno.serve(async (req) => {
         } catch { /* Stripe unreachable: report what we have */ }
       }
 
+      // Opens. `tracked` is how many recipients we have a Resend message id
+      // for, which is NOT the same as c.recipients: campaigns sent before this
+      // was wired have zero tracked rows, and their open count is unknowable
+      // rather than zero. The panel shows a dash in that case instead of a
+      // misleading 0.
+      const { count: tracked } = await supabase
+        .from('campaign_emails')
+        .select('email_id', { count: 'exact', head: true })
+        .eq('campaign_id', c.id);
+      const { count: opened } = await supabase
+        .from('campaign_emails')
+        .select('email_id', { count: 'exact', head: true })
+        .eq('campaign_id', c.id)
+        .not('opened_at', 'is', null);
+
       out.push({
         ...c,
         checkoutsStarted: started,
         bookingsPaid: paid,
         revenue: Math.round(revenue * 100) / 100,
-        taggedBookings: tagged.length
+        taggedBookings: tagged.length,
+        tracked: tracked ?? 0,
+        opened: opened ?? 0
       });
     }
     return json(out);
@@ -1321,7 +1376,7 @@ Deno.serve(async (req) => {
       if (choice.finish_reason === 'tool_calls') {
         for (const toolCall of choice.message.tool_calls) {
           const toolInput = JSON.parse(toolCall.function.arguments);
-          const result = await executeToolCall(toolCall.function.name, toolInput);
+          const result = await executeToolCall(toolCall.function.name, toolInput, authedUser.email);
           messages.push({ role: 'tool', tool_call_id: toolCall.id, content: JSON.stringify(result) });
         }
       } else break;
