@@ -135,6 +135,10 @@ const ADMIN_TOOLS = [
 // no mailboxes, so without it a customer's reply goes nowhere. resend@2
 // forwards keys verbatim and the API reads `reply_to`, so send both spellings.
 const PROMO_REPLY_TO = 'chrisjohnson839@gmail.com';
+// One-way sends (the deposit refund confirmation) point Reply-To here instead
+// of at Chris. Nothing on the domain has a mailbox, so a reply lands nowhere
+// either way; this at least makes the intent explicit to the mail client.
+const NO_REPLY_ADDRESS = 'no-reply@cjfuntimerentals.com';
 const PROMO_OWNER_EMAILS = ['chrisjohnson839@gmail.com', 'leandertoney@gmail.com'];
 
 function promoReplyTo(addr: string) {
@@ -1243,12 +1247,14 @@ Deno.serve(async (req) => {
 
         const resend = new Resend(Deno.env.get('RESEND_API_KEY')!);
         const { error: mailErr } = await resend.emails.send({
-          // Deliberately no-reply, with no Reply-To and no contact line: this
-          // is a one-way confirmation that closes the loop and asks nothing of
-          // the customer. Nothing here needs a response.
-          from: 'CJ Funtime Rentals <no-reply@cjfuntimerentals.com>',
+          // From stays on the branded booking address, the same sender the
+          // customer already got their confirmation and pickup details from.
+          // Reply-To points at no-reply because this is a one-way message that
+          // asks nothing of them: it closes the loop and ends.
+          from: 'CJ Funtime Rentals <bookings@cjfuntimerentals.com>',
           to: booking.email,
           subject: `Your ${amount} deposit has been refunded`,
+          ...promoReplyTo(NO_REPLY_ADDRESS),
           html: `
             <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#222;">
               <h1 style="font-size:22px;margin:0 0 16px;color:#FF6B00;">Your deposit is on its way back</h1>
