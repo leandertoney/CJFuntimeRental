@@ -1147,7 +1147,7 @@ Deno.serve(async (req) => {
 
     const { data: booking, error } = await supabase
       .from('bookings')
-      .select('id, deposit_cents, deposit_refunded_at, stripe_payment_intent, stripe_session_id, email, name')
+      .select('id, deposit_cents, deposit_refunded_at, stripe_payment_intent, stripe_session_id, email, name, vehicle, start_date')
       .eq('id', bookingId)
       .maybeSingle();
 
@@ -1209,7 +1209,75 @@ Deno.serve(async (req) => {
       return json({ ok: true, warning: 'Refund succeeded (' + refund.id + ') but recording it failed: ' + updErr.message, refundId: refund.id, refundedAt }, 200);
     }
 
-    return json({ ok: true, refundId: refund.id, refundedAt, amountCents: booking.deposit_cents });
+    // Tell the customer. The booking confirmation promises the deposit comes
+    // back after return, so a silent refund just leaves them waiting on money
+    // they were told to expect - that is the "where is my deposit?" call.
+    //
+    // Deliberately AFTER the refund and the DB write, and swallowed on
+    // failure: the money has already moved by this point, so a Resend outage
+    // must never turn a completed refund into a 500 the admin would retry.
+    // `emailed` goes back in the response so the panel can say what happened.
+    let emailed = false;
+    let emailError: string | null = null;
+    if (booking.email) {
+      try {
+        const esc = (v: unknown) => String(v ?? '')
+          .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        const amount = '$' + (booking.deposit_cents / 100).toFixed(2);
+        const firstName = String(booking.name || '').trim().split(/\s+/)[0] || 'there';
+        // start_date is a plain YYYY-MM-DD. Split it rather than using Date(),
+        // which parses a bare date as UTC and can show the previous day.
+        let prettyDate = '';
+        if (booking.start_date) {
+          const [y, m, d] = String(booking.start_date).split('-').map(Number);
+          if (y && m && d) {
+            prettyDate = new Date(y, m - 1, d).toLocaleDateString('en-US', {
+              month: 'long', day: 'numeric', year: 'numeric'
+            });
+          }
+        }
+        const rentalLine = booking.vehicle
+          ? `your ${esc(booking.vehicle)} rental${prettyDate ? ' on ' + esc(prettyDate) : ''}`
+          : 'your rental';
+
+        const resend = new Resend(Deno.env.get('RESEND_API_KEY')!);
+        const { error: mailErr } = await resend.emails.send({
+          from: 'CJ Funtime Rentals <bookings@cjfuntimerentals.com>',
+          to: booking.email,
+          subject: `Your ${amount} deposit has been refunded`,
+          ...promoReplyTo(PROMO_REPLY_TO),
+          html: `
+            <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#222;">
+              <h1 style="font-size:22px;margin:0 0 16px;color:#FF6B00;">Your deposit is on its way back</h1>
+              <p style="font-size:15px;line-height:1.6;">Hi ${esc(firstName)},</p>
+              <p style="font-size:15px;line-height:1.6;">
+                Thanks for getting the vehicle back to us in good shape. We have refunded
+                your ${amount} refundable reservation deposit for ${rentalLine}.
+              </p>
+              <p style="font-size:15px;line-height:1.6;">
+                It goes back to the same card you paid with. Banks usually take
+                <strong>5-10 business days</strong> to post it, so do not worry if it is
+                not there immediately.
+              </p>
+              <p style="font-size:15px;line-height:1.6;">
+                Nothing else is needed from you. Just reply to this email if you have any questions.
+              </p>
+              <p style="font-size:15px;line-height:1.6;margin-top:24px;">
+                Thanks again,<br>CJ Funtime Rentals
+              </p>
+            </div>
+          `
+        });
+        if (mailErr) emailError = mailErr.message;
+        else emailed = true;
+      } catch (err) {
+        emailError = (err as Error).message;
+      }
+      if (!emailed) console.error('[admin] deposit refund email failed:', emailError);
+    }
+
+    return json({ ok: true, refundId: refund.id, refundedAt, amountCents: booking.deposit_cents, emailed, emailError });
   }
 
   // ── AI Chat ─────────────────────────────────────────────────────────────────
