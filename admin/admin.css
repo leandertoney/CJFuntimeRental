@@ -1093,6 +1093,15 @@ body.logged-in #admin-shell { display: flex; }
   box-shadow: 0 0 0 3px var(--orange), 0 0 0 12px rgba(255,107,0,0.18);
   transition: box-shadow 0.2s ease;
 }
+/* The confirm dialog is opened FROM inside the booking detail modal, so it
+   must outrank it. Both use .modal-overlay (z-index 10000); at equal z-index
+   the later element in the DOM wins, and #booking-detail-modal is declared
+   after #confirm-modal. That made "refund deposit" look like a dead button:
+   the dialog opened underneath the booking overlay. Keep this above every
+   .modal-overlay, below the what's-new card. */
+#confirm-modal { z-index: 10040; }
+.confirm-box { position: relative; z-index: 10041; }
+
 /* The card sits above everything, always. */
 #whatsnew-modal { z-index: 10050; }
 .whatsnew-box { position: relative; z-index: 10051; }
