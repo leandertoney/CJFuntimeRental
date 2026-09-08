@@ -33,8 +33,7 @@
     .summary-label { color:var(--muted); }
     .summary-value { font-weight:600; }
     .promo-wrap { padding:14px 0; border-bottom:1px solid var(--border); }
-    .promo-toggle { background:none; border:none; color:var(--muted); font-size:13px; text-decoration:underline; cursor:pointer; padding:0; font-family:inherit; }
-    .promo-toggle:hover { color:var(--white); }
+    .promo-label { display:block; font-size:13px; color:var(--muted); margin-bottom:8px; }
     .promo-field { display:flex; gap:8px; margin-top:10px; }
     .promo-field input { flex:1; min-width:0; padding:10px 12px; border-radius:8px; border:1px solid var(--border); background:rgba(255,255,255,0.05); color:var(--white); font-size:14px; font-family:inherit; text-transform:uppercase; }
     .promo-field button { padding:10px 16px; border-radius:8px; border:none; background:var(--orange); color:#fff; font-weight:600; font-size:14px; cursor:pointer; font-family:inherit; }
@@ -538,9 +537,13 @@
       // Additional driver is free. This row is display only and is deliberately
       // NOT added into any total below.
       html += '<div class="summary-row" id="summary-driver2-row" style="display:none;"><span class="summary-label">Additional Driver</span><span class="summary-value" style="font-weight:600;color:var(--white);">Free</span></div>';
+      // Shown open, not behind a "Have a promo code?" link. A customer with a
+      // FIRST10 code emailed to them could not find the collapsed link and paid
+      // full price, which costs a support conversation and a refund each time.
+      // We send these codes out to win bookings, so the box has to be visible.
       html += '<div class="promo-wrap">';
-      html += '<button type="button" class="promo-toggle" id="promo-toggle">Have a promo code?</button>';
-      html += '<div class="promo-field" id="promo-field" style="display:none;">';
+      html += '<label class="promo-label" for="promo-input">Promo code</label>';
+      html += '<div class="promo-field" id="promo-field">';
       html += '<input type="text" id="promo-input" placeholder="Enter code" autocomplete="off" spellcheck="false" maxlength="32">';
       html += '<button type="button" id="promo-apply">Apply</button>';
       html += '</div>';
@@ -585,7 +588,6 @@
       // the discount from the code at checkout, so editing these values here
       // just causes a price-mismatch 409 rather than a cheaper booking.
       var appliedPromo = null;
-      var promoToggle = document.getElementById('promo-toggle');
       var promoField  = document.getElementById('promo-field');
       var promoInput  = document.getElementById('promo-input');
       var promoApply  = document.getElementById('promo-apply');
@@ -631,12 +633,6 @@
         promoMsg.className = 'promo-msg ' + (kind || '');
         promoMsg.style.display = text ? '' : 'none';
       }
-
-      promoToggle.addEventListener('click', function () {
-        var open = promoField.style.display !== 'none';
-        promoField.style.display = open ? 'none' : 'flex';
-        if (!open) promoInput.focus();
-      });
 
       function applyPromo() {
         var code = promoInput.value.trim().toUpperCase();
@@ -696,7 +692,7 @@
         var qp = new URLSearchParams(window.location.search).get('promo');
         if (!qp && bookingData.promoCode) qp = bookingData.promoCode;
         if (qp) {
-          promoField.style.display = 'flex';
+          // The field is always visible now; just fill it and apply.
           promoInput.value = qp.trim().toUpperCase();
           applyPromo();
         }
