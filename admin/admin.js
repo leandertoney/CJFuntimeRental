@@ -857,7 +857,12 @@
 
   // Panels that edit site config are the only ones "Save & Publish" applies to.
   // On a read-only panel the button implies unsaved work that does not exist.
-  var SAVEABLE = ['sections','pricing','copy','faq','emails','discounts'];
+  // 'calendar' belongs here: blocking or reopening a day edits cfg.blockedDates
+  // and is only persisted by Save & Publish, exactly like the other panels.
+  // Leaving it out hid the button on the one panel whose toast tells you to
+  // press it, so a blocked day looked blocked, said "not saved yet", and had
+  // no way to be saved.
+  var SAVEABLE = ['sections','pricing','copy','faq','emails','discounts','calendar'];
 
   function renderPanel(name) {
     document.querySelectorAll('.admin-panel').forEach(function (p) {
