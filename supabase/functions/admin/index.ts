@@ -1343,6 +1343,154 @@ Deno.serve(async (req) => {
     return json({ ok: true, refundId: refund.id, refundedAt, amountCents: booking.deposit_cents, emailed, emailError });
   }
 
+  // ── POST /bookings/:id/refund-promo — honour a discount they could not use ──
+  // For a customer who had a valid promo code but paid full price, usually
+  // because they never found the promo field. Refunds the percentage of the
+  // RENTAL ONLY, matching exactly what the code would have discounted at
+  // checkout: never the deposit, never a delivery fee.
+  //
+  // The amount is computed here from the Stripe line items rather than from
+  // total minus deposit, so a delivery fee cannot leak into the discount and
+  // nobody types a number by hand. Idempotent: refused once promo_refunded_at
+  // is set, with an idempotency key tied to the booking id as a backstop.
+  if (path.match(/^\/bookings\/[^/]+\/refund-promo$/) && req.method === 'POST') {
+    const bookingId = path.split('/')[2];
+    const body = await req.json().catch(() => ({}));
+    const pct = Number(body?.percentOff);
+    if (!Number.isFinite(pct) || pct <= 0 || pct > 100) {
+      return json({ error: 'A percent between 1 and 100 is required.' }, 400);
+    }
+
+    const { data: booking, error } = await supabase
+      .from('bookings')
+      .select('id, promo_refunded_at, stripe_payment_intent, stripe_session_id, email, name, vehicle, start_date')
+      .eq('id', bookingId)
+      .maybeSingle();
+
+    if (error) return json({ error: error.message }, 500);
+    if (!booking) return json({ error: 'Booking not found' }, 404);
+    if (booking.promo_refunded_at) {
+      return json({ error: 'A promo refund was already issued on ' + booking.promo_refunded_at + '.' }, 409);
+    }
+    if (!booking.stripe_session_id) {
+      return json({ error: 'No Stripe session on this booking, so the rental amount cannot be verified.' }, 400);
+    }
+
+    const stripeKey = Deno.env.get('STRIPE_SECRET_KEY')!;
+
+    // Read the session WITH line items. The rental is every line that is not
+    // the refundable deposit and not a delivery/pickup service fee.
+    const sessRes = await fetch(
+      'https://api.stripe.com/v1/checkout/sessions/' + encodeURIComponent(booking.stripe_session_id) + '?expand[]=line_items',
+      { headers: { 'Authorization': 'Bearer ' + stripeKey } }
+    );
+    const sess = await sessRes.json();
+    if (sess?.error) return json({ error: 'Stripe: ' + sess.error.message }, 502);
+
+    // Refuse if a code was already applied. This button is for MISSED
+    // discounts, not for stacking a second one on top.
+    if (sess?.metadata?.promoCode) {
+      return json({ error: 'Promo code ' + sess.metadata.promoCode + ' was already applied to this booking.' }, 400);
+    }
+
+    let rentalCents = 0;
+    for (const li of (sess?.line_items?.data ?? [])) {
+      const desc = String(li?.description ?? '');
+      if (/Deposit/i.test(desc)) continue;
+      if (/Service$/i.test(desc)) continue;   // "Drop-off + Pickup Service"
+      rentalCents += Number(li?.amount_total ?? 0);
+    }
+    if (rentalCents <= 0) {
+      return json({ error: 'Could not work out the rental amount from this booking.' }, 400);
+    }
+
+    const refundCents = Math.round(rentalCents * (pct / 100));
+    if (refundCents <= 0) return json({ error: 'That works out to nothing to refund.' }, 400);
+
+    const paymentIntent = booking.stripe_payment_intent || sess?.payment_intent;
+    if (!paymentIntent) return json({ error: 'Could not find the Stripe payment for this booking.' }, 500);
+
+    const refundRes = await fetch('https://api.stripe.com/v1/refunds', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + stripeKey,
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Idempotency-Key': 'promo-refund-' + bookingId
+      },
+      body: new URLSearchParams({
+        payment_intent: paymentIntent,
+        amount: String(refundCents),
+        'metadata[reason]': 'missed_promo_discount',
+        'metadata[bookingId]': bookingId,
+        'metadata[percentOff]': String(pct),
+        'metadata[refundedBy]': authedUser.email
+      })
+    });
+    const refund = await refundRes.json();
+    if (refund.error) return json({ error: 'Stripe refund failed: ' + refund.error.message }, 502);
+
+    const refundedAt = new Date().toISOString();
+    const { error: updErr } = await supabase
+      .from('bookings')
+      .update({
+        promo_refunded_cents: refundCents,
+        promo_refunded_at: refundedAt,
+        promo_refunded_by: authedUser.email,
+        promo_refund_id: refund.id,
+        promo_refund_pct: pct
+      })
+      .eq('id', bookingId);
+    if (updErr) {
+      return json({ ok: true, warning: 'Refund succeeded (' + refund.id + ') but recording it failed: ' + updErr.message, refundId: refund.id, refundedAt, amountCents: refundCents }, 200);
+    }
+
+    // Tell the customer, for the same reason the deposit refund does: money
+    // arriving with no explanation is a support call. After the write and
+    // swallowed on failure, since the money has already moved.
+    let emailed = false;
+    let emailError: string | null = null;
+    if (booking.email) {
+      try {
+        const esc = (v: unknown) => String(v ?? '')
+          .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        const amount = '$' + (refundCents / 100).toFixed(2);
+        const firstName = String(booking.name || '').trim().split(/\s+/)[0] || 'there';
+
+        const resend = new Resend(Deno.env.get('RESEND_API_KEY')!);
+        const { error: mailErr } = await resend.emails.send({
+          from: 'CJ Funtime Rentals <bookings@cjfuntimerentals.com>',
+          to: booking.email,
+          subject: `Your ${pct}% discount has been refunded`,
+          ...promoReplyTo(NO_REPLY_ADDRESS),
+          html: `
+            <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#222;">
+              <h1 style="font-size:22px;margin:0 0 16px;color:#FF6B00;">Your discount is on its way back</h1>
+              <p style="font-size:15px;line-height:1.6;">Hi ${esc(firstName)},</p>
+              <p style="font-size:15px;line-height:1.6;">
+                You had a ${pct}% discount that was not applied when you booked, so we have
+                refunded it as ${amount} back to the card you paid with.
+              </p>
+              <p style="font-size:15px;line-height:1.6;">
+                Banks usually take <strong>5-10 business days</strong> to post it, so do not
+                worry if it is not there immediately.
+              </p>
+              <p style="font-size:15px;line-height:1.6;">Nothing else is needed from you.</p>
+              <p style="font-size:15px;line-height:1.6;margin-top:24px;">Thanks again,<br>CJ Funtime Rentals</p>
+            </div>
+          `
+        });
+        if (mailErr) emailError = mailErr.message;
+        else emailed = true;
+      } catch (err) {
+        emailError = (err as Error).message;
+      }
+      if (!emailed) console.error('[admin] promo refund email failed:', emailError);
+    }
+
+    return json({ ok: true, refundId: refund.id, refundedAt, amountCents: refundCents, rentalCents, percentOff: pct, emailed, emailError });
+  }
+
   // ── AI Chat ─────────────────────────────────────────────────────────────────
   if (path === '/chat' && req.method === 'POST') {
     const openaiKey = Deno.env.get('OPENAI_API_KEY');

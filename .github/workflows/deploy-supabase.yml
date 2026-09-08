@@ -150,6 +150,19 @@ jobs:
       # Idempotent (IF NOT EXISTS) - safe to run on every deploy. Must run
       # BEFORE the admin and resend-webhook functions deploy, since both
       # read/write campaign_emails.
+      # Idempotent (ADD COLUMN IF NOT EXISTS) - safe to run on every deploy.
+      # Must run BEFORE the admin function deploys, since /refund-promo writes
+      # these columns.
+      - name: Apply promo refund migration
+        run: |
+          SQL=$(jq -Rs . < supabase/migrations/20260908000001_promo_refund.sql)
+          curl -sf -X POST "https://api.supabase.com/v1/projects/yzdtevrwystezhbmgcwn/database/query" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"query\": $SQL}"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
       - name: Apply campaign emails migration
         run: |
           SQL=$(jq -Rs . < supabase/migrations/20260907000001_campaign_emails.sql)

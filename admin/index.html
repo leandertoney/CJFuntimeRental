@@ -585,6 +585,29 @@
         </p>
       </div>
 
+      <!-- Missed promo discount: they had a code but paid full price -->
+      <div id="bd-promo-section" class="booking-detail-section bd-callout hidden">
+        <h4>🎟️ Discount Not Applied</h4>
+        <div id="bd-promo-status" style="font-size:14px;margin-bottom:12px;"></div>
+        <div id="bd-promo-controls" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <label for="bd-promo-pct" style="font-size:13px;white-space:nowrap;">Refund</label>
+          <select id="bd-promo-pct" style="padding:6px 8px;border-radius:6px;width:auto;flex:0 0 auto;">
+            <option value="10" selected>10%</option>
+            <option value="15">15%</option>
+            <option value="20">20%</option>
+          </select>
+          <span style="font-size:13px;white-space:nowrap;">of the rental</span>
+          <button id="bd-refund-promo" type="button" class="btn-inline-success">
+            Refund the discount
+          </button>
+        </div>
+        <p class="bd-callout-note">
+          For a customer who had a valid code but was charged full price. This refunds
+          the rental only, never the deposit or a delivery fee, and emails them to say
+          it is coming.
+        </p>
+      </div>
+
       <div id="bd-delivery-section" class="booking-detail-section bd-callout bd-callout-warn hidden">
         <h4>🚚 Delivery Service Requested</h4>
         <div id="bd-delivery-info" style="font-size:14px;"></div>

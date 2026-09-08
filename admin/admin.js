@@ -3314,6 +3314,7 @@
 
     // Refundable deposit section
     renderDepositSection(booking);
+    renderPromoSection(booking);
 
     // Show/hide delivery section
     var deliverySection = document.getElementById('bd-delivery-section');
@@ -3582,6 +3583,77 @@
     section.classList.remove('hidden');
   }
 
+  // Missed promo discount. Shown only when the booking carries no promo code
+  // and no promo refund has been issued, so the button cannot double-discount.
+  // The rental amount comes from the server, which reads the Stripe line items;
+  // this only displays it. The admin never types an amount.
+  function renderPromoSection(booking) {
+    var section = document.getElementById('bd-promo-section');
+    var status  = document.getElementById('bd-promo-status');
+    var controls = document.getElementById('bd-promo-controls');
+    if (!section) return;
+
+    if (booking.promo_refunded_at) {
+      var when = new Date(booking.promo_refunded_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      var amt  = '$' + ((booking.promo_refunded_cents || 0) / 100).toFixed(2);
+      status.innerHTML = '<span style="color:var(--success);font-weight:600;">✓ ' + amt + ' discount refunded</span> ' +
+        '<span style="color:var(--text-3);">on ' + when + (booking.promo_refunded_by ? ' by ' + esc(booking.promo_refunded_by) : '') + '</span>';
+      controls.style.display = 'none';
+      section.classList.remove('hidden');
+      return;
+    }
+
+    // Already discounted at checkout: nothing owed, so do not offer the button.
+    if (booking.promo_code) {
+      section.classList.add('hidden');
+      return;
+    }
+
+    status.innerHTML = 'No discount was applied to this booking. If the customer had a valid code, refund it here.';
+    controls.style.display = 'flex';
+    section.classList.remove('hidden');
+  }
+
+  function refundPromo() {
+    if (!currentBooking) return;
+    var pct = parseInt(document.getElementById('bd-promo-pct').value, 10) || 10;
+    var who = currentBooking.name || currentBooking.email || 'this customer';
+    askConfirm({
+      title: 'Refund ' + pct + '% of the rental?',
+      text: 'This sends ' + pct + '% of the rental amount back to ' + who
+          + ' on their original card, and emails them to say it is on the way. '
+          + 'The deposit and any delivery fee are not touched. It cannot be undone.',
+      confirmLabel: 'Refund ' + pct + '%',
+      danger: true
+    }, function () { doRefundPromo(pct); });
+  }
+
+  function doRefundPromo(pct) {
+    var btn = document.getElementById('bd-refund-promo');
+    btn.disabled = true;
+    btn.textContent = 'Refunding…';
+
+    apiFetch(ADMIN_API + '/bookings/' + encodeURIComponent(currentBooking.id) + '/refund-promo', {
+      method: 'POST',
+      body: JSON.stringify({ percentOff: pct })
+    })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+      .then(function (r) {
+        if (!r.ok || !r.data.ok) throw new Error(r.data.error || 'Refund failed');
+        currentBooking.promo_refunded_at    = r.data.refundedAt;
+        currentBooking.promo_refunded_cents = r.data.amountCents;
+        renderPromoSection(currentBooking);
+        var amt = '$' + ((r.data.amountCents || 0) / 100).toFixed(2);
+        showToast('success', 'Discount refunded', amt + ' is on its way back to the customer\u2019s card.');
+        try { renderBookingsPanel(); } catch (e) {}
+      })
+      .catch(function (err) {
+        btn.disabled = false;
+        btn.textContent = 'Refund the discount';
+        showToast('error', 'Could not refund', err.message || 'Please try again.');
+      });
+  }
+
   function refundDeposit() {
     if (!currentBooking) return;
     var dollars = '$' + ((currentBooking.deposit_cents || 0) / 100).toLocaleString();
@@ -3791,6 +3863,7 @@
   document.getElementById('bd-verify-canam2').addEventListener('click', function () { verifyCanamEndorsement('additional'); });
   document.getElementById('bd-add-driver2').addEventListener('click', addAdditionalDriver);
   document.getElementById('bd-refund-deposit').addEventListener('click', refundDeposit);
+  document.getElementById('bd-refund-promo').addEventListener('click', refundPromo);
   document.getElementById('booking-detail-modal').addEventListener('click', function (e) {
     if (e.target === this) closeBookingDetailModal();
   });
