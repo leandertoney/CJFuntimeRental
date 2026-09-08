@@ -904,7 +904,15 @@
     if (dropoffFp) { dropoffFp.destroy(); dropoffFp = null; }
 
     var common = {
+      // dateFormat is what the code reads out of input.value, so it stays
+      // ISO. altInput puts a SECOND, visible field in front of it showing the
+      // date the way it is read here: "Sat, Sep 12, 2026" rather than
+      // 2026-09-12, which reads year-month-day. The real input is hidden
+      // behind it and keeps the ISO value every handler expects.
       dateFormat: 'Y-m-d',        // existing handlers read input.value in this format
+      altInput: true,
+      altFormat: 'D, M j, Y',
+      altInputClass: 'bw-date-input',   // inherit the styling of the field it replaces
       minDate: 'today',
       disable: disabled,
       disableMobile: true,
