@@ -83,10 +83,19 @@
 
   function fetchExistingBookings(vehicleKey) {
     if (window.SITE_CONFIG && window.SITE_CONFIG.bookings) {
-      existingBookings = window.SITE_CONFIG.bookings.filter(function(b) {
-        return b.vehicle === vehicleKey ||
-               b.vehicle.toLowerCase().includes(vehicleKey.toLowerCase()) ||
-               vehicleKey.toLowerCase().includes(b.vehicle.toLowerCase());
+      // Use rowMatchesVehicle, the SAME test the availability check and the
+      // calendar greying use. This used to compare `b.vehicle` (a display NAME
+      // like "2024 Polaris Slingshot") against vehicleKey (a KEY like
+      // "slingshot_2022"). None of the three comparisons could ever match, so
+      // every booking was dropped here BEFORE the availability check saw it:
+      // the date stayed white in the picker and the widget let a second
+      // customer through to checkout on an already-booked vehicle.
+      //
+      // Nothing else was wrong. The server sends vehicle_key, rowMatchesVehicle
+      // reads it, and the checkout function's own conflict guard is correct.
+      // This one filter was throwing the data away on the way in.
+      existingBookings = window.SITE_CONFIG.bookings.filter(function (b) {
+        return rowMatchesVehicle(b, vehicleKey);
       });
       console.log('[BookingWidget] Loaded ' + existingBookings.length + ' bookings for ' + vehicleKey);
     }
