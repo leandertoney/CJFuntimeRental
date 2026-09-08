@@ -1805,6 +1805,32 @@
     return (v && v.color) ? base + ' — ' + v.color : base;
   }
 
+  // US date display: month, day, year. Never the raw YYYY-MM-DD, which reads as
+  // year-month-day and is not how anyone here reads a date.
+  //
+  // Split the string rather than new Date('2026-09-12'): a bare date string is
+  // parsed as UTC, which shows the previous day for anyone in Eastern time.
+  function fmtDate(d) {
+    if (!d) return '';
+    var parts = String(d).slice(0, 10).split('-');
+    if (parts.length !== 3) return String(d);
+    var y = Number(parts[0]), m = Number(parts[1]), day = Number(parts[2]);
+    if (!y || !m || !day) return String(d);
+    return new Date(y, m - 1, day).toLocaleDateString('en-US', {
+      month: 'short', day: 'numeric', year: 'numeric'
+    });
+  }
+
+  // Same, without the year, for tight spots like a calendar day panel.
+  function fmtDateShort(d) {
+    if (!d) return '';
+    var parts = String(d).slice(0, 10).split('-');
+    if (parts.length !== 3) return String(d);
+    var y = Number(parts[0]), m = Number(parts[1]), day = Number(parts[2]);
+    if (!y || !m || !day) return String(d);
+    return new Date(y, m - 1, day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+
   // Display name for a BOOKING's vehicle.
   //
   // Two fleet vehicles share the exact display name "2016 Polaris Slingshot"
@@ -2199,8 +2225,8 @@
           + '<div class="cday-item-main">'
           +   '<strong>' + esc(b.name || b.email || 'Booking') + '</strong>'
           +   '<span>' + esc(bookingVehicleName(b)) + '</span>'
-          +   '<span>' + esc((b.startDate || b.start_date) || '') + ' to '
-          +     esc((b.endDate || b.end_date) || '') + ' &middot; $'
+          +   '<span>' + esc(fmtDateShort((b.startDate || b.start_date) || '')) + ' to '
+          +     esc(fmtDateShort((b.endDate || b.end_date) || '')) + ' &middot; $'
           +     (b.total || 0).toLocaleString()
           +     (b.pickup_time ? ' &middot; picks up ' + esc(b.pickup_time) : '') + '</span>'
           + '</div>'
@@ -2221,7 +2247,7 @@
         html += '<div class="cday-item">'
           + '<div class="cday-item-main">'
           +   '<strong>' + esc(vehicleDisplayName(v, vb.vehicle_key)) + '</strong>'
-          +   '<span>' + esc(vb.start_date) + ' to ' + esc(vb.end_date)
+          +   '<span>' + esc(fmtDateShort(vb.start_date)) + ' to ' + esc(fmtDateShort(vb.end_date))
           +     (vb.reason ? ' &middot; ' + esc(vb.reason) : '') + '</span>'
           + '</div>'
           + '<button type="button" class="cday-btn cday-btn-danger" data-remove-vblock="'
@@ -2477,8 +2503,8 @@
             + '<td class="lead-num">' + (idx + 1) + '</td>'
             + '<td class="lead-email"><strong>' + esc(b.name || '—') + '</strong><br><span style="color:var(--text-3);font-size:11px;">' + esc(b.email) + '</span></td>'
             + '<td>' + esc(bookingVehicleName(b)) + deliveryBadges + '</td>'
-            + '<td>' + esc(b.start_date || '—') + '</td>'
-            + '<td>' + esc(b.end_date || '—') + '</td>'
+            + '<td>' + esc(fmtDate(b.start_date) || '—') + '</td>'
+            + '<td>' + esc(fmtDate(b.end_date) || '—') + '</td>'
             + '<td style="text-align:center;">' + (b.days || '—') + '</td>'
             + '<td style="color:var(--success);font-weight:600;">$' + (b.total || 0).toLocaleString() + '</td>'
             + '<td><span class="source-badge ' + statusClass + '">' + esc(b.status || 'confirmed') + '</span></td>'
@@ -3305,7 +3331,7 @@
     document.getElementById('bd-email').textContent = booking.email || '—';
     document.getElementById('bd-phone').textContent = booking.phone || '—';
     document.getElementById('bd-vehicle').textContent = bookingVehicleName(booking);
-    document.getElementById('bd-dates').textContent = (booking.start_date || '') + ' to ' + (booking.end_date || '');
+    document.getElementById('bd-dates').textContent = fmtDate(booking.start_date) + ' to ' + fmtDate(booking.end_date);
     document.getElementById('bd-total').textContent = '$' + (booking.total || 0).toLocaleString();
 
     // Populate editable rental dates

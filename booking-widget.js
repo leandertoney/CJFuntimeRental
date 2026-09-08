@@ -166,6 +166,33 @@
       String(d.getDate()).padStart(2, '0');
   }
 
+  // The steps below the dates only make sense once the dates can actually be
+  // booked. Every place that reveals one asks this first, so nothing can
+  // re-open them a moment after the availability check collapsed them.
+  function datesAreBookable() {
+    if (!state.startDate) return false;
+    return isDateRangeAvailable(state.startDate, state.endDate, state.vehicleKey).available;
+  }
+
+  // Collapse or restore the steps below the dates. Called only from
+  // updatePricing, which is the one place that knows the answer.
+  function setDownstreamVisible(visible) {
+    var dur = $('bw-duration-section');
+    var fields = $('bw-date-fields');
+    var del = $('bw-delivery-section');
+    if (!visible) {
+      if (dur) dur.style.display = 'none';
+      if (fields) fields.style.display = 'none';
+      if (del) del.style.display = 'none';
+      return;
+    }
+    // Restoring only brings back the duration picker. The date fields and the
+    // delivery block are revealed by choosing a duration, which is the normal
+    // flow's job, not this function's.
+    if (dur && state.startDate) dur.style.display = 'block';
+    if (fields) fields.style.display = '';
+  }
+
   function isDateRangeAvailable(startDate, endDate, vehicleKey) {
     if (!startDate) return { available: true };
 
@@ -315,6 +342,12 @@
       + '<div class="bw-hint">Leave blank for same-day rental</div>'
       + '</div>'
 
+      // Availability error sits DIRECTLY under the dates that caused it.
+      // It used to live at the bottom of the widget, below duration, pickup
+      // time and delivery, so someone picking a booked date saw no reaction
+      // anywhere near the calendar and had to scroll to find out why.
+      + '<div id="bw-error" class="bw-error" style="display:none;"></div>'
+
       // Duration type selector (shown after dates)
       + '<div class="bw-section" id="bw-duration-section" style="display:none;">'
       + '<label class="bw-label">How long do you need it?</label>'
@@ -353,9 +386,6 @@
       + '</label>'
       + '</div>'
       + '</div>'
-
-      // Error message
-      + '<div id="bw-error" class="bw-error" style="display:none;"></div>'
 
       // CTA button
       + '<button type="button" class="bw-cta" id="bw-cta" disabled>Select rental type to continue</button>'
@@ -419,7 +449,7 @@
       // Show duration section if date is set
       var durationSection = $('bw-duration-section');
       if (pickupDateInput && pickupDateInput.value && durationSection) {
-        durationSection.style.display = 'block';
+        durationSection.style.display = datesAreBookable() ? 'block' : 'none';
       }
 
       // Restore duration selection
@@ -513,8 +543,9 @@
           // Friday could still show a discounted price.
           state.startDate = this.value;
           if (state.durationType !== 'multi') state.endDate = this.value;
-          // Show duration section when date is picked
-          if (durationSection) durationSection.style.display = 'block';
+          // updatePricing decides whether the steps below are shown: on an
+          // unavailable date it collapses them so the error is the next thing
+          // on screen instead of four sections down.
           updatePricing();
         } else {
           if (durationSection) durationSection.style.display = 'none';
@@ -664,9 +695,9 @@
       });
     }
 
-    // Show delivery section
+    // Show delivery section, but never on dates that cannot be booked.
     var deliverySection = $('bw-delivery-section');
-    if (deliverySection) deliverySection.style.display = 'block';
+    if (deliverySection) deliverySection.style.display = datesAreBookable() ? 'block' : 'none';
   }
 
   function updatePricing() {
@@ -712,6 +743,10 @@
         errorDiv.textContent = availability.message;
         errorDiv.style.display = 'block';
       }
+      // Nothing below the dates is worth configuring while the dates cannot be
+      // booked, and leaving it all open is what pushed the message off-screen.
+      // Collapse back to just the dates and the reason.
+      setDownstreamVisible(false);
       if (priceDisplay) priceDisplay.textContent = 'Dates unavailable';
       if (ctaBtn) {
         ctaBtn.disabled = true;
@@ -722,6 +757,7 @@
 
     // Hide error
     if (errorDiv) errorDiv.style.display = 'none';
+    setDownstreamVisible(true);
 
     // Calculate price
     var pricing = calcPrice();
