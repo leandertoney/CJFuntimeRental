@@ -718,6 +718,30 @@
       return;
     }
 
+    // Availability is checked BEFORE the duration gate below. A booked date is
+    // unbookable whatever duration you pick, and this used to return early on
+    // "no duration yet", so choosing a booked date produced no visible reaction
+    // at all until you also picked a duration. The customer's next move is to
+    // change the date, so tell them now.
+    if (state.startDate) {
+      var earlyCheck = isDateRangeAvailable(state.startDate, state.endDate, state.vehicleKey);
+      if (!earlyCheck.available) {
+        if (errorDiv) {
+          errorDiv.textContent = earlyCheck.message;
+          errorDiv.style.display = 'block';
+        }
+        setDownstreamVisible(false);
+        if (priceDisplay) priceDisplay.textContent = 'Dates unavailable';
+        if (ctaBtn) {
+          ctaBtn.disabled = true;
+          ctaBtn.textContent = 'Select different dates';
+        }
+        return;
+      }
+      if (errorDiv) errorDiv.style.display = 'none';
+      setDownstreamVisible(true);
+    }
+
     if (!state.durationType) {
       if (priceDisplay) priceDisplay.textContent = 'Select how long you need it';
       if (ctaBtn) {
