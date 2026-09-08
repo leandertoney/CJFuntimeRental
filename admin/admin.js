@@ -3587,10 +3587,15 @@
   // and no promo refund has been issued, so the button cannot double-discount.
   // The rental amount comes from the server, which reads the Stripe line items;
   // this only displays it. The admin never types an amount.
+  // Hidden by default. Refunding a missed discount is a rare correction, so the
+  // owner opens it from the "Refund a missed discount" link in the footer
+  // rather than being shown it on every booking. The one exception is a
+  // booking that HAS been refunded: that stays visible as a record.
   function renderPromoSection(booking) {
     var section = document.getElementById('bd-promo-section');
     var status  = document.getElementById('bd-promo-status');
     var controls = document.getElementById('bd-promo-controls');
+    var reveal  = document.getElementById('bd-promo-reveal');
     if (!section) return;
 
     if (booking.promo_refunded_at) {
@@ -3600,23 +3605,35 @@
         '<span style="color:var(--text-3);">on ' + when + (booking.promo_refunded_by ? ' by ' + esc(booking.promo_refunded_by) : '') + '</span>';
       controls.style.display = 'none';
       section.classList.remove('hidden');
+      if (reveal) reveal.style.display = 'none';   // already done, nothing to open
       return;
     }
 
-    // Already discounted at checkout: nothing owed, so do not offer the button.
-    if (booking.promo_code) {
-      section.classList.add('hidden');
-      return;
-    }
+    // Start collapsed every time the modal opens.
+    section.classList.add('hidden');
+    status.innerHTML = 'This refunds 10% of the rental to the customer and emails them.';
+    controls.style.display = '';
 
-    status.innerHTML = 'No discount was applied to this booking. If the customer had a valid code, refund it here.';
-    controls.style.display = 'flex';
-    section.classList.remove('hidden');
+    // Offer the link only when there is something to correct: a booking that
+    // already had a code applied is not owed anything.
+    if (reveal) reveal.style.display = booking.promo_code ? 'none' : '';
   }
+
+  function revealPromoSection() {
+    var section = document.getElementById('bd-promo-section');
+    var reveal  = document.getElementById('bd-promo-reveal');
+    if (!section) return;
+    section.classList.remove('hidden');
+    if (reveal) reveal.style.display = 'none';
+    section.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }
+
+  // Always 10%: that is the FIRST10 code this exists to honour.
+  var PROMO_REFUND_PCT = 10;
 
   function refundPromo() {
     if (!currentBooking) return;
-    var pct = parseInt(document.getElementById('bd-promo-pct').value, 10) || 10;
+    var pct = PROMO_REFUND_PCT;
     var who = currentBooking.name || currentBooking.email || 'this customer';
     askConfirm({
       title: 'Refund ' + pct + '% of the rental?',
@@ -3649,7 +3666,7 @@
       })
       .catch(function (err) {
         btn.disabled = false;
-        btn.textContent = 'Refund the discount';
+        btn.textContent = 'Refund 10% of the rental';
         showToast('error', 'Could not refund', err.message || 'Please try again.');
       });
   }
@@ -3864,6 +3881,7 @@
   document.getElementById('bd-add-driver2').addEventListener('click', addAdditionalDriver);
   document.getElementById('bd-refund-deposit').addEventListener('click', refundDeposit);
   document.getElementById('bd-refund-promo').addEventListener('click', refundPromo);
+  document.getElementById('bd-promo-reveal').addEventListener('click', revealPromoSection);
   document.getElementById('booking-detail-modal').addEventListener('click', function (e) {
     if (e.target === this) closeBookingDetailModal();
   });

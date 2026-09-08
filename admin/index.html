@@ -585,26 +585,20 @@
         </p>
       </div>
 
-      <!-- Missed promo discount: they had a code but paid full price -->
+      <!-- Missed 10% promo discount. Hidden unless the owner opens it from the
+           menu below, so it is not advertised on every booking. -->
       <div id="bd-promo-section" class="booking-detail-section bd-callout hidden">
-        <h4>🎟️ Discount Not Applied</h4>
+        <h4>🎟️ Refund the 10% discount</h4>
         <div id="bd-promo-status" style="font-size:14px;margin-bottom:12px;"></div>
-        <div id="bd-promo-controls" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-          <label for="bd-promo-pct" style="font-size:13px;white-space:nowrap;">Refund</label>
-          <select id="bd-promo-pct" style="padding:6px 8px;border-radius:6px;width:auto;flex:0 0 auto;">
-            <option value="10" selected>10%</option>
-            <option value="15">15%</option>
-            <option value="20">20%</option>
-          </select>
-          <span style="font-size:13px;white-space:nowrap;">of the rental</span>
+        <div id="bd-promo-controls">
           <button id="bd-refund-promo" type="button" class="btn-inline-success">
-            Refund the discount
+            Refund 10% of the rental
           </button>
         </div>
         <p class="bd-callout-note">
-          For a customer who had a valid code but was charged full price. This refunds
-          the rental only, never the deposit or a delivery fee, and emails them to say
-          it is coming.
+          For a customer who had a valid code but was charged full price. Refunds the
+          rental only, never the deposit or a delivery fee, and emails them to say it
+          is coming.
         </p>
       </div>
 
@@ -758,6 +752,10 @@
       <p id="bd-error" class="login-error hidden"></p>
       <p id="bd-success" class="login-error bd-success hidden"></p>
       <div class="modal-actions">
+        <!-- Deliberately a quiet link, not a button. Refunding a missed
+             discount is a rare correction, so it should be reachable without
+             being offered on every booking the owner opens. -->
+        <button id="bd-promo-reveal" type="button" class="bd-quiet-link">Refund a missed discount</button>
         <button id="bd-cancel" type="button" class="btn-secondary-admin">Cancel</button>
         <button id="bd-save" class="btn-primary-admin">Save Details</button>
       </div>

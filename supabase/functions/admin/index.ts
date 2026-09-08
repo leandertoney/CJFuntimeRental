@@ -1355,11 +1355,10 @@ Deno.serve(async (req) => {
   // is set, with an idempotency key tied to the booking id as a backstop.
   if (path.match(/^\/bookings\/[^/]+\/refund-promo$/) && req.method === 'POST') {
     const bookingId = path.split('/')[2];
-    const body = await req.json().catch(() => ({}));
-    const pct = Number(body?.percentOff);
-    if (!Number.isFinite(pct) || pct <= 0 || pct > 100) {
-      return json({ error: 'A percent between 1 and 100 is required.' }, 400);
-    }
+    // Fixed at 10%: this exists to honour the FIRST10 code, and a percentage
+    // the client can choose is a percentage the client can get wrong. The
+    // request body is not trusted for the amount at all.
+    const pct = 10;
 
     const { data: booking, error } = await supabase
       .from('bookings')
