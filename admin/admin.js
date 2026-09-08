@@ -302,7 +302,7 @@
       target: '#calendar-grid',
       eyebrow: 'The calendar',
       title: 'One click never changes anything',
-      text: 'Clicking a day opens it. Blocking asks you to confirm, and still needs Save & Publish.'
+      text: 'Clicking a day opens it. Blocking asks you to confirm, and saves as soon as you do.'
     },
     {
       section: 'calendar',
@@ -857,12 +857,11 @@
 
   // Panels that edit site config are the only ones "Save & Publish" applies to.
   // On a read-only panel the button implies unsaved work that does not exist.
-  // 'calendar' belongs here: blocking or reopening a day edits cfg.blockedDates
-  // and is only persisted by Save & Publish, exactly like the other panels.
-  // Leaving it out hid the button on the one panel whose toast tells you to
-  // press it, so a blocked day looked blocked, said "not saved yet", and had
-  // no way to be saved.
-  var SAVEABLE = ['sections','pricing','copy','faq','emails','discounts','calendar'];
+  //
+  // 'calendar' is deliberately NOT here. Blocking a day saves itself from the
+  // confirm dialog, the same way a per-vehicle block already does, so there is
+  // never a pending calendar change waiting on a button somewhere else.
+  var SAVEABLE = ['sections','pricing','copy','faq','emails','discounts'];
 
   function renderPanel(name) {
     document.querySelectorAll('.admin-panel').forEach(function (p) {
@@ -2311,7 +2310,7 @@
       }, function () {
         if (!cfg.blockedDates) cfg.blockedDates = [];
         if (cfg.blockedDates.indexOf(dateStr) === -1) { cfg.blockedDates.push(dateStr); cfg.blockedDates.sort(); }
-        afterCalChange(dateStr);
+        saveCalendarChange(dateStr, 'Day blocked', 'Nobody can book ' + dateStr + ' now.');
       });
     };
 
@@ -2324,7 +2323,7 @@
       }, function () {
         var idx = (cfg.blockedDates || []).indexOf(dateStr);
         if (idx !== -1) cfg.blockedDates.splice(idx, 1);
-        afterCalChange(dateStr);
+        saveCalendarChange(dateStr, 'Day reopened', dateStr + ' is bookable again.');
       });
     };
 
@@ -2365,12 +2364,30 @@
     });
   }
 
-  // Fleet-wide blocks live in cfg and are saved with Save & Publish, same as
-  // before. Say so, rather than letting the owner assume it is already live.
-  function afterCalChange(dateStr) {
+  // Fleet-wide blocks live in cfg, which is saved as a whole. The calendar has
+  // no Save & Publish button of its own, so the confirm dialog persists the
+  // change itself: a day that looks blocked IS blocked, on the live site.
+  //
+  // On failure the in-memory change is rolled back by the caller's snapshot and
+  // the calendar repainted, so the UI never shows a block the server rejected.
+  function saveCalendarChange(dateStr, okTitle, okText) {
+    var snapshot = (cfg.blockedDates || []).slice();
     renderCalendar();
     openCalDay(dateStr);   // reopens with the backdrop still up
-    showToast('info', 'Not saved yet', 'Hit Save & Publish to put this live.');
+
+    apiFetch(ADMIN_API + '/config', { method: 'POST', body: JSON.stringify(cfg) })
+      .then(function (r) { return r.json().catch(function () { return {}; }); })
+      .then(function (data) {
+        if (!data.ok) throw new Error(data.error || 'Save failed');
+        showToast('success', okTitle, okText);
+      })
+      .catch(function (err) {
+        // Put the calendar back to what the server still believes.
+        cfg.blockedDates = snapshot;
+        renderCalendar();
+        openCalDay(dateStr);
+        showToast('error', 'Not saved', (err.message || 'Network error') + '. The day is unchanged.');
+      });
   }
 
 
